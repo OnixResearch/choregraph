@@ -10,6 +10,8 @@ Admission validates counts before normalized allocation. It rejects malformed id
 
 An admitted machine stores immutable nodes, edges, dependency indexes, a topological order, operations, and exact effect declarations.
 
+Admission also stores numeric graph views. The production proof gate verifies these views without changing the public identifier model.
+
 ## Aggregate state
 
 `MachineState` stores one local state for each admitted node. State size grows with admitted nodes, not the complete theoretical product-state space.
@@ -57,4 +59,6 @@ Positive and negative tests cover empty, linear, diamond, lifecycle, bounds, mal
 
 A bounded property test covers every node and edge input order for the Lattice diamond graph.
 
-These tests are executable examples. They are not formal proofs of invariant preservation or trace safety.
+The single-step Verus rail proves named properties for the production-called indexed kernel. See [`single-step-verification.md`](single-step-verification.md).
+
+The executable tests remain regression evidence. The single-step proof does not prove trace safety or the identifier-map adapter.

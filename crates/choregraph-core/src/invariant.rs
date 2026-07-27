@@ -45,31 +45,67 @@ fn indexes_match(machine: &AdmittedMachine) -> bool {
     dependencies == machine.dependencies && dependents == machine.dependents
 }
 
-fn topology_matches(machine: &AdmittedMachine) -> bool {
-    if machine.topological_order.len() != machine.nodes.len() {
+fn indexed_views_match(machine: &AdmittedMachine) -> bool {
+    let expected_node_indices = machine
+        .node_order
+        .iter()
+        .cloned()
+        .enumerate()
+        .map(|(index, node_id)| (node_id, index))
+        .collect::<BTreeMap<_, _>>();
+    if expected_node_indices != machine.node_indices {
         return false;
     }
-    let mut positions = BTreeMap::new();
-    for (position, node_id) in machine.topological_order.iter().enumerate() {
-        if !machine.nodes.contains_key(node_id) {
-            return false;
-        }
-        if positions.insert(node_id.clone(), position).is_some() {
-            return false;
-        }
-    }
+
+    let mut expected_edges = Vec::with_capacity(machine.edges.len());
     for edge in &machine.edges {
-        let Some(source_position) = positions.get(&edge.source) else {
+        let (Some(source), Some(target)) = (
+            machine.node_indices.get(&edge.source).copied(),
+            machine.node_indices.get(&edge.target).copied(),
+        ) else {
             return false;
         };
-        let Some(target_position) = positions.get(&edge.target) else {
-            return false;
-        };
-        if source_position >= target_position {
-            return false;
-        }
+        expected_edges.push((source, target));
     }
-    true
+    if expected_edges != machine.edge_indices {
+        return false;
+    }
+
+    let mut expected_dependencies = Vec::with_capacity(machine.node_order.len());
+    for node_id in &machine.node_order {
+        let Some(dependencies) = machine.dependencies.get(node_id) else {
+            return false;
+        };
+        let mut indexes = Vec::with_capacity(dependencies.len());
+        for dependency in dependencies {
+            let Some(index) = machine.node_indices.get(dependency).copied() else {
+                return false;
+            };
+            indexes.push(index);
+        }
+        expected_dependencies.push(indexes);
+    }
+    if expected_dependencies != machine.dependency_indices {
+        return false;
+    }
+
+    let mut expected_order = Vec::with_capacity(machine.topological_order.len());
+    for node_id in &machine.topological_order {
+        let Some(index) = machine.node_indices.get(node_id).copied() else {
+            return false;
+        };
+        expected_order.push(index);
+    }
+    expected_order == machine.topological_indices
+}
+
+fn topology_matches(machine: &AdmittedMachine) -> bool {
+    crate::verified_topology::admitted_graph_valid(
+        &machine.edge_indices,
+        machine.nodes.len(),
+        &machine.topological_indices,
+        &machine.dependency_indices,
+    )
 }
 
 fn intent_size(declaration: &EffectDeclaration) -> Option<usize> {
@@ -97,7 +133,8 @@ fn effects_match(machine: &AdmittedMachine) -> bool {
     }
 
     let mut expected_index = BTreeMap::<EffectKey, Vec<EffectDeclaration>>::new();
-    for declaration in &machine.effects {
+    let mut expected_route_indices = BTreeMap::<EffectKey, Vec<usize>>::new();
+    for (effect_index, declaration) in machine.effects.iter().enumerate() {
         let Some(node) = machine.nodes.get(&declaration.node_id) else {
             return false;
         };
@@ -122,16 +159,20 @@ fn effects_match(machine: &AdmittedMachine) -> bool {
             transition: declaration.transition,
         };
         expected_index
-            .entry(key)
+            .entry(key.clone())
             .or_default()
             .push(declaration.clone());
+        expected_route_indices
+            .entry(key)
+            .or_default()
+            .push(effect_index);
     }
     for declarations in expected_index.values() {
         if declarations.len() > machine.limits.max_intents_per_transition {
             return false;
         }
     }
-    expected_index == machine.effect_index
+    expected_index == machine.effect_index && expected_route_indices == machine.effect_route_indices
 }
 
 fn normalized_edges(machine: &AdmittedMachine) -> bool {
@@ -185,6 +226,7 @@ pub fn well_formed(machine: &AdmittedMachine) -> bool {
     }
     normalized_edges(machine)
         && indexes_match(machine)
+        && indexed_views_match(machine)
         && topology_matches(machine)
         && effects_match(machine)
 }

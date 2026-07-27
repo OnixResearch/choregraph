@@ -202,12 +202,17 @@ pub struct AdmittedMachine {
     pub(crate) lifecycle_profile: LifecycleProfile,
     pub(crate) nodes: BTreeMap<NodeId, AdmittedNode>,
     pub(crate) node_order: Vec<NodeId>,
+    pub(crate) node_indices: BTreeMap<NodeId, usize>,
     pub(crate) edges: Vec<Edge>,
+    pub(crate) edge_indices: Vec<(usize, usize)>,
     pub(crate) dependencies: BTreeMap<NodeId, Vec<NodeId>>,
+    pub(crate) dependency_indices: Vec<Vec<usize>>,
     pub(crate) dependents: BTreeMap<NodeId, Vec<NodeId>>,
     pub(crate) topological_order: Vec<NodeId>,
+    pub(crate) topological_indices: Vec<usize>,
     pub(crate) effects: Vec<EffectDeclaration>,
     pub(crate) effect_index: BTreeMap<EffectKey, Vec<EffectDeclaration>>,
+    pub(crate) effect_route_indices: BTreeMap<EffectKey, Vec<usize>>,
 }
 
 impl AdmittedMachine {
@@ -293,10 +298,6 @@ impl MachineState {
     #[must_use]
     pub fn state(&self, node_id: &NodeId) -> Option<LocalState> {
         self.entries.get(node_id).copied()
-    }
-
-    pub(crate) fn set(&mut self, node_id: NodeId, state: LocalState) {
-        self.entries.insert(node_id, state);
     }
 }
 

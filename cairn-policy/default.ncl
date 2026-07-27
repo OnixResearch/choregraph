@@ -216,7 +216,9 @@ let PolicyFieldSetDigest = "cdbe3adf5778872343f8576e0304e3748dcaf7fb58f59c489599
       evidence_sources = [
         { root = "crates", source_kind = "rust_source", extensions = ["rs"] },
         { root = "proofs", source_kind = "rust_source", extensions = ["rs"] },
+        { root = "verus", source_kind = "rust_source", extensions = ["rs"] },
         { root = "config", source_kind = "nickel_source", extensions = ["ncl"] },
+        { root = "evidence", source_kind = "nickel_source", extensions = ["ncl", "json", "md"] },
         { root = "contracts", source_kind = "nickel_source", extensions = ["ncl"] },
         { root = "cairn-policy", source_kind = "nickel_source", extensions = ["ncl"] },
         { root = "tests", source_kind = "tool_source", extensions = ["rs", "ncl", "md"] },

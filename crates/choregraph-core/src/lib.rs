@@ -9,6 +9,8 @@ mod id;
 mod invariant;
 mod model;
 mod transition;
+mod verified;
+mod verified_topology;
 
 pub use analytics::{
     bottlenecks, critical_path, parallel_groups, ready_nodes, resume_decision, would_create_cycle,

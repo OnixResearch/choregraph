@@ -69,6 +69,7 @@
         );
         octetPackages = octet.packages.${system};
         productionVerus = octetPackages."octet-production-verus";
+        productionVerusClosureManifest = octetPackages."octet-production-verus-nix-closure-manifest";
         verusToolchainProfile = octetPackages."octet-verus-toolchain-profile";
       in
       {
@@ -114,6 +115,125 @@
               cargoExtraArgs = "-p choregraph-core --target thumbv7em-none-eabihf";
             }
           );
+
+          # r[verify choregraph.proof.single_step.baseline]
+          # r[verify choregraph.proof.single_step.negative]
+          # r[verify choregraph.proof.single_step.evidence]
+          # r[verify choregraph.proof.single_step.trust]
+          # r[verify choregraph.proof.single_step.toolchain]
+          # r[verify choregraph.proof.single_step.validation]
+          single-step-verus =
+            pkgs.runCommand "choregraph-single-step-verus"
+              {
+                nativeBuildInputs = [
+                  pkgs.b3sum
+                  pkgs.coreutils
+                  pkgs.diffutils
+                  pkgs.gnugrep
+                  pkgs.jq
+                  pkgs.nickel
+                  productionVerus
+                ];
+                src = self;
+              }
+              ''
+                set -eu
+                cd "$src"
+
+                octet-production-verus --identity > "$TMPDIR/verus-identity.txt"
+                grep -F 'proof-verifier: verus@0.2026.05.17.e479cce' \
+                  "$TMPDIR/verus-identity.txt" > /dev/null
+                grep -F 'proof-verifier-source-revision: e479cce36490b8fa4b0fd7755aa742aec354372c' \
+                  "$TMPDIR/verus-identity.txt" > /dev/null
+                grep -F 'proof-verifier-binary-blake3: 2aafa795a63160e2b262e0d8df00ad237766ed87fcd7fe9a981034207b1367c7' \
+                  "$TMPDIR/verus-identity.txt" > /dev/null
+                grep -F 'proof-toolchain: 1.95.0-x86_64-unknown-linux-gnu' \
+                  "$TMPDIR/verus-identity.txt" > /dev/null
+                grep -F 'proof-toolchain-blake3: 4b001492d51b266eef82aeb98469d135d60f63d2720d24d9712c1e83fa10c9e3' \
+                  "$TMPDIR/verus-identity.txt" > /dev/null
+                grep -F 'proof-solver-blake3: 42e48a26bf3b38ca33d84749f4317cc179791de0d578d4d98a67f51782b54331' \
+                  "$TMPDIR/verus-identity.txt" > /dev/null
+                closure_digest="$(cat ${productionVerusClosureManifest}/octet-production-verus-closure.graph.blake3)"
+                test "$closure_digest" = '5f20a8243ed93278d1574e4269838858e99489abd1158f23ab2ffa8471a8d43b'
+
+                octet-production-verus --crate-type=lib verus/proofs/single_step.rs \
+                  -o "$TMPDIR/single-step.rlib" \
+                  > "$TMPDIR/positive.stdout" 2> "$TMPDIR/positive.stderr"
+                grep -E 'verification results:: [1-9][0-9]* verified, 0 errors' \
+                  "$TMPDIR/positive.stdout" > /dev/null
+
+                for fixture in verus/failure-fixtures/*.rs; do
+                  fixture_name="$(basename "$fixture")"
+                  case "$fixture_name" in
+                    denial_with_intent.rs) expected='result.intent_indices@.len()' ;;
+                    premature_readiness.rs) expected='dependencies_complete_spec' ;;
+                    state_map_mismatch.rs) expected='indexed_invariant_spec' ;;
+                    terminal_mutation.rs) expected='terminal_states_preserved_spec' ;;
+                    topological_edge_reversal.rs) expected='topological_order_spec' ;;
+                    undeclared_intent.rs) expected='effects_allowed_spec' ;;
+                    *) echo "unclassified Verus failure fixture: $fixture_name" >&2; exit 1 ;;
+                  esac
+                  set +e
+                  octet-production-verus --crate-type=lib "$fixture" \
+                    > "$TMPDIR/negative.stdout" 2> "$TMPDIR/negative.stderr"
+                  negative_status="$?"
+                  set -e
+                  if [ "$negative_status" -eq 0 ]; then
+                    echo "negative Verus fixture unexpectedly passed: $fixture_name" >&2
+                    exit 1
+                  fi
+                  grep -F 'postcondition not satisfied' "$TMPDIR/negative.stderr" > /dev/null
+                  grep -F "$expected" "$TMPDIR/negative.stderr" > /dev/null
+                done
+
+                if grep -R -E '#\[verifier::external_body\]|assume_specification|\bassume[[:space:]]*\(|\baxiom\b' \
+                  crates/choregraph-core/src/verified.rs \
+                  crates/choregraph-core/src/verified_topology.rs; then
+                  echo 'single-step proof core gained an unrecorded trust escape' >&2
+                  exit 1
+                fi
+                test "$(grep -F -c 'crate::verified::indexed_step(' \
+                  crates/choregraph-core/src/transition.rs)" -eq 2
+                grep -F 'crate::verified::lifecycle_target(' \
+                  crates/choregraph-core/src/transition.rs > /dev/null
+                grep -F 'crate::verified_topology::admitted_graph_valid(' \
+                  crates/choregraph-core/src/invariant.rs > /dev/null
+                if grep -F '(LocalState::Pending, Action::MarkReady)' \
+                  crates/choregraph-core/src/transition.rs; then
+                  echo 'transition shell regained an independent lifecycle table' >&2
+                  exit 1
+                fi
+
+                nickel export --format json evidence/single-step-proof.ncl \
+                  > "$TMPDIR/proof-manifest-raw.json"
+                jq -S . "$TMPDIR/proof-manifest-raw.json" \
+                  > "$TMPDIR/proof-manifest.json"
+                diff --unified evidence/generated/single-step-proof.json \
+                  "$TMPDIR/proof-manifest.json"
+                expected_manifest_hash="$(cat evidence/generated/single-step-proof.blake3)"
+                observed_manifest_hash="$(b3sum evidence/generated/single-step-proof.json)"
+                test "''${observed_manifest_hash%% *}" = "$expected_manifest_hash"
+                jq --exit-status '
+                  .proof.schema == "choregraph.single-step-proof.v1"
+                  and .proof.status == "verified"
+                  and (.proof.theorems | length) == 6
+                  and (.proof.negative_fixtures | length) == 6
+                  and .proof.trusted_surface.project_trusted_declarations == []
+                  and (.proof.non_claims | length) > 0
+                ' "$TMPDIR/proof-manifest.json" > /dev/null
+                jq --raw-output '.proof.sources[] | [.path, .blake3] | @tsv' \
+                  "$TMPDIR/proof-manifest.json" \
+                  | while IFS="$(printf '\t')" read -r source_path expected_hash; do
+                      observed_hash="$(b3sum "$source_path")"
+                      test "''${observed_hash%% *}" = "$expected_hash"
+                    done
+
+                mkdir -p "$out"
+                cp "$TMPDIR/verus-identity.txt" "$out/verus-identity.txt"
+                cp "$TMPDIR/positive.stdout" "$out/positive.stdout"
+                cp "$TMPDIR/proof-manifest.json" "$out/proof-manifest.json"
+                printf '%s\n' "$closure_digest" > "$out/verus-closure.blake3"
+              '';
 
           foundation-boundaries =
             pkgs.runCommand "choregraph-foundation-boundaries"
@@ -263,8 +383,10 @@
                   echo 'choregraph-kamacite gained ambient authority' >&2
                   exit 1
                 fi
-                jq --exit-status '.project.status == "unverified-machine-semantics"' \
-                  "$TMPDIR/project.json" > /dev/null
+                jq --exit-status '
+                  .project.status == "single-step-verified-indexed-kernel"
+                  and .project.claim_scope == "named-single-step-properties-over-production-called-indexed-kernel"
+                ' "$TMPDIR/project.json" > /dev/null
                 jq --exit-status '.toolchain.claim_scope == "pinned-tool-identity-only-not-tool-soundness"' \
                   "$TMPDIR/toolchain.json" > /dev/null
 
@@ -282,7 +404,7 @@
                   and ($ids == ($ids | sort))
                   and (($ids | length) == ($ids | unique | length))
                   and ([.baseline.sources[].working_tree_used] | all(. == false))
-                  and ([.baseline.sources[] | select(.imported == true) | .id] == ["kamacite-interchange-boundary"])
+                  and ([.baseline.sources[] | select(.imported == true) | .id] == ["kamacite-interchange-boundary", "trellis-proof-reference"])
                 ' "$TMPDIR/source-baseline.json" > /dev/null
 
                 if nickel export --format json \

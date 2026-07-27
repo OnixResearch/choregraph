@@ -3151,9 +3151,25 @@
           },
           {
             "extensions": [
+              "rs"
+            ],
+            "root": "verus",
+            "source_kind": "rust_source"
+          },
+          {
+            "extensions": [
               "ncl"
             ],
             "root": "config",
+            "source_kind": "nickel_source"
+          },
+          {
+            "extensions": [
+              "ncl",
+              "json",
+              "md"
+            ],
+            "root": "evidence",
             "source_kind": "nickel_source"
           },
           {

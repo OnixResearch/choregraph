@@ -20,6 +20,10 @@ const MINIMUM_BYTE_LIMIT: usize = 1;
 const MINIMUM_EVENT_ACTION_TAG_BYTES: usize = 1;
 const INTENT_IDENTIFIER_FIELD_COUNT: usize = 5;
 
+type EffectIndex = BTreeMap<EffectKey, Vec<EffectDeclaration>>;
+type EffectRouteIndices = BTreeMap<EffectKey, Vec<usize>>;
+type AdmittedEffects = (Vec<EffectDeclaration>, EffectIndex, EffectRouteIndices);
+
 fn diagnostic(
     code: AdmissionDiagnosticCode,
     subject: Option<&str>,
@@ -360,10 +364,7 @@ fn admit_effects(
     limits: AdmissionLimits,
     nodes: &BTreeMap<NodeId, AdmittedNode>,
     diagnostics: &mut Vec<AdmissionDiagnostic>,
-) -> (
-    Vec<EffectDeclaration>,
-    BTreeMap<EffectKey, Vec<EffectDeclaration>>,
-) {
+) -> AdmittedEffects {
     let mut unique = BTreeSet::new();
     for raw in &spec.effects {
         let Some(declaration) = parse_effect_declaration(raw, limits, diagnostics) else {
@@ -406,12 +407,17 @@ fn admit_effects(
 
     let effects = unique.into_iter().collect::<Vec<_>>();
     let mut index = BTreeMap::<EffectKey, Vec<EffectDeclaration>>::new();
-    for declaration in &effects {
+    let mut route_indices = BTreeMap::<EffectKey, Vec<usize>>::new();
+    for (effect_index, declaration) in effects.iter().enumerate() {
         let key = EffectKey {
             node_id: declaration.node_id.clone(),
             transition: declaration.transition,
         };
-        index.entry(key).or_default().push(declaration.clone());
+        index
+            .entry(key.clone())
+            .or_default()
+            .push(declaration.clone());
+        route_indices.entry(key).or_default().push(effect_index);
     }
     for declarations in index.values() {
         if declarations.len() > limits.max_intents_per_transition {
@@ -423,7 +429,7 @@ fn admit_effects(
             ));
         }
     }
-    (effects, index)
+    (effects, index, route_indices)
 }
 
 fn graph_indexes(
@@ -523,7 +529,8 @@ impl AdmittedMachine {
 
         let nodes = admit_nodes(&spec, limits, &mut diagnostics);
         let edges = admit_edges(&spec, limits, &nodes, &mut diagnostics);
-        let (effects, effect_index) = admit_effects(&spec, limits, &nodes, &mut diagnostics);
+        let (effects, effect_index, effect_route_indices) =
+            admit_effects(&spec, limits, &nodes, &mut diagnostics);
         diagnostics.sort();
         diagnostics.dedup();
         if !diagnostics.is_empty() {
@@ -547,17 +554,78 @@ impl AdmittedMachine {
             )]);
         }
 
+        let node_order = nodes.keys().cloned().collect::<Vec<_>>();
+        let node_indices = node_order
+            .iter()
+            .cloned()
+            .enumerate()
+            .map(|(index, node_id)| (node_id, index))
+            .collect::<BTreeMap<_, _>>();
+        let normalized_edges = edges.into_iter().collect::<Vec<_>>();
+        let mut edge_indices = Vec::with_capacity(normalized_edges.len());
+        for edge in &normalized_edges {
+            let (Some(source), Some(target)) = (
+                node_indices.get(&edge.source).copied(),
+                node_indices.get(&edge.target).copied(),
+            ) else {
+                return Err(alloc::vec![diagnostic(
+                    AdmissionDiagnosticCode::NormalizationInvariant,
+                    None,
+                    None,
+                )]);
+            };
+            edge_indices.push((source, target));
+        }
+        let mut dependency_indices = Vec::with_capacity(node_order.len());
+        for node_id in &node_order {
+            let Some(node_dependencies) = dependencies.get(node_id) else {
+                return Err(alloc::vec![diagnostic(
+                    AdmissionDiagnosticCode::NormalizationInvariant,
+                    None,
+                    None,
+                )]);
+            };
+            let mut indexes = Vec::with_capacity(node_dependencies.len());
+            for dependency in node_dependencies {
+                let Some(index) = node_indices.get(dependency).copied() else {
+                    return Err(alloc::vec![diagnostic(
+                        AdmissionDiagnosticCode::NormalizationInvariant,
+                        None,
+                        None,
+                    )]);
+                };
+                indexes.push(index);
+            }
+            dependency_indices.push(indexes);
+        }
+        let mut topological_indices = Vec::with_capacity(topological_order.len());
+        for node_id in &topological_order {
+            let Some(index) = node_indices.get(node_id).copied() else {
+                return Err(alloc::vec![diagnostic(
+                    AdmissionDiagnosticCode::NormalizationInvariant,
+                    None,
+                    None,
+                )]);
+            };
+            topological_indices.push(index);
+        }
+
         let machine = Self {
             limits,
             lifecycle_profile,
-            node_order: nodes.keys().cloned().collect(),
+            node_order,
+            node_indices,
             nodes,
-            edges: edges.into_iter().collect(),
+            edges: normalized_edges,
+            edge_indices,
             dependencies,
+            dependency_indices,
             dependents,
             topological_order,
+            topological_indices,
             effects,
             effect_index,
+            effect_route_indices,
         };
         if !well_formed(&machine) {
             return Err(alloc::vec![diagnostic(
