@@ -210,16 +210,27 @@ fn lower_lattice(
     Ok((lowered_nodes, lowered_edges))
 }
 
+pub fn parse_evaluated_json(
+    evaluated_json: &[u8],
+    max_evaluated_bytes: u64,
+) -> Result<EvaluatedSource, FrontendFailure> {
+    let evaluated_bytes = u64::try_from(evaluated_json.len())
+        .map_err(|_| fail(FrontendIssueCode::EvaluatedInputTooLarge))?;
+    if evaluated_json.is_empty() || evaluated_bytes > max_evaluated_bytes {
+        return Err(fail(FrontendIssueCode::EvaluatedInputTooLarge));
+    }
+    serde_json::from_slice(evaluated_json)
+        .map_err(|_| fail(FrontendIssueCode::MalformedEvaluatedValue))
+}
+
 pub fn lower_evaluated_json(
     evaluated_json: &[u8],
     observations: &[ObservedImport<'_>],
     frontend_limits: FrontendLimits,
 ) -> Result<LoweringOutput, FrontendFailure> {
-    if evaluated_json.len() > frontend_limits.max_evaluated_bytes {
-        return Err(fail(FrontendIssueCode::EvaluatedInputTooLarge));
-    }
-    let source: EvaluatedSource = serde_json::from_slice(evaluated_json)
-        .map_err(|_| fail(FrontendIssueCode::MalformedEvaluatedValue))?;
+    let max_evaluated_bytes = u64::try_from(frontend_limits.max_evaluated_bytes)
+        .map_err(|_| fail(FrontendIssueCode::EvaluatedInputTooLarge))?;
+    let source = parse_evaluated_json(evaluated_json, max_evaluated_bytes)?;
     let import_closure = validate_import_closure(source.imports(), observations, frontend_limits)?;
 
     let (spec, limits, source_format) = match source {

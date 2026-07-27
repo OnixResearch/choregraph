@@ -11,7 +11,8 @@ use std::path::Path;
 use std::process::ExitCode;
 
 use choregraph_cli::{
-    Command, KamaciteCorpusEntry, build_kamacite_corpus, parse_command, render_foundation_report,
+    Command, KamaciteCorpusEntry, build_kamacite_corpus, compile_nickel, parse_command,
+    render_compilation_report, render_foundation_report,
 };
 
 // This I/O shell returns bounded errors; pure corpus validation stays in the library core.
@@ -44,6 +45,18 @@ fn run(arguments: &[String]) -> Result<(), String> {
     match parse_command(arguments).map_err(String::from)? {
         Command::Boundary => {
             print!("{}", render_foundation_report());
+            Ok(())
+        }
+        Command::CompileNickel { request } => {
+            let compilation_result = compile_nickel(&request).map_err(|failure| {
+                failure
+                    .issues
+                    .iter()
+                    .map(|issue| format!("{:?}: {}", issue.code(), issue.summary()))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            })?;
+            print!("{}", render_compilation_report(&compilation_result));
             Ok(())
         }
         Command::WriteKamaciteCorpus { output_directory } => {

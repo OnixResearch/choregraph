@@ -20,6 +20,7 @@ pub struct PackageModel {
 pub struct DependencyModel {
     pub name: String,
     pub source: DependencySource,
+    pub path: String,
 }
 
 /// The acquisition class of one dependency declaration.

@@ -1,0 +1,12 @@
+[package]
+name = "cap-root-core"
+description = "Pure lexical admission for capability-relative paths"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "AGPL-3.0-or-later"
+repository = "rad://z3cWBCK7VPbEmbL5MAvKJWKjCE745"
+publish = false
+
+[lib]
+path = "src/lib.rs"

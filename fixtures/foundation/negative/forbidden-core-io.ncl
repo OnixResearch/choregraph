@@ -1,2 +1,2 @@
 let model = import "../minimal-core-model.ncl" in
-model [{ name = "cap-std", source = "registry" }] "#![no_std]\nextern crate alloc;\n"
+model [{ name = "cap-std", source = "registry", path = "" }] "#![no_std]\nextern crate alloc;\n"

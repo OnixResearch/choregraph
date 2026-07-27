@@ -41,6 +41,11 @@ impl Default for FrontendLimits {
     }
 }
 
+#[must_use]
+pub fn reviewed_frontend_limits() -> FrontendLimits {
+    FrontendLimits::default()
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ForbiddenEvaluatorAuthority {
     Network,

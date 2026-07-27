@@ -1,5 +1,4 @@
-let Contracts = import "../../../contracts/nickel/restricted-graph-contracts.ncl" in
-({
+{
   source_format = "lattice-workflow-v1",
   schema = "choregraph.lattice-workflow-projection.v1",
   lifecycle_profile = "choregraph.lifecycle.linear.v1",
@@ -34,4 +33,4 @@ let Contracts = import "../../../contracts/nickel/restricted-graph-contracts.ncl
     { node_id = 4, operation = "join" },
     { node_id = 2, operation = "branch-left" },
   ],
-}) | Contracts.EvaluatedGraph
+}

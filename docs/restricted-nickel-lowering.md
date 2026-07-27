@@ -11,7 +11,9 @@ Choregraph begins its maintained frontend claim at evaluated data that satisfies
 
 The contract checks exact fields, required schemas, fixed lifecycle events, array bounds, scalar types, import declarations, and selected graph shapes. Rust then parses with `deny_unknown_fields`, rechecks every numeric ceiling, validates the import closure, constructs `MachineSpec`, and calls normal `AdmittedMachine::admit`.
 
-Passing Nickel export is not sufficient for admission.
+The CLI reads source through an operator-opened capability root. A conservative source gate rejects Nickel `import` syntax and string interpolation before evaluator execution. Declared graph imports remain data and are loaded after evaluation.
+
+The shell applies [`../contracts/nickel/evaluated-graph-contract.ncl`](../contracts/nickel/evaluated-graph-contract.ncl) through the pinned Nickel executable. Passing Nickel export is not sufficient for admission.
 
 ## Import closure
 
@@ -40,10 +42,16 @@ These receipts do not prove arbitrary Nickel semantic equivalence, evaluator sou
 
 The pure frontend emits stable issue codes and constant bounded summaries. Evaluator redaction discards raw text. Safe diagnostics do not include source content, imported values, credentials, environment values, or host paths.
 
-## Capability-shell blocker
+## Capability shell
 
-The required filesystem shell is not complete. `cap-root` has no published immutable repository source at the reviewed candidate revision. Its local policy requires a published revision and aligned Cargo and Nix identity before consumer adoption.
+`cap-root-core` comes from Radicle project `rad:z3cWBCK7VPbEmbL5MAvKJWKjCE745` at exact revision `8991e2572578c16e590c2f1c0915db6c46c5d9cb`. The reviewed Rust source is vendored without changes. [`../tools/sync-cap-root-core.rs`](../tools/sync-cap-root-core.rs) reproduces the import.
 
-Choregraph will not use a sibling path, copy the path algorithm, or claim capability confinement without that gate. `cap-std` `4.0.2` remains the selected I/O mechanism after `cap-root` admission becomes available.
+The shell opens operator-selected source, contract, scratch, output, and import roots once. `cap-root` admits every relative file path. `cap-std` performs the I/O. `cap-fs-ext` rejects symlinks in each traversed directory and final file component.
 
-See [`../evidence/cap-root-adoption-blocker.ncl`](../evidence/cap-root-adoption-blocker.ncl).
+Bounded Exec runs Nickel with an absolute executable, an empty inherited environment, bounded input and output, a deadline, and owned process-group teardown. This mechanism does not provide a filesystem or network sandbox. The conservative source gate excludes source-selected file imports before process execution.
+
+The output path is operator-selected. Publication writes and synchronizes one new temporary regular file. It then creates the final name without replacement and removes the temporary name. This is atomic name publication, not directory-entry durability.
+
+The shell returns stable issue codes and discards raw evaluator diagnostics. Graph data cannot select an ambient root.
+
+See [`../evidence/cap-root-adoption.ncl`](../evidence/cap-root-adoption.ncl) for exact source and process-mechanism identities.

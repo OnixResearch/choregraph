@@ -24,4 +24,6 @@ The proof manifest records each selected Trellis source value. Choregraph verifi
 
 A source identity does not prove correctness. A Trellis proof reference does not transfer a proof claim to Choregraph.
 
-The cap-root entry has no durable release location yet. Its status is reference-only, and Choregraph cannot use it as a release input.
+The capability shell uses `cap-root-core` from Radicle project `rad:z3cWBCK7VPbEmbL5MAvKJWKjCE745` at exact revision `8991e2572578c16e590c2f1c0915db6c46c5d9cb`. The reproducible importer copies the selected Rust source and AGPL license into `vendor/cap-root-core-selected`.
+
+Bounded evaluator execution uses Bounded Exec revision `29dac88ecded94457572db3fdfaaaab95fa91525` through its public Radicle HTTPS adapter. This records process mechanics, not sandbox or evaluator-correctness authority.

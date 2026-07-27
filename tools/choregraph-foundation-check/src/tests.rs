@@ -15,6 +15,15 @@ fn workspace_dependency(name: &str) -> crate::types::DependencyModel {
     crate::types::DependencyModel {
         name: String::from(name),
         source: crate::types::DependencySource::Workspace,
+        path: String::new(),
+    }
+}
+
+fn reviewed_cap_root_dependency() -> crate::types::DependencyModel {
+    crate::types::DependencyModel {
+        name: String::from("cap-root-core"),
+        source: crate::types::DependencySource::LocalPath,
+        path: String::from("vendor/cap-root-core-selected"),
     }
 }
 
@@ -41,6 +50,7 @@ fn allowed_model() -> crate::types::WorkspaceModel {
                     workspace_dependency("choregraph-kamacite"),
                     workspace_dependency("choregraph-nickel"),
                     workspace_dependency("choregraph-seaglass"),
+                    reviewed_cap_root_dependency(),
                 ],
             ),
             package("choregraph-foundation-check", vec![]),
@@ -72,6 +82,7 @@ fn rejects_a_forbidden_core_dependency() {
             package.dependencies.push(crate::types::DependencyModel {
                 name: String::from("cap-std"),
                 source: crate::types::DependencySource::Registry,
+                path: String::new(),
             });
             is_changed = true;
         }
@@ -118,8 +129,27 @@ fn rejects_an_external_path_dependency() {
             package.dependencies.push(crate::types::DependencyModel {
                 name: String::from("execution-graph-core"),
                 source: crate::types::DependencySource::ExternalPath,
+                path: String::from("../execution-graph"),
             });
             is_changed = true;
+        }
+    }
+    assert!(is_changed);
+    assert!(contains_code(&model, "foundation.path-dependency"));
+}
+
+#[test]
+fn rejects_cap_root_from_an_unreviewed_path() {
+    let mut model = allowed_model();
+    let mut is_changed = false;
+    for package in &mut model.packages {
+        if package.name == "choregraph-cli" {
+            for dependency in &mut package.dependencies {
+                if dependency.name == "cap-root-core" {
+                    dependency.path = String::from("../cap-root/crates/cap-root-core");
+                    is_changed = true;
+                }
+            }
         }
     }
     assert!(is_changed);

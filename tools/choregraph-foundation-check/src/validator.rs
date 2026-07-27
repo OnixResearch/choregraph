@@ -4,6 +4,8 @@ const REQUIRED_LICENSE: &str = "AGPL-3.0-or-later";
 const REQUIRED_RUST_VERSION: &str = "1.97.1";
 const PACKAGE_METADATA_ISSUE_LIMIT: usize = 3;
 const ADJACENT_ISSUE_COUNT: usize = 2;
+const CAP_ROOT_PACKAGE: &str = "cap-root-core";
+const CAP_ROOT_VENDOR_PATH: &str = "vendor/cap-root-core-selected";
 
 const PRODUCT_PACKAGES: &[&str] = &[
     CORE_PACKAGE,
@@ -138,6 +140,21 @@ fn validate_package_metadata(
     issues
 }
 
+#[allow(
+    unknown_lints,
+    missing_const_fn,
+    reason = "stable Rust cannot compare owned dependency names and paths in a const function"
+)]
+fn is_reviewed_path_dependency(
+    package: &crate::types::PackageModel,
+    dependency: &crate::types::DependencyModel,
+) -> bool {
+    package.name == "choregraph-cli"
+        && dependency.name == CAP_ROOT_PACKAGE
+        && dependency.source == crate::types::DependencySource::LocalPath
+        && dependency.path == CAP_ROOT_VENDOR_PATH
+}
+
 fn validate_dependency(
     package: &crate::types::PackageModel,
     dependency: &crate::types::DependencyModel,
@@ -159,6 +176,7 @@ fn validate_dependency(
             crate::types::DependencySource::LocalPath
                 | crate::types::DependencySource::ExternalPath
         )
+        && !is_reviewed_path_dependency(package, dependency)
     {
         issues.push(issue(IssueFacts {
             code: "foundation.path-dependency",

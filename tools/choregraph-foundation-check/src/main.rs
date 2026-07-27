@@ -52,13 +52,22 @@ fn normalize_package(
     let mut dependencies = Vec::with_capacity(package.dependencies.len());
     for dependency in &package.dependencies {
         let name = dependency.name.to_string();
-        let source = dependency_source(
-            &name,
-            dependency.path.as_ref().map(|path| path.as_std_path()),
-            workspace_root,
-            internal_packages,
-        );
-        dependencies.push(choregraph_foundation_check::types::DependencyModel { name, source });
+        let dependency_path = dependency.path.as_ref().map(|path| path.as_std_path());
+        let source = dependency_source(&name, dependency_path, workspace_root, internal_packages);
+        let path = dependency_path
+            .map(|dependency_path| {
+                dependency_path
+                    .strip_prefix(workspace_root)
+                    .unwrap_or(dependency_path)
+                    .display()
+                    .to_string()
+            })
+            .unwrap_or_default();
+        dependencies.push(choregraph_foundation_check::types::DependencyModel {
+            name,
+            source,
+            path,
+        });
     }
     dependencies.sort_by(|left, right| left.name.cmp(&right.name));
     debug_assert!(dependencies.len() <= package.dependencies.len());

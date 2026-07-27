@@ -7,6 +7,7 @@ members = [
   "crates/choregraph-seaglass",
   "tools/choregraph-foundation-check",
 ]
+exclude = ["vendor/cap-root-core-selected"]
 resolver = "3"
 
 [workspace.metadata.octet]
@@ -22,6 +23,10 @@ publish = false
 
 [workspace.dependencies]
 blake3 = "=1.8.2"
+bounded-exec = { git = "https://git.onix.computer/z2CpqLFpdP36fZXYUK5ZNWxMibpCo.git", rev = "29dac88ecded94457572db3fdfaaaab95fa91525", package = "bounded-exec" }
+cap-fs-ext = "=4.0.2"
+cap-root-core = { path = "vendor/cap-root-core-selected", version = "=0.1.0" }
+cap-std = "=4.0.2"
 cargo_metadata = "=0.23.1"
 choregraph-core = { path = "crates/choregraph-core", version = "=0.1.0" }
 choregraph-kamacite = { path = "crates/choregraph-kamacite", version = "=0.1.0" }

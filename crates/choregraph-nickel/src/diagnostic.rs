@@ -15,6 +15,9 @@ pub const MAX_SAFE_SUMMARY_BYTES: usize = 160;
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum FrontendIssueCode {
+    NickelSourceTooLarge,
+    MalformedNickelSource,
+    ForbiddenNickelAuthority,
     EvaluatedInputTooLarge,
     MalformedEvaluatedValue,
     EvaluatorRejected,
@@ -46,6 +49,18 @@ pub enum FrontendIssueCode {
     MachineAdmissionRejected,
     EmptyIdentityMaterial,
     StaleTranslationReceipt,
+    CapabilityPathRejected,
+    CapabilityRootUnavailable,
+    CapabilityInputUnavailable,
+    CapabilityInputNotRegular,
+    CapabilityInputTooLarge,
+    UnknownCapabilityRoot,
+    EvaluatorExecutionRejected,
+    EvaluatorOutputRejected,
+    ArtifactConstructionRejected,
+    CapabilityOutputUnavailable,
+    CapabilityOutputExists,
+    AtomicPublicationRejected,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
@@ -96,6 +111,13 @@ pub fn redact_evaluator_error(_raw_error: &str) -> FrontendIssue {
 #[must_use]
 pub const fn summary(code: FrontendIssueCode) -> &'static str {
     match code {
+        FrontendIssueCode::NickelSourceTooLarge => "Nickel source exceeds the selected byte limit",
+        FrontendIssueCode::MalformedNickelSource => {
+            "Nickel source is empty, malformed, or outside the UTF-8 profile"
+        }
+        FrontendIssueCode::ForbiddenNickelAuthority => {
+            "Nickel source requests forbidden import or interpolation authority"
+        }
         FrontendIssueCode::EvaluatedInputTooLarge => {
             "evaluated input exceeds the selected byte limit"
         }
@@ -166,6 +188,38 @@ pub const fn summary(code: FrontendIssueCode) -> &'static str {
         FrontendIssueCode::EmptyIdentityMaterial => "translation identity material is empty",
         FrontendIssueCode::StaleTranslationReceipt => {
             "translation receipt does not match current identity material"
+        }
+        FrontendIssueCode::CapabilityPathRejected => {
+            "path is not admitted beneath the selected capability root"
+        }
+        FrontendIssueCode::CapabilityRootUnavailable => {
+            "operator-selected capability root is unavailable"
+        }
+        FrontendIssueCode::CapabilityInputUnavailable => "capability-relative input is unavailable",
+        FrontendIssueCode::CapabilityInputNotRegular => {
+            "capability-relative input is not a regular file"
+        }
+        FrontendIssueCode::CapabilityInputTooLarge => {
+            "capability-relative input exceeds its selected byte limit"
+        }
+        FrontendIssueCode::UnknownCapabilityRoot => "graph names an unconfigured capability root",
+        FrontendIssueCode::EvaluatorExecutionRejected => {
+            "bounded Nickel evaluator execution was rejected"
+        }
+        FrontendIssueCode::EvaluatorOutputRejected => {
+            "bounded Nickel evaluator output was rejected"
+        }
+        FrontendIssueCode::ArtifactConstructionRejected => {
+            "canonical machine artifact construction was rejected"
+        }
+        FrontendIssueCode::CapabilityOutputUnavailable => {
+            "capability-relative output parent is unavailable"
+        }
+        FrontendIssueCode::CapabilityOutputExists => {
+            "capability-relative output or temporary publication name already exists"
+        }
+        FrontendIssueCode::AtomicPublicationRejected => {
+            "capability-relative atomic publication was rejected"
         }
     }
 }

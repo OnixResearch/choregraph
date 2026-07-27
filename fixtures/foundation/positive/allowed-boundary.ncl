@@ -9,6 +9,12 @@ let package = fun package_name package_dependencies => {
 let workspace = fun package_name => {
   name = package_name,
   source = "workspace",
+  path = "",
+} in
+let reviewed_cap_root = {
+  name = "cap-root-core",
+  source = "local-path",
+  path = "vendor/cap-root-core-selected",
 } in
 {
   packages = [
@@ -21,6 +27,7 @@ let workspace = fun package_name => {
       workspace "choregraph-kamacite",
       workspace "choregraph-nickel",
       workspace "choregraph-seaglass",
+      reviewed_cap_root,
     ],
     package "choregraph-foundation-check" [],
   ],

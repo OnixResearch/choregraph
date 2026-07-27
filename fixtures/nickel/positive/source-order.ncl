@@ -1,5 +1,4 @@
-let Contracts = import "../../../contracts/nickel/restricted-graph-contracts.ncl" in
-({
+{
   effects = [],
   edges = [],
   nodes = [{ operations = ["run"], id = "root" }],
@@ -19,4 +18,4 @@ let Contracts = import "../../../contracts/nickel/restricted-graph-contracts.ncl
   lifecycle_profile = "choregraph.lifecycle.linear.v1",
   schema = "choregraph.evaluated-graph.v1",
   source_format = "choregraph-v1",
-}) | Contracts.EvaluatedGraph
+}

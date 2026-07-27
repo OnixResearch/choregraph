@@ -38,8 +38,12 @@
           filter =
             path: type:
             craneLib.filterCargoSources path type
+            || pkgs.lib.hasInfix "/contracts/nickel/" (toString path)
+            || pkgs.lib.hasInfix "/evidence/generated/" (toString path)
             || pkgs.lib.hasInfix "/fixtures/kamacite/" (toString path)
-            || pkgs.lib.hasInfix "/fixtures/nickel/" (toString path);
+            || pkgs.lib.hasInfix "/fixtures/nickel/" (toString path)
+            || pkgs.lib.hasInfix "/vendor/cap-root-core-selected/" (toString path)
+            || pkgs.lib.hasSuffix "/rust-toolchain.toml" (toString path);
         };
         workspaceVersion = "0.1.0";
         defaultMaxTraceEvents = 65536;
@@ -493,7 +497,7 @@
                     forbidden-core-io.ncl|forbidden-core-evaluator.ncl|forbidden-core-runtime.ncl|forbidden-core-receipt.ncl|forbidden-core-policy.ncl)
                       expected_code="foundation.forbidden-core-dependency"
                       ;;
-                    forbidden-external-path.ncl)
+                    forbidden-external-path.ncl|forbidden-unreviewed-cap-root.ncl)
                       expected_code="foundation.path-dependency"
                       ;;
                     forbidden-reverse-edge.ncl)
@@ -532,10 +536,13 @@
             pkgs.runCommand "choregraph-restricted-nickel-contracts"
               {
                 nativeBuildInputs = [
+                  choregraphPackage
+                  pkgs.b3sum
                   pkgs.coreutils
                   pkgs.gnugrep
                   pkgs.jq
                   pkgs.nickel
+                  rustToolchain
                 ];
                 src = self;
               }
@@ -543,13 +550,31 @@
                 set -eu
                 cd "$src"
                 nickel typecheck contracts/nickel/restricted-graph-contracts.ncl
-                nickel export --format json evidence/cap-root-adoption-blocker.ncl \
-                  > "$TMPDIR/cap-root-blocker.json"
+                nickel typecheck contracts/nickel/evaluated-graph-contract.ncl
+                nickel export --format json evidence/cap-root-adoption.ncl \
+                  > "$TMPDIR/cap-root-adoption.json"
                 jq --exit-status '
-                  .blocker.capability_shell_ready == false
-                  and .blocker.cargo_source_admitted == false
-                  and .blocker.nix_source_aligned == false
-                ' "$TMPDIR/cap-root-blocker.json" > /dev/null
+                  .adoption.schema == "choregraph.cap-root-adoption.v1"
+                  and .adoption.repository_rid == "rad:z3cWBCK7VPbEmbL5MAvKJWKjCE745"
+                  and .adoption.revision == "8991e2572578c16e590c2f1c0915db6c46c5d9cb"
+                  and .adoption.public_repository_available == true
+                  and .adoption.exact_revision_clone_verified == true
+                  and .adoption.cargo_source_admitted == true
+                  and .adoption.nix_source_aligned == true
+                  and .adoption.capability_shell_ready == true
+                ' "$TMPDIR/cap-root-adoption.json" > /dev/null
+                nickel export --format json vendor/cap-root-core-selected/SOURCE.ncl \
+                  > "$TMPDIR/cap-root-source.json"
+                expected_source_hash="$(jq --raw-output '.source.source_blake3' "$TMPDIR/cap-root-source.json")"
+                observed_source_hash="$(b3sum vendor/cap-root-core-selected/src/lib.rs)"
+                test "''${observed_source_hash%% *}" = "$expected_source_hash"
+                expected_license_hash="$(jq --raw-output '.source.license_blake3' "$TMPDIR/cap-root-source.json")"
+                observed_license_hash="$(b3sum vendor/cap-root-core-selected/LICENSE)"
+                test "''${observed_license_hash%% *}" = "$expected_license_hash"
+                rustc tools/sync-cap-root-core.rs -o "$TMPDIR/sync-cap-root-core"
+                "$TMPDIR/sync-cap-root-core" --self-test
+                grep --fixed-strings 'cap-root-core = { path = "vendor/cap-root-core-selected", version = "=0.1.0" }' Cargo.toml > /dev/null
+                grep --fixed-strings 'cap-std = "=4.0.2"' Cargo.toml > /dev/null
                 if grep -R -E 'std::(fs|net|process)|SystemTime|Command::new|env::' \
                   crates/choregraph-nickel/src --include='*.rs'; then
                   echo 'choregraph-nickel gained ambient authority' >&2
@@ -557,18 +582,79 @@
                 fi
                 for fixture in fixtures/nickel/positive/*.ncl; do
                   fixture_name="$(basename "$fixture" .ncl)"
-                  nickel export --format json "$fixture" > "$TMPDIR/raw.json"
+                  nickel export --format json \
+                    --apply-contract contracts/nickel/evaluated-graph-contract.ncl \
+                    "$fixture" > "$TMPDIR/raw.json"
                   jq -S . "$TMPDIR/raw.json" > "$TMPDIR/normalized.json"
                   cmp "fixtures/nickel/evaluated/$fixture_name.json" "$TMPDIR/normalized.json"
                 done
                 for fixture in fixtures/nickel/negative/*.ncl; do
-                  if nickel export --format json "$fixture" > "$TMPDIR/negative.json"; then
+                  if test "$(basename "$fixture")" = forbidden-runtime-import.ncl; then
+                    continue
+                  fi
+                  if nickel export --format json \
+                    --apply-contract contracts/nickel/evaluated-graph-contract.ncl \
+                    "$fixture" > "$TMPDIR/negative.json"; then
                     echo "negative Nickel fixture unexpectedly exported: $fixture" >&2
                     exit 1
                   fi
                 done
+
+                mkdir -p "$TMPDIR/scratch" "$TMPDIR/output"
+                evaluator="$(command -v nickel)"
+                choregraph compile-nickel \
+                  "$evaluator" \
+                  "$src/fixtures/nickel" positive/minimal.ncl \
+                  "$src/contracts/nickel" "$TMPDIR/scratch" \
+                  "$TMPDIR/output" minimal.preserves \
+                  > "$TMPDIR/minimal-report.txt"
+                grep --fixed-strings 'status=compiled' "$TMPDIR/minimal-report.txt" > /dev/null
+                test -s "$TMPDIR/output/minimal.preserves"
+
+                choregraph compile-nickel \
+                  "$evaluator" \
+                  "$src/fixtures/nickel" positive/declared-import.ncl \
+                  "$src/contracts/nickel" "$TMPDIR/scratch" \
+                  "$TMPDIR/output" declared-import.preserves \
+                  "source=$src/fixtures/nickel" \
+                  > "$TMPDIR/import-report.txt"
+                grep --fixed-strings 'imports=1' "$TMPDIR/import-report.txt" > /dev/null
+                test -s "$TMPDIR/output/declared-import.preserves"
+
+                if choregraph compile-nickel \
+                  "$evaluator" \
+                  "$src/fixtures/nickel" negative/forbidden-runtime-import.ncl \
+                  "$src/contracts/nickel" "$TMPDIR/scratch" \
+                  "$TMPDIR/output" forbidden.preserves \
+                  > "$TMPDIR/forbidden.stdout" 2> "$TMPDIR/forbidden.stderr"; then
+                  echo 'forbidden Nickel import unexpectedly compiled' >&2
+                  exit 1
+                fi
+                grep --fixed-strings 'ForbiddenNickelAuthority' "$TMPDIR/forbidden.stderr" > /dev/null
+                if grep --fixed-strings 'missing-declared-import.ncl' "$TMPDIR/forbidden.stderr"; then
+                  echo 'safe diagnostic leaked source text' >&2
+                  exit 1
+                fi
+                test ! -e "$TMPDIR/output/forbidden.preserves"
+
+                if choregraph compile-nickel \
+                  "$evaluator" \
+                  "$src/fixtures/nickel" negative/path-escape.ncl \
+                  "$src/contracts/nickel" "$TMPDIR/scratch" \
+                  "$TMPDIR/output" path-escape.preserves \
+                  > "$TMPDIR/path.stdout" 2> "$TMPDIR/path.stderr"; then
+                  echo 'path-escape fixture unexpectedly compiled' >&2
+                  exit 1
+                fi
+                grep --fixed-strings 'EvaluatorExecutionRejected' "$TMPDIR/path.stderr" > /dev/null
+                if grep --fixed-strings '/home/operator/secret' "$TMPDIR/path.stderr"; then
+                  echo 'safe diagnostic leaked a host path' >&2
+                  exit 1
+                fi
+                test ! -e "$TMPDIR/output/path-escape.preserves"
+
                 mkdir -p "$out"
-                printf '%s\n' 'claim=bounded-contract-shape-only-not-nickel-semantics' > "$out/result.txt"
+                printf '%s\n' 'claim=capability-relative-bounded-frontend-not-nickel-semantics' > "$out/result.txt"
               '';
 
           foundation-evidence =
@@ -635,7 +721,7 @@
                   and ($ids == ($ids | sort))
                   and (($ids | length) == ($ids | unique | length))
                   and ([.baseline.sources[].working_tree_used] | all(. == false))
-                  and ([.baseline.sources[] | select(.imported == true) | .id] == ["kamacite-interchange-boundary", "trellis-proof-reference"])
+                  and ([.baseline.sources[] | select(.imported == true) | .id] == ["bounded-exec-process-mechanism", "cap-root-lexical-boundary", "kamacite-interchange-boundary", "trellis-proof-reference"])
                 ' "$TMPDIR/source-baseline.json" > /dev/null
 
                 if nickel export --format json \

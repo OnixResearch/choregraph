@@ -8,7 +8,7 @@ The project will lower reviewed, data-oriented Nickel graphs into canonical mach
 
 The buildable foundation, executable machine semantics, and Kamacite interchange adapter exist. The adapter emits canonical packed Preserves artifacts, exact BLAKE3 identity chains, a closed local lifecycle profile, and bounded linkage receipts.
 
-Pure lowering from contracted evaluated Nickel data now exists. The capability-relative evaluator shell remains blocked on a published immutable `cap-root` source.
+The restricted Nickel frontend now reads operator-rooted source and imports through `cap-root` and `cap-std`. It runs the selected evaluator through pinned Bounded Exec, lowers checked output, and publishes canonical machine artifacts without replacement.
 
 Production-linked Verus rails now prove the named single-step and finite-trace properties of the indexed kernel. Replay folds the production `step` relation, reports the first denial, and returns no dispatchable intents. A pinned Octet consumer gate checks every workspace target with all Octet lints at error severity. Compatibility parity and release evidence do not exist yet.
 
@@ -21,7 +21,7 @@ Choregraph will own:
 - pure state transitions and effect intents;
 - Verus proofs over production transition code;
 - Kamacite artifact and receipt adapters;
-- restricted Nickel lowering after evaluation;
+- restricted Nickel source evaluation and canonical lowering;
 - Seaglass and Lattice compatibility adapters.
 
 The production transition relation will have one implementation. Compatibility crates must delegate to that implementation.
@@ -75,7 +75,7 @@ See [`docs/trace-replay-verification.md`](docs/trace-replay-verification.md) for
 
 See [`docs/kamacite-profile.md`](docs/kamacite-profile.md) for the selected codec, schemas, identity rules, and receipt boundary.
 
-See [`docs/restricted-nickel-lowering.md`](docs/restricted-nickel-lowering.md) for the evaluated-data contract, pure lowerer, identity chain, and capability-shell blocker.
+See [`docs/restricted-nickel-lowering.md`](docs/restricted-nickel-lowering.md) for the source gate, evaluated-data contract, capability shell, pure lowerer, identity chain, and non-claims.
 
 See [`docs/octet-deny-all.md`](docs/octet-deny-all.md) for the pinned lint policy, strict commands, exception rules, and non-claims.
 
@@ -102,5 +102,6 @@ Choregraph preserves the source implementation license: `AGPL-3.0-or-later`. No 
 - [Kamacite](https://github.com/OnixResearch/kamacite) — canonical Preserves artifacts, source envelopes, FSM descriptors, and receipts.
 - [Lattice](https://github.com/OnixResearch/lattice) — first consumer and Seaglass compatibility target.
 - [Basalt](https://github.com/OnixResearch/basalt) — bounded Nickel and UCAN authorization boundary.
-- [cap-root baseline](evidence/source-baseline.ncl) — pure lexical path admission before capability-relative I/O.
+- [Bounded Exec](https://git.onix.computer/z2CpqLFpdP36fZXYUK5ZNWxMibpCo.git) — bounded evaluator process execution without sandbox or evaluator-correctness claims.
+- [cap-root](rad://z3cWBCK7VPbEmbL5MAvKJWKjCE745) — pure lexical path admission before capability-relative I/O.
 - [`cap-std`](https://github.com/bytecodealliance/cap-std) — capability-oriented filesystem I/O used by consumer shells.

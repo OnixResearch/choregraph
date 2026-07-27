@@ -11,10 +11,18 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
+bounded-exec.workspace = true
+cap-fs-ext.workspace = true
+cap-root-core.workspace = true
+cap-std.workspace = true
 choregraph-core.workspace = true
 choregraph-kamacite.workspace = true
 choregraph-nickel.workspace = true
 choregraph-seaglass.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+tempfile = "=3.23.0"
 
 [[bin]]
 name = "choregraph"
