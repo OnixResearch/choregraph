@@ -96,12 +96,12 @@
         "role": "production-called verified single-step kernel"
       },
       {
-        "blake3": "9aa3621093c35207cf110e155c5188447d7d7ef7766d82cee48240c404a26060",
+        "blake3": "16a30a0bfd64357fa2b8ea63d6998f171d224bc01c1c56391b62a743b43a7708",
         "path": "crates/choregraph-core/src/verified/trace.rs",
         "role": "production trace specifications and finite induction theorems"
       },
       {
-        "blake3": "2f1da8676c9aa9a02d78b036115b4ad30abc46912482a2e1c3e41f9044d1f4ce",
+        "blake3": "cb1687418a1b758700b003026c3e066d069ef53d13c7f27100cbcddd35666a32",
         "path": "crates/choregraph-core/tests/trace-replay.rs",
         "role": "public replay fixtures and repeated-step parity properties"
       },
@@ -121,7 +121,7 @@
         "role": "reviewed selected-source baseline"
       },
       {
-        "blake3": "941f18512bbbdeb4ab3ab0fcfaa959735156f034e99ab2aae191853585f62fca",
+        "blake3": "d7f3f47bf633d3251e38b50ceb3c29033a8246106acd57429ae693515c9af032",
         "path": "flake.nix",
         "role": "maintained positive, negative, trust, and evidence gate"
       },
@@ -154,6 +154,7 @@
     "status": "verified",
     "theorems": [
       "empty_trace_base",
+      "admitted_trace_respects_limit",
       "replay_prefix_length_bounded",
       "finite_replay_preserves_invariant",
       "first_failure_is_exact",

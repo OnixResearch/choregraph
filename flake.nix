@@ -42,6 +42,8 @@
             || pkgs.lib.hasInfix "/fixtures/nickel/" (toString path);
         };
         workspaceVersion = "0.1.0";
+        defaultMaxTraceEvents = 65536;
+        traceBindingBytes = 32;
         commonCargoArgs = {
           pname = "choregraph-workspace";
           version = workspaceVersion;
@@ -443,8 +445,9 @@
                 jq --exit-status '
                   .proof.schema == "choregraph.trace-replay-proof.v1"
                   and .proof.status == "verified"
-                  and .proof.limits.max_trace_events == 65536
-                  and (.proof.theorems | length) == 6
+                  and .proof.limits.max_trace_events == ${toString defaultMaxTraceEvents}
+                  and .proof.limits.trace_binding_bytes == ${toString traceBindingBytes}
+                  and (.proof.theorems | length) == 7
                   and (.proof.negative_fixtures | length) == 4
                   and .proof.trusted_surface.project_trusted_declarations == []
                   and (.proof.non_claims | length) >= 5

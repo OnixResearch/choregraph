@@ -166,7 +166,7 @@ let ProofManifest = {
       },
       {
         path = "flake.nix",
-        blake3 = "941f18512bbbdeb4ab3ab0fcfaa959735156f034e99ab2aae191853585f62fca",
+        blake3 = "d7f3f47bf633d3251e38b50ceb3c29033a8246106acd57429ae693515c9af032",
         role = "maintained proof and failure-fixture gate",
       },
       {

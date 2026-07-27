@@ -12,6 +12,8 @@ let GitRevision = std.contract.from_predicate (fun value =>
 let PositiveNumber = std.contract.from_predicate (fun value =>
   std.is_number value && value > 0
 ) in
+let MaxTraceEvents = 65536 in
+let TraceBindingBytes = 32 in
 let Source = {
   path | NonEmpty,
   blake3 | Blake3Digest,
@@ -107,13 +109,14 @@ let ProofManifest = {
       source_blake3 = "4cb7079deb17e77fe2806bd24a80f47e5df1ca7c405725429a3ea47236ecb0f6",
     },
     limits = {
-      max_trace_events = 65536,
-      trace_binding_bytes = 32,
+      max_trace_events = MaxTraceEvents,
+      trace_binding_bytes = TraceBindingBytes,
       consumed_count_type = "u64",
       failure_index_type = "u64",
     },
     theorems = [
       "empty_trace_base",
+      "admitted_trace_respects_limit",
       "replay_prefix_length_bounded",
       "finite_replay_preserves_invariant",
       "first_failure_is_exact",
@@ -163,12 +166,12 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/verified/trace.rs",
-        blake3 = "9aa3621093c35207cf110e155c5188447d7d7ef7766d82cee48240c404a26060",
+        blake3 = "16a30a0bfd64357fa2b8ea63d6998f171d224bc01c1c56391b62a743b43a7708",
         role = "production trace specifications and finite induction theorems",
       },
       {
         path = "crates/choregraph-core/tests/trace-replay.rs",
-        blake3 = "2f1da8676c9aa9a02d78b036115b4ad30abc46912482a2e1c3e41f9044d1f4ce",
+        blake3 = "cb1687418a1b758700b003026c3e066d069ef53d13c7f27100cbcddd35666a32",
         role = "public replay fixtures and repeated-step parity properties",
       },
       {
@@ -188,7 +191,7 @@ let ProofManifest = {
       },
       {
         path = "flake.nix",
-        blake3 = "941f18512bbbdeb4ab3ab0fcfaa959735156f034e99ab2aae191853585f62fca",
+        blake3 = "d7f3f47bf633d3251e38b50ceb3c29033a8246106acd57429ae693515c9af032",
         role = "maintained positive, negative, trust, and evidence gate",
       },
       {

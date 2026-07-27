@@ -206,6 +206,32 @@ fn empty_trace_preserves_the_initial_state() {
 }
 
 #[test]
+fn equal_explicit_replay_inputs_return_equal_decisions() {
+    let machine = linear_machine();
+    let initial_state = machine.initial_state();
+    let events = completion_events(NODE_SOURCE);
+
+    let first = replay_events(
+        &machine,
+        &initial_state,
+        &events,
+        bindings(),
+        bindings(),
+        TEST_MAX_EVENTS,
+    );
+    let second = replay_events(
+        &machine,
+        &initial_state,
+        &events,
+        bindings(),
+        bindings(),
+        TEST_MAX_EVENTS,
+    );
+
+    assert_eq!(first, second);
+}
+
+#[test]
 fn linear_and_terminal_traces_end_in_invariant_states() {
     let machine = linear_machine();
     let initial_state = machine.initial_state();
@@ -460,6 +486,32 @@ fn malformed_unknown_invalid_terminal_and_reordered_traces_fail_exactly() {
                 panic!("invalid trace completed: {final_state:?}")
             }
         }
+    }
+}
+
+#[test]
+fn trace_at_the_selected_limit_is_processed() {
+    let machine = linear_machine();
+    let initial_state = machine.initial_state();
+    let events = [event(NODE_SOURCE, Action::Cancel)];
+    let decision = replay_events(
+        &machine,
+        &initial_state,
+        &events,
+        bindings(),
+        bindings(),
+        ONE_EVENT_LIMIT,
+    );
+
+    match decision {
+        ReplayDecision::Complete {
+            final_state,
+            consumed,
+        } => {
+            assert_eq!(consumed, ConsumedCount::new(ONE_EVENT_LIMIT));
+            assert!(invariant(&machine, &final_state));
+        }
+        ReplayDecision::Failed(failure) => panic!("boundary trace failed: {failure:?}"),
     }
 }
 

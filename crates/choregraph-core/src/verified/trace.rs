@@ -35,6 +35,18 @@ pub struct IndexedReplayEvent {
     pub requested_intents: Vec<usize>,
 }
 
+pub open spec fn trace_admitted_spec(
+    events: Seq<IndexedReplayEvent>,
+    max_events: int,
+    machine_binding_matches: bool,
+    initial_state_binding_matches: bool,
+) -> bool {
+    0 <= max_events
+        && events.len() <= max_events
+        && machine_binding_matches
+        && initial_state_binding_matches
+}
+
 pub open spec fn replay_event_accepts_spec(
     dependencies: Seq<Vec<usize>>,
     states: Seq<u8>,
@@ -186,6 +198,25 @@ pub proof fn empty_trace_base(
 {}
 
 // r[verify choregraph.proof.trace.lemmas]
+pub proof fn admitted_trace_respects_limit(
+    events: Seq<IndexedReplayEvent>,
+    max_events: int,
+    machine_binding_matches: bool,
+    initial_state_binding_matches: bool,
+)
+    requires trace_admitted_spec(
+        events,
+        max_events,
+        machine_binding_matches,
+        initial_state_binding_matches,
+    )
+    ensures
+        events.len() <= max_events,
+        machine_binding_matches,
+        initial_state_binding_matches,
+{}
+
+// r[verify choregraph.proof.trace.lemmas]
 pub proof fn replay_prefix_length_bounded(
     dependencies: Seq<Vec<usize>>,
     states: Seq<u8>,
@@ -301,13 +332,33 @@ pub proof fn equal_replay_inputs_have_equal_decisions(
     events_b: Seq<IndexedReplayEvent>,
     from_a: int,
     from_b: int,
+    max_events_a: int,
+    max_events_b: int,
+    machine_binding_matches_a: bool,
+    machine_binding_matches_b: bool,
+    initial_state_binding_matches_a: bool,
+    initial_state_binding_matches_b: bool,
 )
     requires
         dependencies_a == dependencies_b,
         states_a == states_b,
         events_a == events_b,
         from_a == from_b,
+        max_events_a == max_events_b,
+        machine_binding_matches_a == machine_binding_matches_b,
+        initial_state_binding_matches_a == initial_state_binding_matches_b,
     ensures
+        trace_admitted_spec(
+            events_a,
+            max_events_a,
+            machine_binding_matches_a,
+            initial_state_binding_matches_a,
+        ) == trace_admitted_spec(
+            events_b,
+            max_events_b,
+            machine_binding_matches_b,
+            initial_state_binding_matches_b,
+        ),
         replay_prefix_len_from_spec(dependencies_a, states_a, events_a, from_a)
             == replay_prefix_len_from_spec(dependencies_b, states_b, events_b, from_b),
         replay_final_states_from_spec(dependencies_a, states_a, events_a, from_a)
