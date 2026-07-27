@@ -140,7 +140,10 @@ dependencies = [
 name = "choregraph-nickel"
 version = "0.1.0"
 dependencies = [
+ "blake3",
  "choregraph-core",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

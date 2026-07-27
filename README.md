@@ -8,7 +8,7 @@ The project will lower reviewed, data-oriented Nickel graphs into canonical mach
 
 The buildable foundation, executable machine semantics, and Kamacite interchange adapter exist. The adapter emits canonical packed Preserves artifacts, exact BLAKE3 identity chains, a closed local lifecycle profile, and bounded linkage receipts.
 
-Lowering, formal proofs, compatibility parity, and release evidence do not exist yet.
+Pure lowering from contracted evaluated Nickel data now exists. The capability-relative evaluator shell remains blocked on a published immutable `cap-root` source. Formal proofs, compatibility parity, and release evidence do not exist yet.
 
 ## Owned boundary
 
@@ -68,6 +68,8 @@ See [`docs/architecture.md`](docs/architecture.md) for the one-way dependency bo
 See [`docs/machine-semantics.md`](docs/machine-semantics.md) for the executable transition model and current non-claims.
 
 See [`docs/kamacite-profile.md`](docs/kamacite-profile.md) for the selected codec, schemas, identity rules, and receipt boundary.
+
+See [`docs/restricted-nickel-lowering.md`](docs/restricted-nickel-lowering.md) for the evaluated-data contract, pure lowerer, identity chain, and capability-shell blocker.
 
 ## Validation
 

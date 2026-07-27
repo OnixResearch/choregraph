@@ -1,0 +1,110 @@
+{
+  "configs": [
+    {
+      "node_id": 3,
+      "operation": "branch-right"
+    },
+    {
+      "node_id": 1,
+      "operation": "root"
+    },
+    {
+      "node_id": 4,
+      "operation": "join"
+    },
+    {
+      "node_id": 2,
+      "operation": "branch-left"
+    }
+  ],
+  "edges": [
+    {
+      "source": 31,
+      "target": 40
+    },
+    {
+      "source": 12,
+      "target": 30
+    },
+    {
+      "source": 11,
+      "target": 20
+    },
+    {
+      "source": 21,
+      "target": 40
+    }
+  ],
+  "events": [
+    "cancel",
+    "complete",
+    "fail",
+    "mark-ready",
+    "start"
+  ],
+  "imports": [],
+  "lifecycle_profile": "choregraph.lifecycle.linear.v1",
+  "limits": {
+    "max_edges": 32,
+    "max_effect_declarations": 32,
+    "max_event_bytes": 4096,
+    "max_identifier_bytes": 128,
+    "max_intent_bytes": 1024,
+    "max_intents_per_transition": 16,
+    "max_nodes": 16,
+    "max_operations": 32,
+    "max_reference_bytes": 71
+  },
+  "nodes": [
+    {
+      "id": 4,
+      "ports": [
+        {
+          "direction": "input",
+          "id": 40
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "ports": [
+        {
+          "direction": "input",
+          "id": 20
+        },
+        {
+          "direction": "output",
+          "id": 21
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "ports": [
+        {
+          "direction": "output",
+          "id": 11
+        },
+        {
+          "direction": "output",
+          "id": 12
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "ports": [
+        {
+          "direction": "input",
+          "id": 30
+        },
+        {
+          "direction": "output",
+          "id": 31
+        }
+      ]
+    }
+  ],
+  "schema": "choregraph.lattice-workflow-projection.v1",
+  "source_format": "lattice-workflow-v1"
+}

@@ -37,7 +37,9 @@
           src = self;
           filter =
             path: type:
-            craneLib.filterCargoSources path type || pkgs.lib.hasInfix "/fixtures/kamacite/" (toString path);
+            craneLib.filterCargoSources path type
+            || pkgs.lib.hasInfix "/fixtures/kamacite/" (toString path)
+            || pkgs.lib.hasInfix "/fixtures/nickel/" (toString path);
         };
         workspaceVersion = "0.1.0";
         commonCargoArgs = {
@@ -173,6 +175,49 @@
                 mkdir -p "$out"
                 printf '%s\n' 'claim-scope=repository-boundary-only-unverified' \
                   > "$out/result.txt"
+              '';
+
+          restricted-nickel-contracts =
+            pkgs.runCommand "choregraph-restricted-nickel-contracts"
+              {
+                nativeBuildInputs = [
+                  pkgs.coreutils
+                  pkgs.gnugrep
+                  pkgs.jq
+                  pkgs.nickel
+                ];
+                src = self;
+              }
+              ''
+                set -eu
+                cd "$src"
+                nickel typecheck contracts/nickel/restricted-graph-contracts.ncl
+                nickel export --format json evidence/cap-root-adoption-blocker.ncl \
+                  > "$TMPDIR/cap-root-blocker.json"
+                jq --exit-status '
+                  .blocker.capability_shell_ready == false
+                  and .blocker.cargo_source_admitted == false
+                  and .blocker.nix_source_aligned == false
+                ' "$TMPDIR/cap-root-blocker.json" > /dev/null
+                if grep -R -E 'std::(fs|net|process)|SystemTime|Command::new|env::' \
+                  crates/choregraph-nickel/src --include='*.rs'; then
+                  echo 'choregraph-nickel gained ambient authority' >&2
+                  exit 1
+                fi
+                for fixture in fixtures/nickel/positive/*.ncl; do
+                  fixture_name="$(basename "$fixture" .ncl)"
+                  nickel export --format json "$fixture" > "$TMPDIR/raw.json"
+                  jq -S . "$TMPDIR/raw.json" > "$TMPDIR/normalized.json"
+                  cmp "fixtures/nickel/evaluated/$fixture_name.json" "$TMPDIR/normalized.json"
+                done
+                for fixture in fixtures/nickel/negative/*.ncl; do
+                  if nickel export --format json "$fixture" > "$TMPDIR/negative.json"; then
+                    echo "negative Nickel fixture unexpectedly exported: $fixture" >&2
+                    exit 1
+                  fi
+                done
+                mkdir -p "$out"
+                printf '%s\n' 'claim=bounded-contract-shape-only-not-nickel-semantics' > "$out/result.txt"
               '';
 
           foundation-evidence =
