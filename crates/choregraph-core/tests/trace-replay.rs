@@ -1,3 +1,17 @@
+// The bounded fixture corpus keeps explicit imports, panic diagnostics, and fixed test vectors.
+#![allow(
+    unknown_lints,
+    assertion_density,
+    explicit_defaults,
+    function_length,
+    non_trait_imports,
+    no_panic,
+    numeric_units,
+    too_many_parameters,
+    unbounded_collection_growth,
+    reason = "the bounded fixture corpus keeps explicit imports, panic diagnostics, and fixed test vectors"
+)]
+
 // r[verify choregraph.proof.trace.model]
 // r[verify choregraph.proof.trace.replay]
 // r[verify choregraph.proof.trace.failure]
@@ -24,12 +38,13 @@ const PAYLOAD: &str = "blake3:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 const MACHINE_BINDING_BYTE: u8 = 0x11;
 const STATE_BINDING_BYTE: u8 = 0x22;
 const STALE_BINDING_BYTE: u8 = 0x33;
-const TEST_MAX_EVENTS: usize = 64;
-const ONE_EVENT_LIMIT: usize = 1;
-const FIRST_EVENT: usize = 0;
-const SECOND_EVENT: usize = 1;
-const THIRD_EVENT: usize = 2;
-const NO_EVENTS: usize = 0;
+const TEST_MAX_EVENTS: u64 = 64;
+const ONE_EVENT_LIMIT: u64 = 1;
+const SINGLE_INTENT_COUNT: usize = 1;
+const FIRST_EVENT: u64 = 0;
+const SECOND_EVENT: u64 = 1;
+const THIRD_EVENT: u64 = 2;
+const NO_EVENTS: u64 = 0;
 
 fn node(id: &str) -> NodeSpec {
     NodeSpec::new(id, Vec::new())
@@ -107,13 +122,27 @@ fn stale_state_bindings() -> ReplayBindings {
     )
 }
 
+fn count(value: usize) -> ConsumedCount {
+    match u64::try_from(value) {
+        Ok(value) => ConsumedCount::new(value),
+        Err(_) => panic!("test count does not fit u64"),
+    }
+}
+
+fn index(value: usize) -> EventIndex {
+    match u64::try_from(value) {
+        Ok(value) => EventIndex::new(value),
+        Err(_) => panic!("test index does not fit u64"),
+    }
+}
+
 fn replay_events(
     machine: &AdmittedMachine,
     initial_state: &MachineState,
     events: &[Event],
     trace_bindings: ReplayBindings,
     expected_bindings: ReplayBindings,
-    max_events: usize,
+    max_events: u64,
 ) -> ReplayDecision {
     replay(ReplayInput::new(
         machine,
@@ -204,7 +233,7 @@ fn linear_and_terminal_traces_end_in_invariant_states() {
             final_state,
             consumed,
         } => {
-            assert_eq!(consumed, ConsumedCount::new(completed.len()));
+            assert_eq!(consumed, count(completed.len()));
             assert!(invariant(&machine, &final_state));
         }
         ReplayDecision::Failed(failure) => panic!("valid linear trace failed: {failure:?}"),
@@ -214,7 +243,7 @@ fn linear_and_terminal_traces_end_in_invariant_states() {
             final_state,
             consumed,
         } => {
-            assert_eq!(consumed, ConsumedCount::new(cancelled.len()));
+            assert_eq!(consumed, count(cancelled.len()));
             assert!(invariant(&machine, &final_state));
         }
         ReplayDecision::Failed(failure) => panic!("valid terminal trace failed: {failure:?}"),
@@ -240,7 +269,7 @@ fn diamond_trace_respects_declared_dependency_order() {
             final_state,
             consumed,
         } => {
-            assert_eq!(consumed, ConsumedCount::new(events.len()));
+            assert_eq!(consumed, count(events.len()));
             assert!(invariant(&machine, &final_state));
             assert!(
                 final_state
@@ -318,7 +347,7 @@ fn replay_discards_historical_effect_intents() {
     let mut start = event(NODE_SOURCE, Action::Start);
     start.effects.push(write_request());
     match step(&machine, &ready, &start) {
-        Decision::Accept { intents, .. } => assert_eq!(intents.len(), ONE_EVENT_LIMIT),
+        Decision::Accept { intents, .. } => assert_eq!(intents.len(), SINGLE_INTENT_COUNT),
         Decision::Deny { reason } => panic!("effectful start denied: {reason:?}"),
     }
 
@@ -466,7 +495,7 @@ fn oversized_and_stale_bound_traces_fail_before_processing() {
 
     let expected = [
         ReplayFailureReason::TraceLimitExceeded {
-            observed: events.len(),
+            observed: count(events.len()).get(),
             maximum: ONE_EVENT_LIMIT,
         },
         ReplayFailureReason::MachineBindingMismatch,
@@ -538,7 +567,7 @@ fn property_generated_traces_match_repeated_production_steps() {
     let initial_state = machine.initial_state();
     let full_trace = diamond_events();
     let mut traces = Vec::new();
-    for prefix_length in NO_EVENTS..=full_trace.len() {
+    for prefix_length in 0..=full_trace.len() {
         traces.push(full_trace[..prefix_length].to_vec());
     }
     for invalid_action in [
@@ -572,12 +601,12 @@ fn property_generated_traces_match_repeated_production_steps() {
                 None,
             ) => {
                 assert_eq!(final_state, expected.0);
-                assert_eq!(consumed, ConsumedCount::new(expected.1));
+                assert_eq!(consumed, count(expected.1));
             }
             (ReplayDecision::Failed(failure), Some((event_index, reason))) => {
                 assert_eq!(failure.last_valid_state.state(), &expected.0);
-                assert_eq!(failure.consumed, ConsumedCount::new(expected.1));
-                assert_eq!(failure.event_index, Some(EventIndex::new(event_index)));
+                assert_eq!(failure.consumed, count(expected.1));
+                assert_eq!(failure.event_index, Some(index(event_index)));
                 assert_eq!(
                     failure.reason,
                     ReplayFailureReason::TransitionDenied(reason)

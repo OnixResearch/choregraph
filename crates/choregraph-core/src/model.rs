@@ -28,7 +28,7 @@ pub const DEFAULT_MAX_REFERENCE_BYTES: usize = crate::id::BLAKE3_REFERENCE_BYTES
 pub const DEFAULT_MAX_EVENT_BYTES: usize = 65_536;
 pub const DEFAULT_MAX_INTENT_BYTES: usize = 2_048;
 pub const DEFAULT_MAX_INTENTS_PER_TRANSITION: usize = 64;
-pub const DEFAULT_MAX_TRACE_EVENTS: usize = 65_536;
+pub const DEFAULT_MAX_TRACE_EVENTS: u64 = 65_536;
 pub const TRACE_BINDING_BYTES: usize = 32;
 
 /// Bounded admission and transition limits selected by the caller.
@@ -404,7 +404,7 @@ impl ReplayBindings {
 /// Caller-selected finite replay limits.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ReplayLimits {
-    pub max_events: usize,
+    pub max_events: u64,
 }
 
 impl Default for ReplayLimits {
@@ -470,33 +470,47 @@ impl<'a> ReplayInput<'a> {
 
 /// The number of accepted events in a replay prefix.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct ConsumedCount(usize);
+pub struct ConsumedCount(u64);
 
 impl ConsumedCount {
     #[must_use]
-    pub const fn new(value: usize) -> Self {
+    pub const fn new(value: u64) -> Self {
         Self(value)
     }
 
     #[must_use]
-    pub const fn get(self) -> usize {
+    pub const fn get(self) -> u64 {
         self.0
+    }
+
+    pub(crate) fn from_usize(value: usize) -> Self {
+        match u64::try_from(value) {
+            Ok(value) => Self(value),
+            Err(_) => Self(u64::MAX),
+        }
     }
 }
 
 /// The zero-based position of the first denied event.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct EventIndex(usize);
+pub struct EventIndex(u64);
 
 impl EventIndex {
     #[must_use]
-    pub const fn new(value: usize) -> Self {
+    pub const fn new(value: u64) -> Self {
         Self(value)
     }
 
     #[must_use]
-    pub const fn get(self) -> usize {
+    pub const fn get(self) -> u64 {
         self.0
+    }
+
+    pub(crate) fn from_usize(value: usize) -> Self {
+        match u64::try_from(value) {
+            Ok(value) => Self(value),
+            Err(_) => Self(u64::MAX),
+        }
     }
 }
 
@@ -524,7 +538,7 @@ impl LastValidState {
 /// Stable reasons that stop replay before the full trace is consumed.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ReplayFailureReason {
-    TraceLimitExceeded { observed: usize, maximum: usize },
+    TraceLimitExceeded { observed: u64, maximum: u64 },
     MachineBindingMismatch,
     InitialStateBindingMismatch,
     InitialStateInvalid,

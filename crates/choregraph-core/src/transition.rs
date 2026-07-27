@@ -367,13 +367,14 @@ fn replay_failure(
 #[must_use]
 pub fn replay(input: ReplayInput<'_>) -> ReplayDecision {
     let trace_events = input.trace.events();
+    let observed_event_count = ConsumedCount::from_usize(trace_events.len()).get();
     let initial_state = input.initial_state.clone();
-    if trace_events.len() > input.limits.max_events {
+    if observed_event_count > input.limits.max_events {
         return replay_failure(
             None,
             ConsumedCount::new(0),
             ReplayFailureReason::TraceLimitExceeded {
-                observed: trace_events.len(),
+                observed: observed_event_count,
                 maximum: input.limits.max_events,
             },
             initial_state,
@@ -413,8 +414,8 @@ pub fn replay(input: ReplayInput<'_>) -> ReplayDecision {
             }
             Decision::Deny { reason } => {
                 return replay_failure(
-                    Some(EventIndex::new(event_index)),
-                    ConsumedCount::new(event_index),
+                    Some(EventIndex::from_usize(event_index)),
+                    ConsumedCount::from_usize(event_index),
                     ReplayFailureReason::TransitionDenied(reason),
                     last_valid_state,
                 );
@@ -424,6 +425,6 @@ pub fn replay(input: ReplayInput<'_>) -> ReplayDecision {
 
     ReplayDecision::Complete {
         final_state: last_valid_state,
-        consumed: ConsumedCount::new(trace_events.len()),
+        consumed: ConsumedCount::from_usize(trace_events.len()),
     }
 }
