@@ -1,39 +1,58 @@
-#![no_std]
+//! Pure canonical artifact and receipt adapter for the selected Kamacite profile.
+//!
+//! The crate owns no filesystem, process, network, clock, policy, or runtime-effect authority.
 
-use choregraph_core::Capability;
+mod aggregate;
+mod codec;
+mod identity;
+mod lifecycle;
+mod receipt;
 
-/// A claim that the Kamacite adapter can receive.
+#[cfg(test)]
+mod tests;
+
+#[allow(dead_code)]
+#[path = "../../../vendor/kamacite-core-selected/preserves_codec.rs"]
+mod selected_kamacite_codec;
+
+pub use aggregate::{
+    AggregateError, AggregateMachineDescriptor, ArtifactSet, CompatibilityMetadata,
+    DescriptorDependencySet, DescriptorEdge, DescriptorEffect, DescriptorLimits, DescriptorNode,
+    GLOBAL_STATE_CARDINALITY, GLOBAL_STATE_MODEL, IdentityMaterials, KAMACITE_REVISION,
+    SupportedKamaciteProfile, ValidatedMachineArtifact, build_artifact_set, build_profile_artifact,
+    encode_machine_descriptor, validate_machine_artifact,
+};
+pub use codec::{
+    CanonicalArtifact, CodecBoundaryError, FSM_RECEIPT_ROOT_LABEL, FSM_RECEIPT_SCHEMA_VERSION,
+    FSM_SPEC_ROOT_LABEL, FSM_SPEC_SCHEMA_VERSION, MACHINE_ROOT_LABEL, MACHINE_SCHEMA_VERSION,
+};
+pub use identity::{
+    ArtifactDomain, ArtifactIdentity, BLAKE3_ALGORITHM, BLAKE3_HEX_LENGTH, IdentityChain,
+    IdentityError, KamaciteIdentity, KamaciteIdentityDomain, compute_identity,
+    compute_kamacite_identity,
+};
+pub use lifecycle::{
+    FsmCoverageEvidence, FsmDenialRow, FsmEvent, FsmGuard, FsmMatrixCell, FsmSideEffect, FsmState,
+    FsmTransitionRow, LIFECYCLE_FSM_ID, LifecycleArtifact, LifecycleDescriptor, LifecycleError,
+    build_lifecycle_artifact, transition_identity, validate_lifecycle_artifact,
+};
+pub use receipt::{
+    FsmGuardDecision, FsmReceiptArtifact, FsmReceiptBody, FsmTraceStep, LinkReceiptArtifact,
+    LinkReceiptBody, LinkReceiptRole, ReceiptBundle, ReceiptError, TraceObservation,
+    build_receipt_bundle, encode_fsm_receipt_body, encode_link_receipt_body, validate_fsm_receipt,
+    validate_link_receipt, validate_receipt_bundle,
+};
+
+pub const CLAIM_BOUNDARY: &str = "canonical encoding and exact identity linkage; not behavioral proof, authority, or effect success";
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum InterchangeClaim {
     CanonicalIdentityBinding,
     BehavioralProof,
-    RuntimeAuthorization,
+    RuntimeAuthority,
 }
 
-/// Returns the core capability that canonical artifacts can describe.
-#[must_use]
-pub const fn described_core_capability() -> Capability {
-    Capability::ImmutableMachineData
-}
-
-/// Returns true only for identity linkage owned by Kamacite.
 #[must_use]
 pub const fn supports(claim: InterchangeClaim) -> bool {
     matches!(claim, InterchangeClaim::CanonicalIdentityBinding)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{InterchangeClaim, supports};
-
-    #[test]
-    fn supports_canonical_identity_binding() {
-        assert!(supports(InterchangeClaim::CanonicalIdentityBinding));
-    }
-
-    #[test]
-    fn rejects_behavioral_and_authority_claims() {
-        assert!(!supports(InterchangeClaim::BehavioralProof));
-        assert!(!supports(InterchangeClaim::RuntimeAuthorization));
-    }
 }

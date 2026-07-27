@@ -12,7 +12,11 @@ Each tree identity uses this method:
 
 The Seaglass upstream entry uses the BLAKE3 value of the source file. Execution-graph provenance evidence maps that file to its upstream revision.
 
-The foundation imports no implementation or proof source. All entries have `imported = false` and `working_tree_used = false`.
+The foundation imported no implementation or proof source. The Kamacite change vendors only the selected canonical codec and its license files from the exact recorded revision.
+
+The public `preserves` dependency is pinned to the selected Kamacite profile version. `tools/sync-kamacite-codec.rs` reproduces the import from the recorded Git object.
+
+The authenticated Kamacite repository is not a Cargo release input. All identities exclude sibling working-tree changes. No ambient sibling path is a release input.
 
 A source identity does not prove correctness. A Trellis proof reference does not transfer a proof claim to Choregraph.
 

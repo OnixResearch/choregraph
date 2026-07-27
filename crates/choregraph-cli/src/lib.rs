@@ -1,20 +1,33 @@
+mod corpus;
+
 use choregraph_core::{Capability, FOUNDATION_CLAIM, MACHINE_CLAIM, permits};
 use choregraph_kamacite::{InterchangeClaim, supports as supports_interchange};
 use choregraph_nickel::{LoweringInputStage, accepts as accepts_lowering};
 use choregraph_seaglass::{CompatibilityMode, accepts as accepts_compatibility};
 
-/// A command accepted by the current foundation shell.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub use corpus::{KamaciteCorpusEntry, build_kamacite_corpus};
+
+/// A command accepted by the imperative shell.
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Command {
     Boundary,
+    WriteKamaciteCorpus { output_directory: String },
 }
 
-/// Parses the command without reading process state.
+/// Parses a command without reading process state.
 pub fn parse_command(arguments: &[String]) -> Result<Command, &'static str> {
     match arguments {
         [] => Ok(Command::Boundary),
         [argument] if argument == "boundary" => Ok(Command::Boundary),
-        _ => Err("usage: choregraph [boundary]"),
+        [command, output_directory] if command == "write-kamacite-corpus" => {
+            if output_directory.is_empty() {
+                return Err("Kamacite corpus output directory must be non-empty");
+            }
+            Ok(Command::WriteKamaciteCorpus {
+                output_directory: output_directory.clone(),
+            })
+        }
+        _ => Err("usage: choregraph [boundary | write-kamacite-corpus <output-directory>]"),
     }
 }
 
@@ -47,11 +60,21 @@ mod tests {
             parse_command(&[String::from("boundary")]),
             Ok(Command::Boundary)
         );
+        assert_eq!(
+            parse_command(&[
+                String::from("write-kamacite-corpus"),
+                String::from("fixtures/kamacite"),
+            ]),
+            Ok(Command::WriteKamaciteCorpus {
+                output_directory: String::from("fixtures/kamacite"),
+            })
+        );
     }
 
     #[test]
-    fn rejects_unknown_or_extra_arguments() {
+    fn rejects_unknown_incomplete_or_extra_arguments() {
         assert!(parse_command(&[String::from("run")]).is_err());
+        assert!(parse_command(&[String::from("write-kamacite-corpus")]).is_err());
         assert!(parse_command(&[String::from("boundary"), String::from("extra")]).is_err());
     }
 

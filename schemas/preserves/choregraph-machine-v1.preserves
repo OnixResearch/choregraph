@@ -1,0 +1,72 @@
+; Choregraph bounded aggregate machine descriptor v1.
+; Canonical packed Preserves bytes are the authority.
+; Aggregate state remains a node-id-to-local-state map and is never listed here.
+
+AggregateMachineDescriptor = <choregraph-machine-v1 {
+  schema_version: 1,
+  machine_schema: "choregraph.machine.v1",
+  lifecycle_profile_id: "choregraph.lifecycle.linear.v1",
+  lifecycle_profile_identity: ArtifactIdentity,
+  kamacite_profile_identity: ArtifactIdentity,
+  global_state_model: "parameterized-map-from-node-id-to-local-state",
+  global_state_cardinality: "not-enumerated",
+  limits: DescriptorLimits,
+  nodes: [DescriptorNode ...],
+  edges: [DescriptorEdge ...],
+  dependencies: [DescriptorDependencySet ...],
+  topological_order: [string ...],
+  effects: [DescriptorEffect ...],
+  compatibility: CompatibilityMetadata,
+  checked_laws: [string ...],
+  non_claims: [string ...]
+}>
+
+ArtifactIdentity = <ArtifactIdentity {
+  domain: symbol,
+  algorithm: "blake3",
+  hex: string
+}>
+
+DescriptorLimits = <DescriptorLimits {
+  max_nodes: integer,
+  max_edges: integer,
+  max_operations: integer,
+  max_effect_declarations: integer,
+  max_identifier_bytes: integer,
+  max_reference_bytes: integer,
+  max_event_bytes: integer,
+  max_intent_bytes: integer,
+  max_intents_per_transition: integer
+}>
+
+DescriptorNode = <DescriptorNode {
+  node_id: string,
+  operations: [string ...]
+}>
+
+DescriptorEdge = <DescriptorEdge {
+  source: string,
+  target: string
+}>
+
+DescriptorDependencySet = <DescriptorDependencySet {
+  node_id: string,
+  dependencies: [string ...]
+}>
+
+DescriptorEffect = <DescriptorEffect {
+  node_id: string,
+  from_state: string,
+  action: string,
+  operation: string,
+  resource: string,
+  ability: string,
+  request: string,
+  payload: string
+}>
+
+CompatibilityMetadata = <CompatibilityMetadata {
+  execution_graph_revision: string,
+  lattice_revision: string,
+  kamacite_revision: string
+}>

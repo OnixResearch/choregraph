@@ -1,0 +1,18 @@
+; Choregraph exact artifact-link receipt v1.
+; This receipt records identity linkage. It does not create a behavioral proof.
+
+LinkReceiptBody = <choregraph-link-receipt-v1 {
+  schema_version: 1,
+  role: admission | lifecycle | source | proof-reference,
+  subject: ArtifactIdentity,
+  dependencies: [ArtifactIdentity ...],
+  checked_laws: [string ...],
+  non_claims: [string ...],
+  semantic_claims: []
+}>
+
+ArtifactIdentity = <ArtifactIdentity {
+  domain: symbol,
+  algorithm: "blake3",
+  hex: string
+}>

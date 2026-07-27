@@ -32,7 +32,9 @@ The foundation checker rejects forbidden dependencies, source tokens, path depen
 
 ## Adapter boundaries
 
-`choregraph-kamacite` owns conversion to canonical artifact and receipt vocabulary. This adapter does not create behavioral proofs.
+`choregraph-kamacite` owns pure in-memory conversion to canonical artifacts and receipt vocabulary. It uses a hash-checked, selected Kamacite codec snapshot. It does not read files, run processes, use clocks, access networks, authorize effects, or create behavioral proofs.
+
+`choregraph-cli write-kamacite-corpus` is the imperative shell that writes maintained fixtures. The adapter returns only in-memory values.
 
 `choregraph-nickel` accepts only evaluated data. Source discovery, imports, contracts, and Nickel evaluation remain in a shell.
 

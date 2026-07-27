@@ -247,6 +247,11 @@ impl AdmittedMachine {
     }
 
     #[must_use]
+    pub fn operations(&self, node_id: &NodeId) -> Option<&BTreeSet<OperationId>> {
+        self.nodes.get(node_id).map(|node| &node.operations)
+    }
+
+    #[must_use]
     pub fn dependents(&self, node_id: &NodeId) -> Option<&[NodeId]> {
         self.dependents.get(node_id).map(Vec::as_slice)
     }

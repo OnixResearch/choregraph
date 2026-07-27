@@ -33,7 +33,12 @@
         };
         rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
         craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
-        cargoSource = craneLib.cleanCargoSource self;
+        cargoSource = pkgs.lib.cleanSourceWith {
+          src = self;
+          filter =
+            path: type:
+            craneLib.filterCargoSources path type || pkgs.lib.hasInfix "/fixtures/kamacite/" (toString path);
+        };
         workspaceVersion = "0.1.0";
         commonCargoArgs = {
           pname = "choregraph-workspace";
@@ -192,6 +197,27 @@
 
                 nickel export --format json config/project.ncl > "$TMPDIR/project.json"
                 nickel export --format json config/toolchain.ncl > "$TMPDIR/toolchain.json"
+                nickel export --format json fixtures/kamacite/corpus.ncl \
+                  > "$TMPDIR/kamacite-corpus.json"
+                jq --exit-status '
+                  ([.cases[] | select(.expected == "accept")] | length) > 0
+                  and ([.cases[] | select(.expected == "reject")] | length) > 0
+                  and .profile.authority == "canonical-packed-preserves"
+                  and .profile.fsm_determinism_policy == "deterministic"
+                  and .profile.fsm_receipt_kinds == ["exhaustiveness", "trace"]
+                  and .profile.fsm_denial_no_effect_class == "no-side-effect"
+                ' "$TMPDIR/kamacite-corpus.json" > /dev/null
+                expected_machine_schema_hash="$(jq --raw-output '.profile.machine_schema_source_blake3' "$TMPDIR/kamacite-corpus.json")"
+                observed_machine_schema_hash="$(b3sum schemas/preserves/choregraph-machine-v1.preserves)"
+                test "''${observed_machine_schema_hash%% *}" = "$expected_machine_schema_hash"
+                expected_link_schema_hash="$(jq --raw-output '.profile.link_receipt_schema_source_blake3' "$TMPDIR/kamacite-corpus.json")"
+                observed_link_schema_hash="$(b3sum schemas/preserves/choregraph-link-receipt-v1.preserves)"
+                test "''${observed_link_schema_hash%% *}" = "$expected_link_schema_hash"
+                if grep -R -E 'std::(fs|net|process)|SystemTime|Command::new|env::' \
+                  crates/choregraph-kamacite/src --include='*.rs'; then
+                  echo 'choregraph-kamacite gained ambient authority' >&2
+                  exit 1
+                fi
                 jq --exit-status '.project.status == "unverified-machine-semantics"' \
                   "$TMPDIR/project.json" > /dev/null
                 jq --exit-status '.toolchain.claim_scope == "pinned-tool-identity-only-not-tool-soundness"' \
@@ -211,7 +237,7 @@
                   and ($ids == ($ids | sort))
                   and (($ids | length) == ($ids | unique | length))
                   and ([.baseline.sources[].working_tree_used] | all(. == false))
-                  and ([.baseline.sources[].imported] | all(. == false))
+                  and ([.baseline.sources[] | select(.imported == true) | .id] == ["kamacite-interchange-boundary"])
                 ' "$TMPDIR/source-baseline.json" > /dev/null
 
                 if nickel export --format json \
@@ -226,6 +252,20 @@
                 grep -F '374bd16b26cee2af34211a29bfa531c016811f51' flake.nix > /dev/null
                 rustc --version > "$TMPDIR/rust-version.txt"
                 grep -F 'rustc 1.97.1 ' "$TMPDIR/rust-version.txt" > /dev/null
+                nickel export --format json vendor/kamacite-core-selected/SOURCE.ncl \
+                  > "$TMPDIR/kamacite-codec-source.json"
+                expected_codec_hash="$(jq --raw-output '.source.source_blake3' "$TMPDIR/kamacite-codec-source.json")"
+                observed_codec_hash="$(b3sum vendor/kamacite-core-selected/preserves_codec.rs)"
+                test "''${observed_codec_hash%% *}" = "$expected_codec_hash"
+                expected_apache_hash="$(jq --raw-output '.source.apache_license_blake3' "$TMPDIR/kamacite-codec-source.json")"
+                observed_apache_hash="$(b3sum vendor/kamacite-core-selected/LICENSE-APACHE)"
+                test "''${observed_apache_hash%% *}" = "$expected_apache_hash"
+                expected_mit_hash="$(jq --raw-output '.source.mit_license_blake3' "$TMPDIR/kamacite-codec-source.json")"
+                observed_mit_hash="$(b3sum vendor/kamacite-core-selected/LICENSE-MIT)"
+                test "''${observed_mit_hash%% *}" = "$expected_mit_hash"
+                rustc tools/sync-kamacite-codec.rs -o "$TMPDIR/sync-kamacite-codec"
+                "$TMPDIR/sync-kamacite-codec" --self-test
+
                 nickel --version > "$TMPDIR/nickel-version.txt"
                 nix --version > "$TMPDIR/nix-version.txt"
                 octet-production-verus --identity > "$TMPDIR/verus-identity.txt"

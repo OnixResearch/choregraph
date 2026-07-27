@@ -1,0 +1,398 @@
+use choregraph_core::{
+    Action, AdmissionLimits, AdmittedMachine, EdgeSpec, EffectDeclarationSpec, LocalState,
+    MachineSpec, NodeSpec, TransitionSelector,
+};
+use choregraph_kamacite::{
+    AggregateMachineDescriptor, ArtifactDomain, IdentityMaterials, KamaciteIdentityDomain,
+    TraceObservation, build_artifact_set, build_receipt_bundle, compute_identity,
+    compute_kamacite_identity, encode_fsm_receipt_body, encode_link_receipt_body,
+    encode_machine_descriptor,
+};
+use std::collections::BTreeSet;
+
+const PAYLOAD: &str = "blake3:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const SOURCE_ENVELOPE: &[u8] = b"canonical-source-envelope-v1";
+const PROOF_SET: &[u8] = b"proof-set-status-pending-v1";
+const MATERIAL_LENGTH_BYTES: usize = size_of::<u64>();
+const ADAPTER_SOURCES: &[&[u8]] = &[
+    include_bytes!("../../choregraph-kamacite/src/lib.rs"),
+    include_bytes!("../../choregraph-kamacite/src/aggregate.rs"),
+    include_bytes!("../../choregraph-kamacite/src/codec.rs"),
+    include_bytes!("../../choregraph-kamacite/src/identity.rs"),
+    include_bytes!("../../choregraph-kamacite/src/lifecycle.rs"),
+    include_bytes!("../../choregraph-kamacite/src/receipt.rs"),
+    include_bytes!("../../../vendor/kamacite-core-selected/preserves_codec.rs"),
+];
+const GENERATOR_SOURCES: &[&[u8]] = &[include_bytes!("corpus.rs")];
+const TOOLCHAIN_SOURCES: &[&[u8]] = &[
+    include_bytes!("../../../rust-toolchain.toml"),
+    include_bytes!("../../../Cargo.lock"),
+];
+const CANONICAL_INTEGER_BYTES: [u8; 3] = [0xb0, 0x01, 0x01];
+const NON_CANONICAL_INTEGER_BYTES: [u8; 4] = [0xb0, 0x02, 0x00, 0x01];
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct KamaciteCorpusEntry {
+    pub relative_path: &'static str,
+    pub bytes: Vec<u8>,
+}
+
+fn diamond_machine() -> Result<AdmittedMachine, String> {
+    let nodes = vec![
+        NodeSpec::new("tail", vec![String::from("emit")]),
+        NodeSpec::new("right", vec![String::from("run")]),
+        NodeSpec::new("root", vec![String::from("prepare")]),
+        NodeSpec::new("left", vec![String::from("run")]),
+    ];
+    let edges = vec![
+        EdgeSpec::new("right", "tail"),
+        EdgeSpec::new("root", "right"),
+        EdgeSpec::new("left", "tail"),
+        EdgeSpec::new("root", "left"),
+    ];
+    let mut spec = MachineSpec::new(nodes, edges);
+    spec.effects.push(EffectDeclarationSpec {
+        node_id: String::from("root"),
+        transition: TransitionSelector {
+            from: LocalState::Ready,
+            action: Action::Start,
+        },
+        operation: String::from("prepare"),
+        resource: String::from("root/work"),
+        ability: String::from("execute"),
+        request: String::from("request/start"),
+        payload: String::from(PAYLOAD),
+    });
+    AdmittedMachine::admit(spec, AdmissionLimits::default())
+        .map_err(|diagnostics| format!("diamond admission failed: {diagnostics:?}"))
+}
+
+fn successful_trace() -> Vec<TraceObservation> {
+    vec![
+        TraceObservation {
+            from_state: String::from("pending"),
+            event: String::from("mark-ready"),
+            to_state: String::from("ready"),
+            guard_evidence_refs: vec![String::from("dependency-snapshot:root:empty")],
+        },
+        TraceObservation {
+            from_state: String::from("ready"),
+            event: String::from("start"),
+            to_state: String::from("running"),
+            guard_evidence_refs: Vec::new(),
+        },
+        TraceObservation {
+            from_state: String::from("running"),
+            event: String::from("complete"),
+            to_state: String::from("completed"),
+            guard_evidence_refs: Vec::new(),
+        },
+    ]
+}
+
+fn framed_material(sources: &[&[u8]]) -> Result<Vec<u8>, String> {
+    let mut material = Vec::new();
+    for source in sources {
+        let source_length = u64::try_from(source.len())
+            .map_err(|_| String::from("identity source length exceeds u64"))?;
+        material.extend_from_slice(&source_length.to_le_bytes()[..MATERIAL_LENGTH_BYTES]);
+        material.extend_from_slice(source);
+    }
+    Ok(material)
+}
+
+fn noncanonical_equivalent(canonical: &[u8]) -> Result<Vec<u8>, String> {
+    let mut bytes = canonical.to_vec();
+    let offset = bytes
+        .windows(CANONICAL_INTEGER_BYTES.len())
+        .position(|window| window == CANONICAL_INTEGER_BYTES)
+        .ok_or_else(|| String::from("canonical machine lacks the schema-version integer"))?;
+    bytes.splice(
+        offset..offset + CANONICAL_INTEGER_BYTES.len(),
+        NON_CANONICAL_INTEGER_BYTES,
+    );
+    Ok(bytes)
+}
+
+fn machine_variant(
+    descriptor: &AggregateMachineDescriptor,
+    mutate: impl FnOnce(&mut AggregateMachineDescriptor),
+) -> Result<Vec<u8>, String> {
+    let mut variant = descriptor.clone();
+    mutate(&mut variant);
+    encode_machine_descriptor(&variant)
+        .map(|artifact| artifact.packed_bytes)
+        .map_err(|error| error.to_string())
+}
+
+pub fn build_kamacite_corpus() -> Result<Vec<KamaciteCorpusEntry>, String> {
+    let machine = diamond_machine()?;
+    let generator_material = framed_material(GENERATOR_SOURCES)?;
+    let adapter_material = framed_material(ADAPTER_SOURCES)?;
+    let toolchain_material = framed_material(TOOLCHAIN_SOURCES)?;
+    let set = build_artifact_set(
+        &machine,
+        IdentityMaterials {
+            source_envelope: SOURCE_ENVELOPE,
+            proof_set: PROOF_SET,
+            generator: &generator_material,
+            adapter: &adapter_material,
+            toolchain: &toolchain_material,
+        },
+    )
+    .map_err(|error| error.to_string())?;
+    let bundle =
+        build_receipt_bundle(&set, &successful_trace()).map_err(|error| error.to_string())?;
+
+    let unsupported = machine_variant(&set.machine_descriptor, |descriptor| {
+        descriptor.lifecycle_profile_id = String::from("unsupported.lifecycle.v9");
+    })?;
+    let enumerated = machine_variant(&set.machine_descriptor, |descriptor| {
+        descriptor.global_state_model = String::from("enumerated-product-table");
+        descriptor.global_state_cardinality = String::from("six-to-the-node-count");
+    })?;
+    let mismatched_lifecycle_identity =
+        compute_identity(ArtifactDomain::Lifecycle, b"different-lifecycle")
+            .map_err(|error| error.to_string())?;
+    let lifecycle_mismatch = machine_variant(&set.machine_descriptor, |descriptor| {
+        descriptor.lifecycle_profile_identity = mismatched_lifecycle_identity;
+    })?;
+
+    let mut proof_mismatch = bundle.proof_reference.body.clone();
+    proof_mismatch.subject = set.identities.machine.clone();
+    let proof_mismatch = encode_link_receipt_body(&proof_mismatch)
+        .map_err(|error| error.to_string())?
+        .packed_bytes;
+
+    let mut trace_mismatch = bundle.trace.body.clone();
+    trace_mismatch.trace_steps[1].to_state = String::from("completed");
+    let trace_mismatch = encode_fsm_receipt_body(&trace_mismatch)
+        .map_err(|error| error.to_string())?
+        .packed_bytes;
+
+    let mut overclaim = bundle.exhaustiveness.body.clone();
+    overclaim
+        .semantic_claims
+        .push(String::from("transition implementation is formally proven"));
+    let overclaim = encode_fsm_receipt_body(&overclaim)
+        .map_err(|error| error.to_string())?
+        .packed_bytes;
+
+    let stale_identity = compute_identity(ArtifactDomain::Receipt, b"stale-receipt")
+        .map_err(|error| error.to_string())?;
+    let stale_identity = format!("{}\n", stale_identity.hex).into_bytes();
+    let adapter_identity =
+        compute_kamacite_identity(KamaciteIdentityDomain::Adapter, &adapter_material);
+    let adapter_identity = format!("{}\n", adapter_identity.hex).into_bytes();
+
+    let entries = vec![
+        KamaciteCorpusEntry {
+            relative_path: "positive/profile.preserves",
+            bytes: set.profile_artifact.packed_bytes.clone(),
+        },
+        KamaciteCorpusEntry {
+            relative_path: "positive/lifecycle.preserves",
+            bytes: set.lifecycle.canonical.packed_bytes.clone(),
+        },
+        KamaciteCorpusEntry {
+            relative_path: "positive/machine.preserves",
+            bytes: set.machine_artifact.packed_bytes.clone(),
+        },
+        KamaciteCorpusEntry {
+            relative_path: "positive/admitted-ir.preserves",
+            bytes: set.admitted_ir_artifact.packed_bytes.clone(),
+        },
+        KamaciteCorpusEntry {
+            relative_path: "positive/admission.receipt.preserves",
+            bytes: bundle.admission.canonical.packed_bytes.clone(),
+        },
+        KamaciteCorpusEntry {
+            relative_path: "positive/lifecycle.receipt.preserves",
+            bytes: bundle.lifecycle.canonical.packed_bytes.clone(),
+        },
+        KamaciteCorpusEntry {
+            relative_path: "positive/source.receipt.preserves",
+            bytes: bundle.source.canonical.packed_bytes.clone(),
+        },
+        KamaciteCorpusEntry {
+            relative_path: "positive/proof-reference.receipt.preserves",
+            bytes: bundle.proof_reference.canonical.packed_bytes.clone(),
+        },
+        KamaciteCorpusEntry {
+            relative_path: "positive/exhaustiveness.receipt.preserves",
+            bytes: bundle.exhaustiveness.canonical.packed_bytes.clone(),
+        },
+        KamaciteCorpusEntry {
+            relative_path: "positive/trace.receipt.preserves",
+            bytes: bundle.trace.canonical.packed_bytes.clone(),
+        },
+        KamaciteCorpusEntry {
+            relative_path: "positive/adapter-identity.txt",
+            bytes: adapter_identity,
+        },
+        KamaciteCorpusEntry {
+            relative_path: "negative/malformed.preserves",
+            bytes: vec![0xff],
+        },
+        KamaciteCorpusEntry {
+            relative_path: "negative/json-substitution.json",
+            bytes: br#"{"schema_version":1}"#.to_vec(),
+        },
+        KamaciteCorpusEntry {
+            relative_path: "negative/noncanonical.preserves",
+            bytes: noncanonical_equivalent(&set.machine_artifact.packed_bytes)?,
+        },
+        KamaciteCorpusEntry {
+            relative_path: "negative/unsupported-profile.preserves",
+            bytes: unsupported,
+        },
+        KamaciteCorpusEntry {
+            relative_path: "negative/global-enumeration.preserves",
+            bytes: enumerated,
+        },
+        KamaciteCorpusEntry {
+            relative_path: "negative/lifecycle-mismatch.preserves",
+            bytes: lifecycle_mismatch,
+        },
+        KamaciteCorpusEntry {
+            relative_path: "negative/proof-mismatch.receipt.preserves",
+            bytes: proof_mismatch,
+        },
+        KamaciteCorpusEntry {
+            relative_path: "negative/trace-mismatch.receipt.preserves",
+            bytes: trace_mismatch,
+        },
+        KamaciteCorpusEntry {
+            relative_path: "negative/overclaim.receipt.preserves",
+            bytes: overclaim,
+        },
+        KamaciteCorpusEntry {
+            relative_path: "negative/stale-receipt-identity.txt",
+            bytes: stale_identity,
+        },
+    ];
+    let unique_paths = entries
+        .iter()
+        .map(|entry| entry.relative_path)
+        .collect::<BTreeSet<_>>();
+    if unique_paths.len() != entries.len() {
+        return Err(String::from("Kamacite corpus contains duplicate paths"));
+    }
+    Ok(entries)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::build_kamacite_corpus;
+
+    const MINIMUM_POSITIVE_CASES: usize = 10;
+    const MINIMUM_NEGATIVE_CASES: usize = 10;
+
+    fn must<T, E: std::fmt::Debug>(result: Result<T, E>) -> T {
+        match result {
+            Ok(value) => value,
+            Err(error) => panic!("expected success, got {error:?}"),
+        }
+    }
+
+    fn must_some<T>(value: Option<T>) -> T {
+        match value {
+            Some(value) => value,
+            None => panic!("expected a checked-in corpus fixture"),
+        }
+    }
+
+    fn checked_in_fixture(relative_path: &str) -> Option<&'static [u8]> {
+        let bytes: &[u8] = match relative_path {
+            "positive/profile.preserves" => {
+                include_bytes!("../../../fixtures/kamacite/positive/profile.preserves")
+            }
+            "positive/lifecycle.preserves" => {
+                include_bytes!("../../../fixtures/kamacite/positive/lifecycle.preserves")
+            }
+            "positive/machine.preserves" => {
+                include_bytes!("../../../fixtures/kamacite/positive/machine.preserves")
+            }
+            "positive/admitted-ir.preserves" => {
+                include_bytes!("../../../fixtures/kamacite/positive/admitted-ir.preserves")
+            }
+            "positive/admission.receipt.preserves" => {
+                include_bytes!("../../../fixtures/kamacite/positive/admission.receipt.preserves")
+            }
+            "positive/lifecycle.receipt.preserves" => {
+                include_bytes!("../../../fixtures/kamacite/positive/lifecycle.receipt.preserves")
+            }
+            "positive/source.receipt.preserves" => {
+                include_bytes!("../../../fixtures/kamacite/positive/source.receipt.preserves")
+            }
+            "positive/proof-reference.receipt.preserves" => include_bytes!(
+                "../../../fixtures/kamacite/positive/proof-reference.receipt.preserves"
+            ),
+            "positive/exhaustiveness.receipt.preserves" => include_bytes!(
+                "../../../fixtures/kamacite/positive/exhaustiveness.receipt.preserves"
+            ),
+            "positive/trace.receipt.preserves" => {
+                include_bytes!("../../../fixtures/kamacite/positive/trace.receipt.preserves")
+            }
+            "positive/adapter-identity.txt" => {
+                include_bytes!("../../../fixtures/kamacite/positive/adapter-identity.txt")
+            }
+            "negative/malformed.preserves" => {
+                include_bytes!("../../../fixtures/kamacite/negative/malformed.preserves")
+            }
+            "negative/json-substitution.json" => {
+                include_bytes!("../../../fixtures/kamacite/negative/json-substitution.json")
+            }
+            "negative/noncanonical.preserves" => {
+                include_bytes!("../../../fixtures/kamacite/negative/noncanonical.preserves")
+            }
+            "negative/unsupported-profile.preserves" => {
+                include_bytes!("../../../fixtures/kamacite/negative/unsupported-profile.preserves")
+            }
+            "negative/global-enumeration.preserves" => {
+                include_bytes!("../../../fixtures/kamacite/negative/global-enumeration.preserves")
+            }
+            "negative/lifecycle-mismatch.preserves" => {
+                include_bytes!("../../../fixtures/kamacite/negative/lifecycle-mismatch.preserves")
+            }
+            "negative/proof-mismatch.receipt.preserves" => include_bytes!(
+                "../../../fixtures/kamacite/negative/proof-mismatch.receipt.preserves"
+            ),
+            "negative/trace-mismatch.receipt.preserves" => include_bytes!(
+                "../../../fixtures/kamacite/negative/trace-mismatch.receipt.preserves"
+            ),
+            "negative/overclaim.receipt.preserves" => {
+                include_bytes!("../../../fixtures/kamacite/negative/overclaim.receipt.preserves")
+            }
+            "negative/stale-receipt-identity.txt" => {
+                include_bytes!("../../../fixtures/kamacite/negative/stale-receipt-identity.txt")
+            }
+            _ => return None,
+        };
+        Some(bytes)
+    }
+
+    #[test]
+    fn corpus_has_positive_and_negative_cases() {
+        let corpus = must(build_kamacite_corpus());
+        let positives = corpus
+            .iter()
+            .filter(|entry| entry.relative_path.starts_with("positive/"))
+            .count();
+        let negatives = corpus
+            .iter()
+            .filter(|entry| entry.relative_path.starts_with("negative/"))
+            .count();
+        assert!(positives >= MINIMUM_POSITIVE_CASES);
+        assert!(negatives >= MINIMUM_NEGATIVE_CASES);
+    }
+
+    #[test]
+    fn checked_in_corpus_matches_the_current_profile_and_adapter() {
+        let corpus = must(build_kamacite_corpus());
+        for entry in corpus {
+            let checked_in = must_some(checked_in_fixture(entry.relative_path));
+            assert_eq!(checked_in, entry.bytes, "{} is stale", entry.relative_path);
+        }
+    }
+}

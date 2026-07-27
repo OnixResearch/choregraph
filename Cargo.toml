@@ -17,11 +17,13 @@ license = "AGPL-3.0-or-later"
 publish = false
 
 [workspace.dependencies]
+blake3 = "=1.8.2"
 cargo_metadata = "=0.23.1"
 choregraph-core = { path = "crates/choregraph-core", version = "=0.1.0" }
 choregraph-kamacite = { path = "crates/choregraph-kamacite", version = "=0.1.0" }
 choregraph-nickel = { path = "crates/choregraph-nickel", version = "=0.1.0" }
 choregraph-seaglass = { path = "crates/choregraph-seaglass", version = "=0.1.0" }
+preserves = { version = "=5.0.0-rc.7", features = ["serde"] }
 serde = { version = "=1.0.228", features = ["derive"] }
 serde_json = "=1.0.149"
 
