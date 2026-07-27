@@ -16,6 +16,15 @@ Use Verus specifications and proofs beside production Rust. Reuse Trellis primit
 
 Every behavior requires positive and negative tests. Include malformed input, bounds, denial, terminal mutation, stale identity, and mismatched receipt cases.
 
+Run the focused foundation rail before broad Nix validation:
+
+```text
+nix develop -c cargo test --workspace --all-targets
+nix develop -c cargo clippy --workspace --all-targets -- --deny warnings
+nix develop -c cargo run -p choregraph-foundation-check -- --root .
+nix flake check -L
+```
+
 Use named constants for non-trivial numeric values. Use BLAKE3 for project-owned identities.
 
 ## Lifecycle and VCS

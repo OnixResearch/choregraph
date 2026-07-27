@@ -1,0 +1,45 @@
+# Foundation architecture
+
+Choregraph uses one pure machine core and one-way adapter dependencies.
+
+## Workspace direction
+
+```text
+choregraph-core
+  <- choregraph-kamacite
+  <- choregraph-nickel
+  <- choregraph-seaglass
+
+choregraph-core + all adapters
+  <- choregraph-cli
+```
+
+`choregraph-foundation-check` is a private repository tool. Product crates do not depend on this tool.
+
+## Core boundary
+
+`choregraph-core` uses `no_std` plus `alloc`. It owns immutable machine data and deterministic decisions after later changes implement them.
+
+The core excludes:
+
+- filesystem and environment access;
+- clocks, processes, and networks;
+- Nickel evaluation and token verification;
+- persistence and receipt issuance;
+- effect execution and runtime authorization.
+
+The foundation checker rejects forbidden dependencies, source tokens, path dependencies, reverse edges, license drift, and unpinned package metadata.
+
+## Adapter boundaries
+
+`choregraph-kamacite` owns conversion to canonical artifact and receipt vocabulary. This adapter does not create behavioral proofs.
+
+`choregraph-nickel` accepts only evaluated data. Source discovery, imports, contracts, and Nickel evaluation remain in a shell.
+
+`choregraph-seaglass` is a conversion-only compatibility boundary. It cannot contain an independent transition implementation.
+
+`choregraph-cli` owns process arguments and terminal output. Later shell behavior must remain separate from the pure core.
+
+## Current claim
+
+Foundation validation covers repository structure and declared boundaries. It does not prove machine, compiler, proof, runtime, consumer, or release correctness.

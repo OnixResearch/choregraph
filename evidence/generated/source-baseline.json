@@ -1,0 +1,148 @@
+{
+  "baseline": {
+    "non_claims": [
+      "a source identity does not prove source correctness",
+      "a reference proof does not transfer to Choregraph",
+      "a content match does not authorize migration or release",
+      "this foundation imports no transition implementation",
+      "local working-tree changes are outside every recorded identity"
+    ],
+    "observed_on": "2026-07-27",
+    "schema": "choregraph.source-baseline.v1",
+    "sources": [
+      {
+        "acquisition_status": "reference-only-not-a-release-input",
+        "content_blake3": "237574a2ad24357886913ecec9fb91deb22859b8898fde97c95d4bd67b67454f",
+        "hash_protocol": "blake3-sorted-path-file-digest-manifest-v1",
+        "hash_scope": "committed files under the listed source scopes",
+        "id": "basalt-authority-boundary",
+        "imported": false,
+        "license": "AGPL-3.0-or-later",
+        "repository": "git@github.com:OnixResearch/basalt.git",
+        "revision": "f10e3fa7e821cb69665caaf1c26624128a5cf0fe",
+        "role": "optional authorization reference outside the core",
+        "source_scopes": [
+          "src",
+          "contracts/authority-core"
+        ],
+        "working_tree_used": false
+      },
+      {
+        "acquisition_status": "reference-only-without-release-acquisition",
+        "content_blake3": "e8dce94d55219a1694ef1ac47f9a2cef6e983c0d04f924c75681ff64648ed8e4",
+        "hash_protocol": "blake3-sorted-path-file-digest-manifest-v1",
+        "hash_scope": "committed files under the listed source scopes",
+        "id": "cap-root-lexical-boundary",
+        "imported": false,
+        "license": "AGPL-3.0-or-later",
+        "repository": "unpublished-local-reference:cap-root",
+        "revision": "8991e2572578c16e590c2f1c0915db6c46c5d9cb",
+        "role": "optional consumer lexical path reference outside the core",
+        "source_scopes": [
+          "crates/cap-root-core/src"
+        ],
+        "working_tree_used": false
+      },
+      {
+        "acquisition_status": "immutable-radicle-reference",
+        "content_blake3": "2573fd529650e74e7966988cf9b2cedeedc363485dfb45b4d18c6ff4086dabcf",
+        "hash_protocol": "blake3-sorted-path-file-digest-manifest-v1",
+        "hash_scope": "committed files under the listed source scopes",
+        "id": "execution-graph-core",
+        "imported": false,
+        "license": "AGPL-3.0-or-later",
+        "repository": "https://git.onix.computer/z2oYsb9jGTyp68BKYhzpivY1eK58a.git",
+        "revision": "c415ddf2c8252dd9ba6cb267a4e6346158069823",
+        "role": "behavior and compatibility baseline",
+        "source_scopes": [
+          "src"
+        ],
+        "working_tree_used": false
+      },
+      {
+        "acquisition_status": "reference-only-not-a-release-input",
+        "content_blake3": "2a1d6a1b6971f8f321553967ebf2ca526525e79c698a85cf7f58c3f9ff3bfe38",
+        "hash_protocol": "blake3-sorted-path-file-digest-manifest-v1",
+        "hash_scope": "committed files under the listed source scopes",
+        "id": "kamacite-interchange-boundary",
+        "imported": false,
+        "license": "AGPL-3.0-or-later",
+        "repository": "git@github.com:OnixResearch/kamacite.git",
+        "revision": "6245a52498f7de511df660eabec3f9b350338cb6",
+        "role": "canonical artifact and receipt vocabulary reference",
+        "source_scopes": [
+          "crates/kamacite-core/src",
+          "schemas/preserves",
+          "docs/fsm-spec-receipts.md"
+        ],
+        "working_tree_used": false
+      },
+      {
+        "acquisition_status": "reference-only-not-a-release-input",
+        "content_blake3": "d50434a3c52d413c14c1489b7d159b8f012c4ba96b18020f72b0eba640c560a2",
+        "hash_protocol": "blake3-sorted-path-file-digest-manifest-v1",
+        "hash_scope": "committed files under the listed source scopes",
+        "id": "lattice-first-consumer",
+        "imported": false,
+        "license": "AGPL-3.0-or-later",
+        "repository": "git@github.com:OnixResearch/lattice.git",
+        "revision": "c8d56ad83a57287064edb85f58808f53e4bf4536",
+        "role": "first consumer runtime and capability boundary",
+        "source_scopes": [
+          "src/engine/runner.rs",
+          "src/capability",
+          "src/config"
+        ],
+        "working_tree_used": false
+      },
+      {
+        "acquisition_status": "vendored-reference-in-lattice-revision",
+        "content_blake3": "fcf651777c335fb07654e3425389f7dc223adce053bc74578fc6308a9b6166d6",
+        "hash_protocol": "blake3-sorted-path-file-digest-manifest-v1",
+        "hash_scope": "committed files under the listed source scopes",
+        "id": "lattice-seaglass-vendor",
+        "imported": false,
+        "license": "AGPL-3.0-or-later",
+        "repository": "git@github.com:OnixResearch/lattice.git",
+        "revision": "c8d56ad83a57287064edb85f58808f53e4bf4536",
+        "role": "current Lattice compatibility snapshot",
+        "source_scopes": [
+          "vendor-cargo-deps/seaglass-execution-graph/src"
+        ],
+        "working_tree_used": false
+      },
+      {
+        "acquisition_status": "provenance-reference-through-execution-graph-evidence",
+        "content_blake3": "91450b94f6256c71057507b6ae97f63e505dc57377198be38087530bedefccb4",
+        "hash_protocol": "blake3-file-bytes-v1",
+        "hash_scope": "source file mapped by the execution-graph source baseline",
+        "id": "seaglass-upstream-source",
+        "imported": false,
+        "license": "AGPL-3.0-or-later",
+        "repository": "git@github.com:brittonr/seaglass.git",
+        "revision": "9d8726556045cbdb990ec32024cf6145b4b6cdfc",
+        "role": "original execution-graph implementation provenance",
+        "source_scopes": [
+          "seaglass-execution-graph/src/lib.rs"
+        ],
+        "working_tree_used": false
+      },
+      {
+        "acquisition_status": "reference-only-until-an-exact-primitive-is-selected",
+        "content_blake3": "6de52f1bdf9b39a0bf365cf1b5c7088c9c5f0277d6c65bdd00d7977bb3250237",
+        "hash_protocol": "blake3-sorted-path-file-digest-manifest-v1",
+        "hash_scope": "committed files under the listed source scopes",
+        "id": "trellis-proof-reference",
+        "imported": false,
+        "license": "AGPL-3.0-or-later",
+        "repository": "git@github.com:OnixResearch/trellis.git",
+        "revision": "aead4527bfc3c714e71669bce656719dd2a6b2e2",
+        "role": "verified primitive and proof-pattern reference",
+        "source_scopes": [
+          "src"
+        ],
+        "working_tree_used": false
+      }
+    ]
+  }
+}

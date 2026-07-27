@@ -1,0 +1,21 @@
+[package]
+name = "choregraph-cli"
+description = "Imperative command shell for Choregraph."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+choregraph-core.workspace = true
+choregraph-kamacite.workspace = true
+choregraph-nickel.workspace = true
+choregraph-seaglass.workspace = true
+
+[[bin]]
+name = "choregraph"
+path = "src/main.rs"

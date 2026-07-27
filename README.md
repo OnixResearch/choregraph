@@ -6,7 +6,9 @@ The project will lower reviewed, data-oriented Nickel graphs into canonical mach
 
 ## Status
 
-Only lifecycle and architecture plans exist. No implementation, proof, compiler, or release claim exists yet.
+The buildable foundation exists. It includes the workspace, typed boundaries, source provenance, pinned tools, and positive and negative architecture validation.
+
+Machine semantics, lowering, formal proofs, compatibility parity, and release evidence do not exist yet.
 
 ## Owned boundary
 
@@ -48,7 +50,7 @@ A denied transition must preserve state and emit no effects.
 
 See [`docs/implementation-order.md`](docs/implementation-order.md) for the dependency-ordered Choregraph, execution-graph, and Lattice Cairn changes.
 
-## Planned workspace
+## Workspace
 
 ```text
 crates/choregraph-core/
@@ -56,11 +58,23 @@ crates/choregraph-kamacite/
 crates/choregraph-nickel/
 crates/choregraph-seaglass/
 crates/choregraph-cli/
-contracts/
-fixtures/positive/
-fixtures/negative/
-proofs/
+tools/choregraph-foundation-check/
+fixtures/foundation/
+evidence/
 ```
+
+See [`docs/architecture.md`](docs/architecture.md) for the one-way dependency boundary.
+
+## Validation
+
+```text
+nix develop -c cargo test --workspace --all-targets
+nix develop -c cargo clippy --workspace --all-targets -- --deny warnings
+nix develop -c cargo run -p choregraph-foundation-check -- --root .
+nix flake check -L
+```
+
+See [`docs/foundation-validation.md`](docs/foundation-validation.md) for the complete foundation rail.
 
 ## License
 
@@ -68,10 +82,10 @@ Choregraph preserves the source implementation license: `AGPL-3.0-or-later`. No 
 
 ## References
 
-- [`../execution-graph/`](../execution-graph/) — existing deterministic DAG implementation and compatibility baseline.
-- [`../trellis/`](../trellis/) — verified DAG, lifecycle, scheduler, replay, and choreography primitives.
-- [`../kamacite/`](../kamacite/) — canonical Preserves artifacts, source envelopes, FSM descriptors, and receipts.
-- [`../lattice/`](../lattice/) — first consumer and Seaglass compatibility target.
-- [`../basalt/`](../basalt/) — bounded Nickel and UCAN authorization boundary.
-- [`../cap-root/`](../cap-root/) — pure lexical path admission before capability-relative I/O.
+- [execution-graph](https://git.onix.computer/z2oYsb9jGTyp68BKYhzpivY1eK58a.git) — existing deterministic DAG implementation and compatibility baseline.
+- [Trellis](https://github.com/OnixResearch/trellis) — verified DAG, lifecycle, scheduler, replay, and choreography primitives.
+- [Kamacite](https://github.com/OnixResearch/kamacite) — canonical Preserves artifacts, source envelopes, FSM descriptors, and receipts.
+- [Lattice](https://github.com/OnixResearch/lattice) — first consumer and Seaglass compatibility target.
+- [Basalt](https://github.com/OnixResearch/basalt) — bounded Nickel and UCAN authorization boundary.
+- [cap-root baseline](evidence/source-baseline.ncl) — pure lexical path admission before capability-relative I/O.
 - [`cap-std`](https://github.com/bytecodealliance/cap-std) — capability-oriented filesystem I/O used by consumer shells.
