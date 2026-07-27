@@ -203,7 +203,7 @@ let ProofManifest = {
       },
       {
         path = "verus/trace-failure-fixtures/failure_index_skips_denial.rs",
-        blake3 = "e5e0ec109328138953cb3f0d752cc2d2dfa6752bf1b8f5493db48a9ec7180be2",
+        blake3 = "77796d593dfee1e40bd20146a32bc9cd171685529489f19e7f57e3b1e9cbd3d6",
         role = "negative first-failure index fixture",
       },
       {
