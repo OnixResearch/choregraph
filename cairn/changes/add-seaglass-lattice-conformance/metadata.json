@@ -1,0 +1,6 @@
+{
+  "depends_on": [
+    "add-restricted-nickel-lowering",
+    "prove-trace-replay-safety"
+  ]
+}
