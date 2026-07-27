@@ -17,14 +17,19 @@
 // r[impl choregraph.machine.denial]
 // r[impl choregraph.machine.effect_intents]
 // r[impl choregraph.proof.single_step.production_linkage]
+// r[impl choregraph.proof.trace.model]
+// r[impl choregraph.proof.trace.replay]
+// r[impl choregraph.proof.trace.failure]
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 
 use crate::id::{AbilityId, NodeId, OperationId, PayloadRef, RequestId, ResourceId};
 use crate::invariant::{effects_allowed, invariant, terminal_states_preserved};
 use crate::model::{
-    Action, AdmittedMachine, Decision, DenialReason, EffectDeclaration, EffectIntent, EffectKey,
-    EffectRequest, Event, LocalState, LocalTransitionError, MachineState, TransitionSelector,
+    Action, AdmittedMachine, ConsumedCount, Decision, DenialReason, EffectDeclaration,
+    EffectIntent, EffectKey, EffectRequest, Event, EventIndex, LastValidState, LocalState,
+    LocalTransitionError, MachineState, ReplayDecision, ReplayFailure, ReplayFailureReason,
+    ReplayInput, TransitionSelector,
 };
 use crate::verified::{
     ACTION_CANCEL, ACTION_COMPLETE, ACTION_FAIL, ACTION_MARK_READY, ACTION_START,
@@ -339,4 +344,86 @@ pub fn step(machine: &AdmittedMachine, state: &MachineState, event: &Event) -> D
         &requested_indices,
     );
     public_decision_from_indexed(machine, state, event, from, indexed)
+}
+
+fn replay_failure(
+    event_index: Option<EventIndex>,
+    consumed: ConsumedCount,
+    reason: ReplayFailureReason,
+    last_valid_state: MachineState,
+) -> ReplayDecision {
+    ReplayDecision::Failed(ReplayFailure {
+        event_index,
+        consumed,
+        reason,
+        last_valid_state: LastValidState::new(last_valid_state),
+    })
+}
+
+/// Replays a bounded event trace through the production transition relation.
+///
+/// Accepted effect intents are checked by [`step`] and then discarded. Replay output contains no
+/// intent field and grants no dispatch authority.
+#[must_use]
+pub fn replay(input: ReplayInput<'_>) -> ReplayDecision {
+    let trace_events = input.trace.events();
+    let initial_state = input.initial_state.clone();
+    if trace_events.len() > input.limits.max_events {
+        return replay_failure(
+            None,
+            ConsumedCount::new(0),
+            ReplayFailureReason::TraceLimitExceeded {
+                observed: trace_events.len(),
+                maximum: input.limits.max_events,
+            },
+            initial_state,
+        );
+    }
+    let trace_bindings = input.trace.bindings();
+    if trace_bindings.machine != input.expected_bindings.machine {
+        return replay_failure(
+            None,
+            ConsumedCount::new(0),
+            ReplayFailureReason::MachineBindingMismatch,
+            initial_state,
+        );
+    }
+    if trace_bindings.initial_state != input.expected_bindings.initial_state {
+        return replay_failure(
+            None,
+            ConsumedCount::new(0),
+            ReplayFailureReason::InitialStateBindingMismatch,
+            initial_state,
+        );
+    }
+    if !invariant(input.machine, input.initial_state) {
+        return replay_failure(
+            None,
+            ConsumedCount::new(0),
+            ReplayFailureReason::InitialStateInvalid,
+            initial_state,
+        );
+    }
+
+    let mut last_valid_state = initial_state;
+    for (event_index, event) in trace_events.iter().enumerate() {
+        match step(input.machine, &last_valid_state, event) {
+            Decision::Accept { next, intents: _ } => {
+                last_valid_state = next;
+            }
+            Decision::Deny { reason } => {
+                return replay_failure(
+                    Some(EventIndex::new(event_index)),
+                    ConsumedCount::new(event_index),
+                    ReplayFailureReason::TransitionDenied(reason),
+                    last_valid_state,
+                );
+            }
+        }
+    }
+
+    ReplayDecision::Complete {
+        final_state: last_valid_state,
+        consumed: ConsumedCount::new(trace_events.len()),
+    }
 }

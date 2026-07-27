@@ -12,6 +12,8 @@ mod transition;
 mod verified;
 #[path = "verified/topology.rs"]
 mod verified_topology;
+#[path = "verified/trace.rs"]
+mod verified_trace;
 
 pub use analytics::{
     bottlenecks, critical_path, parallel_groups, ready_nodes, resume_decision, would_create_cycle,
@@ -29,12 +31,14 @@ pub use invariant::{
 };
 pub use model::{
     Action, AdmissionDiagnostic, AdmissionDiagnosticCode, AdmissionLimits, AdmittedMachine,
-    Bottleneck, DEFAULT_MAX_EDGES, DEFAULT_MAX_EFFECT_DECLARATIONS, DEFAULT_MAX_EVENT_BYTES,
-    DEFAULT_MAX_IDENTIFIER_BYTES, DEFAULT_MAX_INTENT_BYTES, DEFAULT_MAX_INTENTS_PER_TRANSITION,
-    DEFAULT_MAX_NODES, DEFAULT_MAX_OPERATIONS, DEFAULT_MAX_REFERENCE_BYTES, Decision, DenialReason,
-    Edge, EdgeSpec, EffectDeclaration, EffectDeclarationSpec, EffectIntent, EffectRequest, Event,
-    InvariantIssue, LINEAR_LIFECYCLE_V1, LifecycleProfile, LimitKind, LocalState,
+    Bottleneck, BoundedTrace, ConsumedCount, DEFAULT_MAX_EDGES, DEFAULT_MAX_EFFECT_DECLARATIONS,
+    DEFAULT_MAX_EVENT_BYTES, DEFAULT_MAX_IDENTIFIER_BYTES, DEFAULT_MAX_INTENT_BYTES,
+    DEFAULT_MAX_INTENTS_PER_TRANSITION, DEFAULT_MAX_NODES, DEFAULT_MAX_OPERATIONS,
+    DEFAULT_MAX_REFERENCE_BYTES, DEFAULT_MAX_TRACE_EVENTS, Decision, DenialReason, Edge, EdgeSpec,
+    EffectDeclaration, EffectDeclarationSpec, EffectIntent, EffectRequest, Event, EventIndex,
+    InvariantIssue, LINEAR_LIFECYCLE_V1, LastValidState, LifecycleProfile, LimitKind, LocalState,
     LocalTransitionError, MACHINE_SCHEMA_V1, MachineSpec, MachineState, NodeSpec, ParallelGroup,
-    ResumeDecision, TransitionSelector,
+    ReplayBindings, ReplayDecision, ReplayFailure, ReplayFailureReason, ReplayInput, ReplayLimits,
+    ResumeDecision, TRACE_BINDING_BYTES, TraceBinding, TransitionSelector,
 };
-pub use transition::{lifecycle_target, step};
+pub use transition::{lifecycle_target, replay, step};
