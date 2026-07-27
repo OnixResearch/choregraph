@@ -24,17 +24,19 @@ The required CLI shell must use `cap-root` before `cap-std` I/O. The local `cap-
 
 The local `cap-root` policy states that consumers must not add sibling path dependencies. Adoption requires a published immutable Git revision and aligned Cargo and Nix source identity.
 
-Observed local candidate revision:
+The reviewed `main` commit and local candidate are:
 
 ```text
-6003544ef57651414e779411ac3a6f2c804a9e56
+8991e2572578c16e590c2f1c0915db6c46c5d9cb
 ```
 
-The existing Choregraph source baseline records an older reference-only revision. Neither revision is an admitted release source.
+Jujutsu reports `6003544ef57651414e779411ac3a6f2c804a9e56` for the empty working-copy commit above `main`. That commit has no tree delta and is not the publication candidate.
+
+The Choregraph source baseline already records the reviewed `main` commit and its source identity. The identity is `e8dce94d55219a1694ef1ac47f9a2cef6e983c0d04f924c75681ff64648ed8e4` for `crates/cap-root-core/src` under the recorded manifest protocol. This local identity is still not an admitted release source.
 
 ## Required resolution
 
-1. Publish a reviewed immutable `cap-root` revision.
+1. Publish reviewed `cap-root` commit `8991e2572578c16e590c2f1c0915db6c46c5d9cb` as an immutable source, or review a replacement commit.
 2. Record its anonymous acquisition URL, revision, license, and source identity.
 3. Align the exact Cargo dependency and Nix source.
 4. Add `cap-std` `4.0.2` in the CLI shell only.
