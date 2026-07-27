@@ -108,7 +108,7 @@ let SourceBaseline = import "source-baseline-contract.ncl" in
       },
       {
         id = "trellis-proof-reference",
-        role = "adapted lifecycle readiness and topological proof-pattern source",
+        role = "adapted lifecycle, readiness, topology, and finite-trace proof-pattern source",
         repository = "git@github.com:OnixResearch/trellis.git",
         revision = "aead4527bfc3c714e71669bce656719dd2a6b2e2",
         source_scopes = ["src"],

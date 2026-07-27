@@ -15,7 +15,7 @@ let Project = {
   project | Project = {
     name = "choregraph",
     license = "AGPL-3.0-or-later",
-    status = "single-step-verified-indexed-kernel",
+    status = "finite-trace-verified-indexed-kernel",
     core = "pure-no-std-plus-alloc-machine-boundary",
     first_consumer = "lattice-seaglass",
     workspace_members = [
@@ -38,6 +38,6 @@ let Project = {
       "receipt-issuance",
       "effect-execution",
     ],
-    claim_scope = "named-single-step-properties-over-production-called-indexed-kernel",
+    claim_scope = "named-single-step-and-finite-trace-properties-over-production-called-indexed-kernel",
   },
 }

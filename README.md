@@ -10,7 +10,7 @@ The buildable foundation, executable machine semantics, and Kamacite interchange
 
 Pure lowering from contracted evaluated Nickel data now exists. The capability-relative evaluator shell remains blocked on a published immutable `cap-root` source.
 
-A production-linked Verus rail now proves the named single-step properties of the indexed kernel. A pinned Octet consumer gate checks every workspace target with all Octet lints at error severity. Trace proofs, compatibility parity, and release evidence do not exist yet.
+Production-linked Verus rails now prove the named single-step and finite-trace properties of the indexed kernel. Replay folds the production `step` relation, reports the first denial, and returns no dispatchable intents. A pinned Octet consumer gate checks every workspace target with all Octet lints at error severity. Compatibility parity and release evidence do not exist yet.
 
 ## Owned boundary
 
@@ -69,7 +69,9 @@ See [`docs/architecture.md`](docs/architecture.md) for the one-way dependency bo
 
 See [`docs/machine-semantics.md`](docs/machine-semantics.md) for the executable transition model and current non-claims.
 
-See [`docs/single-step-verification.md`](docs/single-step-verification.md) for the production linkage, theorems, trust boundary, and proof commands.
+See [`docs/single-step-verification.md`](docs/single-step-verification.md) for the single-step production linkage and proof boundary.
+
+See [`docs/trace-replay-verification.md`](docs/trace-replay-verification.md) for bounded replay, finite-trace theorems, exact failure behavior, and non-claims.
 
 See [`docs/kamacite-profile.md`](docs/kamacite-profile.md) for the selected codec, schemas, identity rules, and receipt boundary.
 

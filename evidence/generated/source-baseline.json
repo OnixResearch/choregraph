@@ -137,7 +137,7 @@
         "license": "MPL-2.0",
         "repository": "git@github.com:OnixResearch/trellis.git",
         "revision": "aead4527bfc3c714e71669bce656719dd2a6b2e2",
-        "role": "adapted lifecycle readiness and topological proof-pattern source",
+        "role": "adapted lifecycle, readiness, topology, and finite-trace proof-pattern source",
         "source_scopes": [
           "src"
         ],

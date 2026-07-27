@@ -106,7 +106,7 @@ let ProofManifest = {
       },
       {
         path = "config/project.ncl",
-        blake3 = "42d0ad717676bd2f6d5789e0fdc03a8594ee36811fd6c5875f35a7c7241e4c88",
+        blake3 = "0c2c754868bd94b6590b2260e46885dc19a440f3b2bba078e88385e38b6eb714",
         role = "reviewed project claim boundary",
       },
       {
@@ -131,17 +131,17 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/lib.rs",
-        blake3 = "9d27e6ca73e8c177c0c5ffa3d2cfb58787ef39899ed45da5dfe4ae6997654a3f",
+        blake3 = "f491db7f9671a151f7985384cc7a937db21b271d44299455a6211ce7dc377b5a",
         role = "production module linkage",
       },
       {
         path = "crates/choregraph-core/src/model.rs",
-        blake3 = "0b3404bc9c9410e991f39697e23fa8d0be910157508c615726ef19a928b0d047",
+        blake3 = "883ff13ba2ef4c81629767449522519302433f742e984b1d720359b939fc7b76",
         role = "production indexed machine fields",
       },
       {
         path = "crates/choregraph-core/src/transition.rs",
-        blake3 = "7a44539817dfb7fc9ba7715b4eda9371a567a35ab976cdf493c7bdcc8f389d88",
+        blake3 = "7fb94f703451facdad98fc3d4e3b2d4b9c4834df4dde439941074dec6bf49ddb",
         role = "production transition shell and kernel delegation",
       },
       {
@@ -156,17 +156,17 @@ let ProofManifest = {
       },
       {
         path = "evidence/generated/source-baseline.json",
-        blake3 = "7f5f0e45c3d883ff0df5f30dcf310e18a88de8e30c7b85570182196b91c2c268",
+        blake3 = "8e672be8748e579f84f4c91980bbc1a477a8ca511cb90520293d75a2bacd538c",
         role = "canonical selected-source baseline",
       },
       {
         path = "evidence/source-baseline.ncl",
-        blake3 = "05e8b9e81b6c9f8ef0a5a0ffaf87ad9075b52698276b00784a51abf10dd5f608",
+        blake3 = "9a76e62c070ef343a0f1d2a633511c8e37abe2790a130d4396bd210d8f558547",
         role = "reviewed selected-source baseline",
       },
       {
         path = "flake.nix",
-        blake3 = "d1468cb685799096113c8c8f5357ab3dae6a89cfaba90d323b3c2161bc5c4d14",
+        blake3 = "941f18512bbbdeb4ab3ab0fcfaa959735156f034e99ab2aae191853585f62fca",
         role = "maintained proof and failure-fixture gate",
       },
       {
@@ -254,7 +254,7 @@ let ProofManifest = {
     non_claims = [
       "This evidence does not prove Verus, Z3, rustc, vstd, the allocator, or the operating system.",
       "This evidence does not prove arbitrary Nickel evaluation or source-to-index semantic equivalence.",
-      "This evidence does not prove runtime authorization, effect execution, persistence, scheduling, liveness, or trace induction.",
+      "This evidence does not prove runtime authorization, effect execution, persistence, scheduling, or liveness. Finite-trace claims require the separate trace rail.",
       "Trellis source identities record adapted proof inputs and do not transfer Trellis certification.",
     ],
   },

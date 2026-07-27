@@ -61,4 +61,4 @@ A bounded property test covers every node and edge input order for the Lattice d
 
 The single-step Verus rail proves named properties for the production-called indexed kernel. See [`single-step-verification.md`](single-step-verification.md).
 
-The executable tests remain regression evidence. The single-step proof does not prove trace safety or the identifier-map adapter.
+The finite-trace rail proves invariant preservation for the indexed replay fold. The public replay API calls production `step`, discards historical intents, and has executable parity tests. Verus does not prove the identifier-map adapter or caller-supplied identity derivation.

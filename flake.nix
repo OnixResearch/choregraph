@@ -337,6 +337,132 @@
                 printf '%s\n' "$closure_digest" > "$out/verus-closure.blake3"
               '';
 
+          # r[verify choregraph.proof.trace.lemmas]
+          # r[verify choregraph.proof.trace.preservation]
+          # r[verify choregraph.proof.trace.determinism]
+          # r[verify choregraph.proof.trace.failure]
+          # r[verify choregraph.proof.trace.replay]
+          # r[verify choregraph.proof.trace.evidence]
+          # r[verify choregraph.proof.trace.validation]
+          trace-replay-verus =
+            pkgs.runCommand "choregraph-trace-replay-verus"
+              {
+                nativeBuildInputs = [
+                  pkgs.b3sum
+                  pkgs.coreutils
+                  pkgs.diffutils
+                  pkgs.gnugrep
+                  pkgs.jq
+                  pkgs.nickel
+                  productionVerus
+                ];
+                src = self;
+              }
+              ''
+                set -eu
+                cd "$src"
+
+                octet-production-verus --identity > "$TMPDIR/verus-identity.txt"
+                grep -F 'proof-verifier: verus@0.2026.05.17.e479cce' \
+                  "$TMPDIR/verus-identity.txt" > /dev/null
+                grep -F 'proof-verifier-source-revision: e479cce36490b8fa4b0fd7755aa742aec354372c' \
+                  "$TMPDIR/verus-identity.txt" > /dev/null
+                grep -F 'proof-verifier-binary-blake3: 2aafa795a63160e2b262e0d8df00ad237766ed87fcd7fe9a981034207b1367c7' \
+                  "$TMPDIR/verus-identity.txt" > /dev/null
+                grep -F 'proof-toolchain: 1.95.0-x86_64-unknown-linux-gnu' \
+                  "$TMPDIR/verus-identity.txt" > /dev/null
+                grep -F 'proof-toolchain-blake3: 4b001492d51b266eef82aeb98469d135d60f63d2720d24d9712c1e83fa10c9e3' \
+                  "$TMPDIR/verus-identity.txt" > /dev/null
+                grep -F 'proof-solver-blake3: 42e48a26bf3b38ca33d84749f4317cc179791de0d578d4d98a67f51782b54331' \
+                  "$TMPDIR/verus-identity.txt" > /dev/null
+                closure_digest="$(cat ${productionVerusClosureManifest}/octet-production-verus-closure.graph.blake3)"
+                test "$closure_digest" = '5f20a8243ed93278d1574e4269838858e99489abd1158f23ab2ffa8471a8d43b'
+
+                octet-production-verus --crate-type=lib verus/proofs/trace_replay.rs \
+                  -o "$TMPDIR/trace-replay.rlib" \
+                  > "$TMPDIR/positive.stdout" 2> "$TMPDIR/positive.stderr"
+                grep -E 'verification results:: [1-9][0-9]* verified, 0 errors' \
+                  "$TMPDIR/positive.stdout" > /dev/null
+
+                for fixture in verus/trace-failure-fixtures/*.rs; do
+                  fixture_name="$(basename "$fixture")"
+                  case "$fixture_name" in
+                    empty_trace_mutation.rs) expected='replay_final_states_from_spec' ;;
+                    failure_index_skips_denial.rs) expected='replay_failure_index_from_spec' ;;
+                    preservation_without_initial_invariant.rs) expected='indexed_invariant_spec' ;;
+                    replay_with_dispatch_intent.rs) expected='replay_dispatch_intents_spec' ;;
+                    *) echo "unclassified trace failure fixture: $fixture_name" >&2; exit 1 ;;
+                  esac
+                  set +e
+                  octet-production-verus --crate-type=lib "$fixture" \
+                    > "$TMPDIR/negative.stdout" 2> "$TMPDIR/negative.stderr"
+                  negative_status="$?"
+                  set -e
+                  if [ "$negative_status" -eq 0 ]; then
+                    echo "negative trace fixture unexpectedly passed: $fixture_name" >&2
+                    exit 1
+                  fi
+                  grep -F 'postcondition not satisfied' "$TMPDIR/negative.stderr" > /dev/null
+                  grep -F "$expected" "$TMPDIR/negative.stderr" > /dev/null
+                done
+
+                if grep -R -E '#\[verifier::external_body\]|assume_specification|\bassume[[:space:]]*\(|\baxiom\b' \
+                  crates/choregraph-core/src/verified.rs \
+                  crates/choregraph-core/src/verified/trace.rs; then
+                  echo 'trace proof core gained an unrecorded trust escape' >&2
+                  exit 1
+                fi
+                grep -F 'match step(input.machine, &last_valid_state, event)' \
+                  crates/choregraph-core/src/transition.rs > /dev/null
+                grep -F 'Decision::Accept { next, intents: _ }' \
+                  crates/choregraph-core/src/transition.rs > /dev/null
+                grep -F '../../crates/choregraph-core/src/verified.rs' \
+                  verus/proofs/trace_replay.rs > /dev/null
+                grep -F '../../crates/choregraph-core/src/verified/trace.rs' \
+                  verus/proofs/trace_replay.rs > /dev/null
+                if grep -A12 -F 'pub enum ReplayDecision' \
+                  crates/choregraph-core/src/model.rs | grep -E 'intents|dispatch'; then
+                  echo 'replay decision gained dispatch authority' >&2
+                  exit 1
+                fi
+                if grep -F '(STATE_PENDING, ACTION_MARK_READY)' \
+                  crates/choregraph-core/src/verified/trace.rs; then
+                  echo 'trace proof regained an independent lifecycle table' >&2
+                  exit 1
+                fi
+
+                nickel export --format json evidence/trace-replay-proof.ncl \
+                  > "$TMPDIR/proof-manifest-raw.json"
+                jq -S . "$TMPDIR/proof-manifest-raw.json" \
+                  > "$TMPDIR/proof-manifest.json"
+                diff --unified evidence/generated/trace-replay-proof.json \
+                  "$TMPDIR/proof-manifest.json"
+                expected_manifest_hash="$(cat evidence/generated/trace-replay-proof.blake3)"
+                observed_manifest_hash="$(b3sum evidence/generated/trace-replay-proof.json)"
+                test "''${observed_manifest_hash%% *}" = "$expected_manifest_hash"
+                jq --exit-status '
+                  .proof.schema == "choregraph.trace-replay-proof.v1"
+                  and .proof.status == "verified"
+                  and .proof.limits.max_trace_events == 65536
+                  and (.proof.theorems | length) == 6
+                  and (.proof.negative_fixtures | length) == 4
+                  and .proof.trusted_surface.project_trusted_declarations == []
+                  and (.proof.non_claims | length) >= 5
+                ' "$TMPDIR/proof-manifest.json" > /dev/null
+                jq --raw-output '.proof.sources[] | [.path, .blake3] | @tsv' \
+                  "$TMPDIR/proof-manifest.json" \
+                  | while IFS="$(printf '\t')" read -r source_path expected_hash; do
+                      observed_hash="$(b3sum "$source_path")"
+                      test "''${observed_hash%% *}" = "$expected_hash"
+                    done
+
+                mkdir -p "$out"
+                cp "$TMPDIR/verus-identity.txt" "$out/verus-identity.txt"
+                cp "$TMPDIR/positive.stdout" "$out/positive.stdout"
+                cp "$TMPDIR/proof-manifest.json" "$out/proof-manifest.json"
+                printf '%s\n' "$closure_digest" > "$out/verus-closure.blake3"
+              '';
+
           foundation-boundaries =
             pkgs.runCommand "choregraph-foundation-boundaries"
               {
@@ -486,8 +612,8 @@
                   exit 1
                 fi
                 jq --exit-status '
-                  .project.status == "single-step-verified-indexed-kernel"
-                  and .project.claim_scope == "named-single-step-properties-over-production-called-indexed-kernel"
+                  .project.status == "finite-trace-verified-indexed-kernel"
+                  and .project.claim_scope == "named-single-step-and-finite-trace-properties-over-production-called-indexed-kernel"
                 ' "$TMPDIR/project.json" > /dev/null
                 jq --exit-status '.toolchain.claim_scope == "pinned-tool-identity-only-not-tool-soundness"' \
                   "$TMPDIR/toolchain.json" > /dev/null
