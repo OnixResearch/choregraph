@@ -2,80 +2,36 @@
 
 extern crate alloc;
 
-use alloc::vec::Vec;
+mod admission;
+mod analytics;
+mod boundary;
+mod id;
+mod invariant;
+mod model;
+mod transition;
 
-/// A capability that can occur at a Choregraph trust boundary.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum Capability {
-    ImmutableMachineData,
-    DeterministicDecision,
-    FileSystem,
-    Environment,
-    Clock,
-    Process,
-    Network,
-    NickelEvaluation,
-    TokenVerification,
-    Persistence,
-    ReceiptIssuance,
-    EffectExecution,
-}
-
-/// The only production implementation policy accepted by Choregraph.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum TransitionImplementationPolicy {
-    ChoregraphCoreOnly,
-}
-
-/// The foundation claim does not include machine or proof correctness.
-pub const FOUNDATION_CLAIM: &str = "repository-boundary-only-unverified";
-
-/// The transition implementation policy for every compatibility adapter.
-pub const TRANSITION_IMPLEMENTATION_POLICY: TransitionImplementationPolicy =
-    TransitionImplementationPolicy::ChoregraphCoreOnly;
-
-const EXCLUDED_CAPABILITIES: &[Capability] = &[
-    Capability::FileSystem,
-    Capability::Environment,
-    Capability::Clock,
-    Capability::Process,
-    Capability::Network,
-    Capability::NickelEvaluation,
-    Capability::TokenVerification,
-    Capability::Persistence,
-    Capability::ReceiptIssuance,
-    Capability::EffectExecution,
-];
-
-/// Returns true only for capabilities owned by the future pure machine core.
-#[must_use]
-pub const fn permits(capability: Capability) -> bool {
-    matches!(
-        capability,
-        Capability::ImmutableMachineData | Capability::DeterministicDecision
-    )
-}
-
-/// Returns the explicit authority that remains outside the core.
-#[must_use]
-pub fn excluded_capabilities() -> Vec<Capability> {
-    EXCLUDED_CAPABILITIES.to_vec()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{Capability, excluded_capabilities, permits};
-
-    #[test]
-    fn permits_pure_machine_capabilities() {
-        assert!(permits(Capability::ImmutableMachineData));
-        assert!(permits(Capability::DeterministicDecision));
-    }
-
-    #[test]
-    fn rejects_every_excluded_authority() {
-        for capability in excluded_capabilities() {
-            assert!(!permits(capability));
-        }
-    }
-}
+pub use analytics::{
+    bottlenecks, critical_path, parallel_groups, ready_nodes, resume_decision, would_create_cycle,
+};
+pub use boundary::{
+    Capability, FOUNDATION_CLAIM, MACHINE_CLAIM, TRANSITION_IMPLEMENTATION_POLICY,
+    TransitionImplementationPolicy, excluded_capabilities, permits,
+};
+pub use id::{
+    AbilityId, BLAKE3_DIGEST_HEX_BYTES, BLAKE3_REFERENCE_BYTES, BLAKE3_REFERENCE_PREFIX, BoundedId,
+    IdentifierError, NodeId, OperationId, PayloadRef, PayloadRefError, RequestId, ResourceId,
+};
+pub use invariant::{
+    effects_allowed, invariant, terminal_states_preserved, validate_invariant, well_formed,
+};
+pub use model::{
+    Action, AdmissionDiagnostic, AdmissionDiagnosticCode, AdmissionLimits, AdmittedMachine,
+    Bottleneck, DEFAULT_MAX_EDGES, DEFAULT_MAX_EFFECT_DECLARATIONS, DEFAULT_MAX_EVENT_BYTES,
+    DEFAULT_MAX_IDENTIFIER_BYTES, DEFAULT_MAX_INTENT_BYTES, DEFAULT_MAX_INTENTS_PER_TRANSITION,
+    DEFAULT_MAX_NODES, DEFAULT_MAX_OPERATIONS, DEFAULT_MAX_REFERENCE_BYTES, Decision, DenialReason,
+    Edge, EdgeSpec, EffectDeclaration, EffectDeclarationSpec, EffectIntent, EffectRequest, Event,
+    InvariantIssue, LINEAR_LIFECYCLE_V1, LifecycleProfile, LimitKind, LocalState,
+    LocalTransitionError, MACHINE_SCHEMA_V1, MachineSpec, MachineState, NodeSpec, ParallelGroup,
+    ResumeDecision, TransitionSelector,
+};
+pub use transition::{lifecycle_target, step};

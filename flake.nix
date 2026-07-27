@@ -192,7 +192,7 @@
 
                 nickel export --format json config/project.ncl > "$TMPDIR/project.json"
                 nickel export --format json config/toolchain.ncl > "$TMPDIR/toolchain.json"
-                jq --exit-status '.project.status == "unverified-foundation"' \
+                jq --exit-status '.project.status == "unverified-machine-semantics"' \
                   "$TMPDIR/project.json" > /dev/null
                 jq --exit-status '.toolchain.claim_scope == "pinned-tool-identity-only-not-tool-soundness"' \
                   "$TMPDIR/toolchain.json" > /dev/null

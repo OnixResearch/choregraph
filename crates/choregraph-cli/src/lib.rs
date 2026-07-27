@@ -1,4 +1,4 @@
-use choregraph_core::{Capability, FOUNDATION_CLAIM, permits};
+use choregraph_core::{Capability, FOUNDATION_CLAIM, MACHINE_CLAIM, permits};
 use choregraph_kamacite::{InterchangeClaim, supports as supports_interchange};
 use choregraph_nickel::{LoweringInputStage, accepts as accepts_lowering};
 use choregraph_seaglass::{CompatibilityMode, accepts as accepts_compatibility};
@@ -32,7 +32,7 @@ pub fn render_foundation_report() -> String {
             && !accepts_compatibility(CompatibilityMode::IndependentTransitionImplementation);
 
     format!(
-        "status={FOUNDATION_CLAIM}\ncore-pure={core_is_pure}\nkamacite-identity-only={kamacite_is_identity_only}\nnickel-evaluated-data-only={nickel_is_evaluated_data_only}\nseaglass-delegate-only={seaglass_is_delegate_only}\n"
+        "status={FOUNDATION_CLAIM}\nmachine-status={MACHINE_CLAIM}\ncore-pure={core_is_pure}\nkamacite-identity-only={kamacite_is_identity_only}\nnickel-evaluated-data-only={nickel_is_evaluated_data_only}\nseaglass-delegate-only={seaglass_is_delegate_only}\n"
     )
 }
 

@@ -6,9 +6,9 @@ The project will lower reviewed, data-oriented Nickel graphs into canonical mach
 
 ## Status
 
-The buildable foundation exists. It includes the workspace, typed boundaries, source provenance, pinned tools, and positive and negative architecture validation.
+The buildable foundation and executable machine semantics exist. The pure core now has bounded admission, aggregate state, lifecycle transitions, effect intents, invariants, and deterministic graph analytics.
 
-Machine semantics, lowering, formal proofs, compatibility parity, and release evidence do not exist yet.
+Lowering, formal proofs, compatibility parity, and release evidence do not exist yet.
 
 ## Owned boundary
 
@@ -64,6 +64,8 @@ evidence/
 ```
 
 See [`docs/architecture.md`](docs/architecture.md) for the one-way dependency boundary.
+
+See [`docs/machine-semantics.md`](docs/machine-semantics.md) for the executable transition model and current non-claims.
 
 ## Validation
 

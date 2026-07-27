@@ -15,7 +15,7 @@ let Project = {
   project | Project = {
     name = "choregraph",
     license = "AGPL-3.0-or-later",
-    status = "unverified-foundation",
+    status = "unverified-machine-semantics",
     core = "pure-no-std-plus-alloc-machine-boundary",
     first_consumer = "lattice-seaglass",
     workspace_members = [
@@ -38,6 +38,6 @@ let Project = {
       "receipt-issuance",
       "effect-execution",
     ],
-    claim_scope = "repository-structure-and-declared-boundaries-only",
+    claim_scope = "executable-examples-only-formal-proof-obligations-open",
   },
 }
