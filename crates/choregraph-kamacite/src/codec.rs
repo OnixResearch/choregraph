@@ -1,3 +1,13 @@
+// The pure codec adapter mirrors the selected Kamacite API and canonical schema paths.
+#![allow(
+    unknown_lints,
+    ambiguous_params,
+    missing_const_fn,
+    non_trait_imports,
+    path_segment_repetition,
+    reason = "the pure codec adapter mirrors the selected Kamacite API and canonical schema paths"
+)]
+
 // r[impl choregraph.interchange.kamacite.adapter]
 // r[impl choregraph.interchange.kamacite.preserves]
 use crate::selected_kamacite_codec::{

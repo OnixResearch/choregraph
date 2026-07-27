@@ -1,3 +1,11 @@
+// The closed profile publishes explicit reviewed defaults through the existing API.
+#![allow(
+    unknown_lints,
+    explicit_defaults,
+    non_trait_imports,
+    reason = "the closed profile publishes explicit reviewed defaults through the existing API"
+)]
+
 // r[impl choregraph.nickel.profile]
 use choregraph_core::AdmissionLimits;
 

@@ -1,3 +1,16 @@
+// Identity code keeps explicit domain matches and fixed-size BLAKE3 arithmetic.
+#![allow(
+    unknown_lints,
+    ambiguous_params,
+    fragile_exhaustive_enum_match,
+    missing_const_fn,
+    non_trait_imports,
+    numeric_units,
+    path_segment_repetition,
+    raw_arithmetic_overflow,
+    reason = "identity code keeps explicit domain matches and fixed-size BLAKE3 arithmetic"
+)]
+
 // r[impl choregraph.interchange.kamacite.identity]
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};

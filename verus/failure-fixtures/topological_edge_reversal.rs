@@ -2,7 +2,7 @@
 
 extern crate alloc;
 
-#[path = "../../crates/choregraph-core/src/verified_topology.rs"]
+#[path = "../../crates/choregraph-core/src/verified/topology.rs"]
 mod production_topology;
 
 use production_topology::topological_order_spec;

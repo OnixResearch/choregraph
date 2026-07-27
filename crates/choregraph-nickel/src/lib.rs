@@ -9,8 +9,6 @@ mod lower;
 mod model;
 mod profile;
 
-use choregraph_core::Capability;
-
 pub use diagnostic::{
     FrontendFailure, FrontendIssue, FrontendIssueCode, MAX_SAFE_SUMMARY_BYTES,
     redact_evaluator_error, summary,
@@ -44,8 +42,8 @@ pub enum LoweringInputStage {
 }
 
 #[must_use]
-pub const fn output_capability() -> Capability {
-    Capability::ImmutableMachineData
+pub const fn output_capability() -> choregraph_core::Capability {
+    choregraph_core::Capability::ImmutableMachineData
 }
 
 #[must_use]

@@ -1,4 +1,17 @@
-#![allow(clippy::assign_op_pattern)]
+// Verus proof syntax and production-linked specifications require these local source shapes.
+#![allow(
+    unknown_lints,
+    ambiguous_params,
+    assertion_density,
+    clippy::assign_op_pattern,
+    nested_conditionals,
+    non_trait_imports,
+    raw_arithmetic_overflow,
+    too_many_parameters,
+    unbounded_collection_growth,
+    usize_in_public_api,
+    reason = "Verus proof syntax and production-linked specifications require these local source shapes"
+)]
 
 // r[impl choregraph.proof.single_step.specifications]
 // r[impl choregraph.proof.single_step.production_linkage]

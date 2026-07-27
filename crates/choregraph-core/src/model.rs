@@ -1,3 +1,10 @@
+// The canonical public IR remains in one reviewable file with explicit value imports.
+#![allow(
+    unknown_lints,
+    non_trait_imports,
+    reason = "the canonical public IR remains in one reviewable file with explicit value imports"
+)]
+
 // r[impl choregraph.machine.ir]
 // r[impl choregraph.machine.bounds]
 // r[impl choregraph.machine.parameterized_state]

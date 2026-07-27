@@ -10,7 +10,7 @@ The buildable foundation, executable machine semantics, and Kamacite interchange
 
 Pure lowering from contracted evaluated Nickel data now exists. The capability-relative evaluator shell remains blocked on a published immutable `cap-root` source.
 
-A production-linked Verus rail now proves the named single-step properties of the indexed kernel. Trace proofs, compatibility parity, and release evidence do not exist yet.
+A production-linked Verus rail now proves the named single-step properties of the indexed kernel. A pinned Octet consumer gate checks every workspace target with all Octet lints at error severity. Trace proofs, compatibility parity, and release evidence do not exist yet.
 
 ## Owned boundary
 
@@ -75,12 +75,15 @@ See [`docs/kamacite-profile.md`](docs/kamacite-profile.md) for the selected code
 
 See [`docs/restricted-nickel-lowering.md`](docs/restricted-nickel-lowering.md) for the evaluated-data contract, pure lowerer, identity chain, and capability-shell blocker.
 
+See [`docs/octet-deny-all.md`](docs/octet-deny-all.md) for the pinned lint policy, strict commands, exception rules, and non-claims.
+
 ## Validation
 
 ```text
 nix develop -c cargo test --workspace --all-targets
 nix develop -c cargo clippy --workspace --all-targets -- --deny warnings
 nix develop -c cargo run -p choregraph-foundation-check -- --root .
+nix build .#checks.x86_64-linux.octet-deny-all --no-link -L
 nix flake check -L
 ```
 

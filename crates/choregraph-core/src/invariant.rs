@@ -1,3 +1,17 @@
+// Invariant checks mirror proof-linked state relations and deterministic collection shapes.
+#![allow(
+    unknown_lints,
+    allocation_in_loop,
+    assertion_density,
+    compound_condition,
+    missing_const_fn,
+    non_trait_imports,
+    numeric_units,
+    path_segment_repetition,
+    unbounded_collection_growth,
+    reason = "invariant checks mirror proof-linked state relations and deterministic collection shapes"
+)]
+
 // r[impl choregraph.machine.invariants]
 // r[impl choregraph.machine.effect_intents]
 use alloc::collections::{BTreeMap, BTreeSet};

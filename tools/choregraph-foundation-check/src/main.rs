@@ -1,20 +1,11 @@
-use std::collections::BTreeSet;
-use std::env;
-use std::ffi::OsString;
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::process::ExitCode;
-
-use cargo_metadata::{MetadataCommand, Package};
-use choregraph_foundation_check::{
-    DependencyModel, DependencySource, PackageModel, SourceUnit, WorkspaceModel, validate_workspace,
-};
-
 const CORE_SOURCE_PATH: &str = "crates/choregraph-core/src";
+const MAX_CORE_SOURCE_ENTRIES: usize = 4_096;
+const INITIAL_DIRECTORY_CAPACITY: usize = 32;
+const ADJACENT_ENTRY_COUNT: usize = 2;
 
 fn parse_single_path(
-    mut arguments: impl Iterator<Item = OsString>,
-) -> Result<(&'static str, PathBuf), String> {
+    mut arguments: impl Iterator<Item = std::ffi::OsString>,
+) -> Result<(&'static str, std::path::PathBuf), String> {
     let option = arguments.next().ok_or_else(|| {
         String::from("usage: choregraph-foundation-check (--root PATH | --model-json PATH)")
     })?;
@@ -29,36 +20,36 @@ fn parse_single_path(
         .to_str()
         .ok_or_else(|| String::from("foundation check option is not UTF-8"))?;
     match option {
-        "--root" => Ok(("root", PathBuf::from(value))),
-        "--model-json" => Ok(("model-json", PathBuf::from(value))),
+        "--root" => Ok(("root", std::path::PathBuf::from(value))),
+        "--model-json" => Ok(("model-json", std::path::PathBuf::from(value))),
         _ => Err(format!("unknown foundation check option: {option}")),
     }
 }
 
 fn dependency_source(
     dependency_name: &str,
-    dependency_path: Option<&Path>,
-    workspace_root: &Path,
-    internal_packages: &BTreeSet<String>,
-) -> DependencySource {
+    dependency_path: Option<&std::path::Path>,
+    workspace_root: &std::path::Path,
+    internal_packages: &std::collections::BTreeSet<String>,
+) -> choregraph_foundation_check::types::DependencySource {
     let Some(path) = dependency_path else {
-        return DependencySource::Registry;
+        return choregraph_foundation_check::types::DependencySource::Registry;
     };
     if internal_packages.contains(dependency_name) {
-        return DependencySource::Workspace;
+        return choregraph_foundation_check::types::DependencySource::Workspace;
     }
     if path.starts_with(workspace_root) {
-        return DependencySource::LocalPath;
+        return choregraph_foundation_check::types::DependencySource::LocalPath;
     }
-    DependencySource::ExternalPath
+    choregraph_foundation_check::types::DependencySource::ExternalPath
 }
 
 fn normalize_package(
-    package: &Package,
-    workspace_root: &Path,
-    internal_packages: &BTreeSet<String>,
-) -> PackageModel {
-    let mut dependencies = Vec::new();
+    package: &cargo_metadata::Package,
+    workspace_root: &std::path::Path,
+    internal_packages: &std::collections::BTreeSet<String>,
+) -> choregraph_foundation_check::types::PackageModel {
+    let mut dependencies = Vec::with_capacity(package.dependencies.len());
     for dependency in &package.dependencies {
         let name = dependency.name.to_string();
         let source = dependency_source(
@@ -67,11 +58,17 @@ fn normalize_package(
             workspace_root,
             internal_packages,
         );
-        dependencies.push(DependencyModel { name, source });
+        dependencies.push(choregraph_foundation_check::types::DependencyModel { name, source });
     }
     dependencies.sort_by(|left, right| left.name.cmp(&right.name));
+    debug_assert!(dependencies.len() <= package.dependencies.len());
+    debug_assert!(
+        dependencies
+            .windows(ADJACENT_ENTRY_COUNT)
+            .all(|pair| pair[0].name <= pair[1].name)
+    );
 
-    PackageModel {
+    choregraph_foundation_check::types::PackageModel {
         name: package.name.to_string(),
         license: package.license.clone().unwrap_or_default(),
         rust_version: package
@@ -84,15 +81,17 @@ fn normalize_package(
     }
 }
 
-fn collect_source_units(
-    source_root: &Path,
-    current: &Path,
-    units: &mut Vec<SourceUnit>,
-) -> Result<(), String> {
-    let mut entries = Vec::new();
-    let directory = fs::read_dir(current)
+fn read_sorted_entries(current: &std::path::Path) -> Result<Vec<std::fs::DirEntry>, String> {
+    let mut entries = Vec::with_capacity(INITIAL_DIRECTORY_CAPACITY);
+    let directory = std::fs::read_dir(current)
         .map_err(|error| format!("cannot read {}: {error}", current.display()))?;
     for entry in directory {
+        if entries.len() >= MAX_CORE_SOURCE_ENTRIES {
+            return Err(format!(
+                "directory entry limit exceeded under {}",
+                current.display()
+            ));
+        }
         let entry = entry.map_err(|error| {
             format!(
                 "cannot read directory entry in {}: {error}",
@@ -101,35 +100,69 @@ fn collect_source_units(
         })?;
         entries.push(entry);
     }
-    entries.sort_by_key(|entry| entry.path());
-
-    for entry in entries {
-        let path = entry.path();
-        let file_type = entry
-            .file_type()
-            .map_err(|error| format!("cannot inspect {}: {error}", path.display()))?;
-        if file_type.is_dir() {
-            collect_source_units(source_root, &path, units)?;
-            continue;
-        }
-        if !file_type.is_file() {
-            continue;
-        }
-        let text = fs::read_to_string(&path)
-            .map_err(|error| format!("cannot read {}: {error}", path.display()))?;
-        let relative = path
-            .strip_prefix(source_root)
-            .map_err(|error| format!("cannot normalize {}: {error}", path.display()))?;
-        units.push(SourceUnit {
-            path: relative.display().to_string(),
-            text,
-        });
-    }
-    Ok(())
+    entries.sort_by_key(std::fs::DirEntry::path);
+    debug_assert!(entries.len() <= MAX_CORE_SOURCE_ENTRIES);
+    debug_assert!(
+        entries
+            .windows(ADJACENT_ENTRY_COUNT)
+            .all(|pair| pair[0].path() <= pair[1].path())
+    );
+    Ok(entries)
 }
 
-fn load_workspace(root: &Path) -> Result<WorkspaceModel, String> {
-    let mut command = MetadataCommand::new();
+fn collect_source_units(
+    source_root: &std::path::Path,
+) -> Result<Vec<choregraph_foundation_check::types::SourceUnit>, String> {
+    let mut pending = Vec::with_capacity(MAX_CORE_SOURCE_ENTRIES);
+    let mut units = Vec::with_capacity(MAX_CORE_SOURCE_ENTRIES);
+    pending.push(source_root.to_path_buf());
+
+    for _entry_index in 0..MAX_CORE_SOURCE_ENTRIES {
+        let Some(current) = pending.pop() else {
+            break;
+        };
+        for entry in read_sorted_entries(&current)? {
+            let path = entry.path();
+            let file_type = entry
+                .file_type()
+                .map_err(|error| format!("cannot inspect {}: {error}", path.display()))?;
+            if file_type.is_dir() {
+                if pending.len() >= MAX_CORE_SOURCE_ENTRIES {
+                    return Err(String::from("core source directory limit exceeded"));
+                }
+                pending.push(path);
+                continue;
+            }
+            if !file_type.is_file() {
+                continue;
+            }
+            if units.len() >= MAX_CORE_SOURCE_ENTRIES {
+                return Err(String::from("core source file limit exceeded"));
+            }
+            let text = std::fs::read_to_string(&path)
+                .map_err(|error| format!("cannot read {}: {error}", path.display()))?;
+            let relative = path
+                .strip_prefix(source_root)
+                .map_err(|error| format!("cannot normalize {}: {error}", path.display()))?;
+            units.push(choregraph_foundation_check::types::SourceUnit {
+                path: relative.display().to_string(),
+                text,
+            });
+        }
+    }
+    if !pending.is_empty() {
+        return Err(String::from("core source traversal limit exceeded"));
+    }
+    units.sort_by(|left, right| left.path.cmp(&right.path));
+    debug_assert!(pending.is_empty());
+    debug_assert!(units.len() <= MAX_CORE_SOURCE_ENTRIES);
+    Ok(units)
+}
+
+fn load_workspace(
+    root: &std::path::Path,
+) -> Result<choregraph_foundation_check::types::WorkspaceModel, String> {
+    let mut command = cargo_metadata::MetadataCommand::new();
     command.current_dir(root);
     command.no_deps();
     let metadata = command
@@ -137,14 +170,14 @@ fn load_workspace(root: &Path) -> Result<WorkspaceModel, String> {
         .map_err(|error| format!("cargo metadata failed: {error}"))?;
 
     let workspace_root = metadata.workspace_root.as_std_path();
-    let mut internal_packages = BTreeSet::new();
+    let mut internal_packages = std::collections::BTreeSet::new();
     for package in &metadata.packages {
         if metadata.workspace_members.contains(&package.id) {
             internal_packages.insert(package.name.to_string());
         }
     }
 
-    let mut packages = Vec::new();
+    let mut packages = Vec::with_capacity(metadata.packages.len());
     for package in &metadata.packages {
         if metadata.workspace_members.contains(&package.id) {
             packages.push(normalize_package(
@@ -157,32 +190,33 @@ fn load_workspace(root: &Path) -> Result<WorkspaceModel, String> {
     packages.sort_by(|left, right| left.name.cmp(&right.name));
 
     let source_root = workspace_root.join(CORE_SOURCE_PATH);
-    let mut core_sources = Vec::new();
-    collect_source_units(&source_root, &source_root, &mut core_sources)?;
-    core_sources.sort_by(|left, right| left.path.cmp(&right.path));
-
-    Ok(WorkspaceModel {
+    let core_sources = collect_source_units(&source_root)?;
+    debug_assert!(packages.len() <= metadata.packages.len());
+    debug_assert!(core_sources.len() <= MAX_CORE_SOURCE_ENTRIES);
+    Ok(choregraph_foundation_check::types::WorkspaceModel {
         packages,
         core_sources,
     })
 }
 
-fn load_model_json(path: &Path) -> Result<WorkspaceModel, String> {
-    let bytes = fs::read(path)
+fn load_model_json(
+    path: &std::path::Path,
+) -> Result<choregraph_foundation_check::types::WorkspaceModel, String> {
+    let bytes = std::fs::read(path)
         .map_err(|error| format!("cannot read fixture {}: {error}", path.display()))?;
     serde_json::from_slice(&bytes)
         .map_err(|error| format!("cannot parse fixture {}: {error}", path.display()))
 }
 
-fn run() -> Result<(), String> {
-    let (input_kind, path) = parse_single_path(env::args_os().skip(1))?;
+fn run(arguments: impl Iterator<Item = std::ffi::OsString>) -> Result<(), String> {
+    let (input_kind, path) = parse_single_path(arguments)?;
     let model = match input_kind {
         "root" => load_workspace(&path)?,
         "model-json" => load_model_json(&path)?,
         _ => return Err(String::from("internal foundation input error")),
     };
 
-    let issues = validate_workspace(&model);
+    let issues = choregraph_foundation_check::validator::validate_workspace(&model);
     if issues.is_empty() {
         println!("foundation-boundary: passed");
         return Ok(());
@@ -194,12 +228,17 @@ fn run() -> Result<(), String> {
     Err(String::from("foundation-boundary: failed"))
 }
 
-fn main() -> ExitCode {
-    match run() {
-        Ok(()) => ExitCode::SUCCESS,
+#[allow(
+    unknown_lints,
+    ambient_env,
+    reason = "the CLI shell must capture process arguments before calling explicit-input logic"
+)]
+fn main() -> std::process::ExitCode {
+    match run(std::env::args_os().skip(1)) {
+        Ok(()) => std::process::ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("{error}");
-            ExitCode::FAILURE
+            std::process::ExitCode::FAILURE
         }
     }
 }

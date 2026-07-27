@@ -9,5 +9,5 @@ extern crate alloc;
 #[path = "../../crates/choregraph-core/src/verified.rs"]
 mod production_verified;
 
-#[path = "../../crates/choregraph-core/src/verified_topology.rs"]
+#[path = "../../crates/choregraph-core/src/verified/topology.rs"]
 mod production_topology;

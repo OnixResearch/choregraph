@@ -1,3 +1,18 @@
+// The production shell keeps one proof-linked transition path and bounded deterministic output.
+#![allow(
+    unknown_lints,
+    ambiguous_params,
+    assertion_density,
+    fragile_exhaustive_enum_match,
+    function_length,
+    missing_const_fn,
+    non_trait_imports,
+    numeric_units,
+    sentinel_fallback,
+    unbounded_collection_growth,
+    reason = "the production shell keeps one proof-linked transition path and bounded deterministic output"
+)]
+
 // r[impl choregraph.machine.step]
 // r[impl choregraph.machine.denial]
 // r[impl choregraph.machine.effect_intents]

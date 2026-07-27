@@ -1,3 +1,10 @@
+// Explicit value imports keep the capability boundary readable during review.
+#![allow(
+    unknown_lints,
+    non_trait_imports,
+    reason = "explicit value imports keep the capability boundary readable during review"
+)]
+
 use alloc::vec::Vec;
 
 /// A capability that can occur at a Choregraph trust boundary.

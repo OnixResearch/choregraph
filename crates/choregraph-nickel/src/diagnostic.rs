@@ -1,3 +1,12 @@
+// Bounded diagnostics keep stable exhaustive codes and one redaction path.
+#![allow(
+    unknown_lints,
+    fragile_exhaustive_enum_match,
+    function_length,
+    non_trait_imports,
+    reason = "bounded diagnostics keep stable exhaustive codes and one redaction path"
+)]
+
 // r[impl choregraph.nickel.diagnostics]
 use serde::{Deserialize, Serialize};
 

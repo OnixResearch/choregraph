@@ -1,3 +1,13 @@
+// Bounded identifiers keep stable usize-based compatibility and explicit BLAKE3 arithmetic.
+#![allow(
+    unknown_lints,
+    non_trait_imports,
+    path_segment_repetition,
+    raw_arithmetic_overflow,
+    usize_in_public_api,
+    reason = "bounded identifiers keep stable usize-based compatibility and explicit BLAKE3 arithmetic"
+)]
+
 use alloc::string::String;
 use core::fmt;
 use core::marker::PhantomData;

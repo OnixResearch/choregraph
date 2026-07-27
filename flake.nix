@@ -68,6 +68,26 @@
           }
         );
         octetPackages = octet.packages.${system};
+        octetDenyConfig = (builtins.fromJSON (builtins.readFile ./config/octet-deny-all.json)).config;
+        octetDenyFlags = builtins.concatStringsSep " " (map (lint: "-D ${lint}") octetDenyConfig.lints);
+        octetDenyAllRunner = pkgs.writeShellApplication {
+          name = "octet-deny-all";
+          runtimeInputs = [ octetPackages.cargo-octet ];
+          text = ''
+            export DYLINT_RUSTFLAGS=${pkgs.lib.escapeShellArg octetDenyFlags}
+            exec cargo-octet check "$@"
+          '';
+        };
+        # r[impl choregraph.quality.octet.scope]
+        octetDenyAllCheck =
+          (octet.lib.mkConsumerCheck {
+            inherit system;
+            src = self;
+            cargoLock = ./Cargo.lock;
+          }).overrideAttrs
+            (_old: {
+              DYLINT_RUSTFLAGS = octetDenyFlags;
+            });
         productionVerus = octetPackages."octet-production-verus";
         productionVerusClosureManifest = octetPackages."octet-production-verus-nix-closure-manifest";
         verusToolchainProfile = octetPackages."octet-verus-toolchain-profile";
@@ -77,9 +97,91 @@
           default = choregraphPackage;
           choregraph = choregraphPackage;
           foundation-check = foundationChecker;
+          octet-deny-all = octetDenyAllRunner;
         };
 
         checks = {
+          octet-deny-all = octetDenyAllCheck;
+
+          # r[impl choregraph.quality.octet.severity]
+          octet-deny-all-policy =
+            pkgs.runCommand "choregraph-octet-deny-all-policy"
+              {
+                nativeBuildInputs = [
+                  pkgs.b3sum
+                  pkgs.coreutils
+                  pkgs.diffutils
+                  pkgs.gawk
+                  pkgs.gnugrep
+                  pkgs.jq
+                  pkgs.nickel
+                ];
+                src = self;
+              }
+              ''
+                set -eu
+                cd "$src"
+
+                nickel export --format json config/octet-deny-all.ncl \
+                  > "$TMPDIR/octet-deny-all-raw.json"
+                jq -S . "$TMPDIR/octet-deny-all-raw.json" \
+                  > "$TMPDIR/octet-deny-all.json"
+                cmp config/octet-deny-all.json "$TMPDIR/octet-deny-all.json"
+
+                jq --exit-status '
+                  .config.schema == "choregraph.octet-deny-all.v1"
+                  and .config.mode == "deny-all"
+                  and .config.octet_revision == "374bd16b26cee2af34211a29bfa531c016811f51"
+                  and (.config.lints | length) > 0
+                  and (.config.lints | length) == (.config.lints | unique | length)
+                  and (.config.lints[0] == "unknown_lints")
+                ' "$TMPDIR/octet-deny-all.json" > /dev/null
+
+                expected_hook_hash="$(jq --raw-output '.config.hook_blake3' \
+                  "$TMPDIR/octet-deny-all.json")"
+                observed_hook_hash="$(b3sum ${octet}/hooks/octet-deny-all.sh)"
+                test "''${observed_hook_hash%% *}" = "$expected_hook_hash"
+
+                awk '$1 == "-D" { print $2 }' ${octet}/hooks/octet-deny-all.sh \
+                  > "$TMPDIR/upstream-lints.txt"
+                jq --raw-output '.config.lints[]' "$TMPDIR/octet-deny-all.json" \
+                  > "$TMPDIR/local-lints.txt"
+                diff --unified "$TMPDIR/upstream-lints.txt" "$TMPDIR/local-lints.txt"
+
+                for fixture in \
+                  fixtures/octet/negative/warn-mode.ncl \
+                  fixtures/octet/negative/empty-lints.ncl \
+                  fixtures/octet/negative/disabled-lint.ncl; do
+                  if nickel export --format json "$fixture" \
+                    > "$TMPDIR/invalid.json" 2> "$TMPDIR/invalid.stderr"; then
+                    echo "invalid Octet policy fixture unexpectedly exported: $fixture" >&2
+                    exit 1
+                  fi
+                done
+
+                nickel export --format json fixtures/octet/negative/duplicate-lint.ncl \
+                  > "$TMPDIR/duplicate.json"
+                jq --exit-status '
+                  (.config.lints | length) != (.config.lints | unique | length)
+                ' "$TMPDIR/duplicate.json" > /dev/null
+
+                grep --fixed-strings '[octet]' dylint.toml > /dev/null
+                grep --fixed-strings 'excessive_file_length_max = 1100' dylint.toml > /dev/null
+                grep --fixed-strings 'module_file_count_max = 9' dylint.toml > /dev/null
+                if grep -E '^[[:space:]]*(disabled_lints|\[octet\.lint_levels\]|[a-z_]+[[:space:]]*=[[:space:]]*"warn")' dylint.toml; then
+                  echo 'dylint.toml weakens the Octet deny-all policy' >&2
+                  exit 1
+                fi
+                grep --fixed-strings 'default_scope = ["--workspace"]' Cargo.toml > /dev/null
+                grep --fixed-strings 'cargo_check_args = ["--all-targets", "--ignore-rust-version"]' Cargo.toml > /dev/null
+
+                mkdir -p "$out"
+                cp "$TMPDIR/octet-deny-all.json" "$out/policy.json"
+                cp "$TMPDIR/local-lints.txt" "$out/lints.txt"
+                printf '%s\n' 'non-claim=static-source-lint-observations-only' \
+                  > "$out/non-claim.txt"
+              '';
+
           workspace-format = craneLib.cargoFmt {
             src = cargoSource;
           };
@@ -188,7 +290,7 @@
 
                 if grep -R -E '#\[verifier::external_body\]|assume_specification|\bassume[[:space:]]*\(|\baxiom\b' \
                   crates/choregraph-core/src/verified.rs \
-                  crates/choregraph-core/src/verified_topology.rs; then
+                  crates/choregraph-core/src/verified/topology.rs; then
                   echo 'single-step proof core gained an unrecorded trust escape' >&2
                   exit 1
                 fi
@@ -422,7 +524,7 @@
                 nickel export --format json vendor/kamacite-core-selected/SOURCE.ncl \
                   > "$TMPDIR/kamacite-codec-source.json"
                 expected_codec_hash="$(jq --raw-output '.source.source_blake3' "$TMPDIR/kamacite-codec-source.json")"
-                observed_codec_hash="$(b3sum vendor/kamacite-core-selected/preserves_codec.rs)"
+                observed_codec_hash="$(b3sum vendor/kamacite-core-selected/preserves/codec.rs)"
                 test "''${observed_codec_hash%% *}" = "$expected_codec_hash"
                 expected_apache_hash="$(jq --raw-output '.source.apache_license_blake3' "$TMPDIR/kamacite-codec-source.json")"
                 observed_apache_hash="$(b3sum vendor/kamacite-core-selected/LICENSE-APACHE)"
@@ -482,6 +584,7 @@
             pkgs.jq
             pkgs.nickel
             pkgs.nixfmt
+            octetDenyAllRunner
             productionVerus
             rustToolchain
             verusToolchainProfile

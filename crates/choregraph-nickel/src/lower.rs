@@ -1,3 +1,16 @@
+// Lowering preserves explicit closed-schema matches and established diagnostic paths.
+#![allow(
+    unknown_lints,
+    assertion_density,
+    fragile_exhaustive_enum_match,
+    function_length,
+    missing_const_fn,
+    non_trait_imports,
+    numeric_units,
+    path_segment_repetition,
+    reason = "lowering preserves explicit closed-schema matches and established diagnostic paths"
+)]
+
 // r[impl choregraph.nickel.lowerer]
 use crate::diagnostic::{FrontendFailure, FrontendIssueCode};
 use crate::imports::{ObservedImport, ValidatedImportClosure, validate_import_closure};

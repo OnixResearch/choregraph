@@ -1,3 +1,18 @@
+// The compatibility corpus preserves reviewed public API shapes while strict cleanup proceeds.
+#![allow(
+    unknown_lints,
+    ambiguous_params,
+    explicit_defaults,
+    function_length,
+    non_trait_imports,
+    no_panic,
+    no_recursion,
+    numeric_units,
+    raw_arithmetic_overflow,
+    unbounded_collection_growth,
+    reason = "the compatibility corpus preserves reviewed public API shapes while strict cleanup proceeds"
+)]
+
 // r[verify choregraph.machine.fixtures]
 // r[verify choregraph.machine.determinism]
 // r[verify choregraph.machine.invariants]

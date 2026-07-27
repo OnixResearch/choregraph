@@ -1,3 +1,13 @@
+// The canonical compatibility corpus retains explicit byte-level boundary cases.
+#![allow(
+    unknown_lints,
+    assertion_density,
+    non_trait_imports,
+    numeric_units,
+    raw_arithmetic_overflow,
+    reason = "the canonical compatibility corpus retains explicit byte-level boundary cases"
+)]
+
 // r[impl choregraph.interchange.kamacite.fixtures]
 use crate::aggregate::{ArtifactSet, IdentityMaterials};
 use crate::codec::{

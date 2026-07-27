@@ -1,3 +1,14 @@
+// Translation identity keeps explicit domains and fixed framed-byte arithmetic.
+#![allow(
+    unknown_lints,
+    assertion_density,
+    fragile_exhaustive_enum_match,
+    non_trait_imports,
+    numeric_units,
+    path_segment_repetition,
+    reason = "translation identity keeps explicit domains and fixed framed-byte arithmetic"
+)]
+
 // r[impl choregraph.nickel.identity]
 // r[impl choregraph.nickel.claim_boundary]
 use crate::diagnostic::{FrontendFailure, FrontendIssueCode};

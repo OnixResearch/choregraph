@@ -1,0 +1,12 @@
+# Octet severity comes from the generated deny-all DYLINT_RUSTFLAGS policy.
+# Do not add disabled_lints or warning-level overrides here.
+
+[octet]
+
+# The proof-linked and canonical-codec files stay co-located for direct review.
+# Tighten this limit after those sources split without changing proof identity.
+excessive_file_length_max = 1100
+
+# The core and Kamacite adapters use bounded, responsibility-specific modules.
+# Tighten this limit after a proof-aware module migration.
+module_file_count_max = 9

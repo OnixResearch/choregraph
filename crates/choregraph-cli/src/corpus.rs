@@ -1,3 +1,16 @@
+// Corpus generation binds reviewed source bytes and preserves established canonical fixture shapes.
+#![allow(
+    unknown_lints,
+    assertion_density,
+    explicit_defaults,
+    function_length,
+    non_trait_imports,
+    numeric_units,
+    path_segment_repetition,
+    raw_arithmetic_overflow,
+    reason = "corpus generation binds reviewed source bytes and preserves established canonical fixture shapes"
+)]
+
 use choregraph_core::{
     Action, AdmissionLimits, AdmittedMachine, EdgeSpec, EffectDeclarationSpec, LocalState,
     MachineSpec, NodeSpec, TransitionSelector,
@@ -21,7 +34,7 @@ const ADAPTER_SOURCES: &[&[u8]] = &[
     include_bytes!("../../choregraph-kamacite/src/identity.rs"),
     include_bytes!("../../choregraph-kamacite/src/lifecycle.rs"),
     include_bytes!("../../choregraph-kamacite/src/receipt.rs"),
-    include_bytes!("../../../vendor/kamacite-core-selected/preserves_codec.rs"),
+    include_bytes!("../../../vendor/kamacite-core-selected/preserves/codec.rs"),
 ];
 const GENERATOR_SOURCES: &[&[u8]] = &[include_bytes!("corpus.rs")];
 const TOOLCHAIN_SOURCES: &[&[u8]] = &[

@@ -1,7 +1,5 @@
 #![no_std]
 
-use choregraph_core::Capability;
-
 /// A possible implementation mode for the Seaglass compatibility surface.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum CompatibilityMode {
@@ -11,8 +9,8 @@ pub enum CompatibilityMode {
 
 /// Returns the core capability that the future adapter delegates to.
 #[must_use]
-pub const fn delegated_capability() -> Capability {
-    Capability::DeterministicDecision
+pub const fn delegated_capability() -> choregraph_core::Capability {
+    choregraph_core::Capability::DeterministicDecision
 }
 
 /// Returns true only for a conversion-only delegate.
@@ -23,17 +21,17 @@ pub const fn accepts(mode: CompatibilityMode) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{CompatibilityMode, accepts};
-
     #[test]
     fn accepts_delegation_to_core() {
-        assert!(accepts(CompatibilityMode::DelegateToChoregraphCore));
+        assert!(super::accepts(
+            super::CompatibilityMode::DelegateToChoregraphCore
+        ));
     }
 
     #[test]
     fn rejects_an_independent_transition_core() {
-        assert!(!accepts(
-            CompatibilityMode::IndependentTransitionImplementation
+        assert!(!super::accepts(
+            super::CompatibilityMode::IndependentTransitionImplementation
         ));
     }
 }

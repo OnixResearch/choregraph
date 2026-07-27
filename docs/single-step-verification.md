@@ -37,7 +37,7 @@ The source-link gate rejects these changes:
 The production proof sources are:
 
 - `crates/choregraph-core/src/verified.rs`;
-- `crates/choregraph-core/src/verified_topology.rs`;
+- `crates/choregraph-core/src/verified/topology.rs`;
 - `crates/choregraph-core/src/transition.rs`;
 - `crates/choregraph-core/src/admission.rs`;
 - `crates/choregraph-core/src/invariant.rs`.

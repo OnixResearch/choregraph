@@ -15,7 +15,7 @@ const IMPORT_ENTRY_COUNT: usize = 3;
 const IMPORT_ENTRIES: &[(&str, &str)] = &[
     (
         "crates/kamacite-core/src/preserves_codec.rs",
-        "preserves_codec.rs",
+        "preserves/codec.rs",
     ),
     ("crates/kamacite-core/LICENSE-APACHE", "LICENSE-APACHE"),
     ("crates/kamacite-core/LICENSE-MIT", "LICENSE-MIT"),

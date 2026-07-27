@@ -121,37 +121,37 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/admission.rs",
-        blake3 = "8ffe07c9327260ba87603609c78cb5207cbda64f5366f99a0e66ee2186e3e3e8",
+        blake3 = "0e96e43f159de5a514a16b3e779cf9591540a1f2018ecdbcfcf336b55443bd17",
         role = "production indexed graph construction",
       },
       {
         path = "crates/choregraph-core/src/invariant.rs",
-        blake3 = "a087910cf027596eb4bc5c02c9d8548a38cfd34185c272371fd34f0551e5a4c6",
+        blake3 = "4c5c5c7e7cc021e88292613f93d4f2215e9f50eff734d2996e5364871c0f5e74",
         role = "production graph and post-step gates",
       },
       {
         path = "crates/choregraph-core/src/lib.rs",
-        blake3 = "847ded78862fe3c5bc1671c4b93cc9249bedb6ab75054c3bd0e985d4b68a6eee",
+        blake3 = "9d27e6ca73e8c177c0c5ffa3d2cfb58787ef39899ed45da5dfe4ae6997654a3f",
         role = "production module linkage",
       },
       {
         path = "crates/choregraph-core/src/model.rs",
-        blake3 = "c003a213273572c05fb0d07a814dc191a3c041d5cb0caf75d9d2420f91f13611",
+        blake3 = "0b3404bc9c9410e991f39697e23fa8d0be910157508c615726ef19a928b0d047",
         role = "production indexed machine fields",
       },
       {
         path = "crates/choregraph-core/src/transition.rs",
-        blake3 = "251127940b19d849b84cd6a193099cde215931241f400055b64c9bdd001950d5",
+        blake3 = "7a44539817dfb7fc9ba7715b4eda9371a567a35ab976cdf493c7bdcc8f389d88",
         role = "production transition shell and kernel delegation",
       },
       {
         path = "crates/choregraph-core/src/verified.rs",
-        blake3 = "443aed2e06eebabd40e60bd5c31f1ebde973439161833cd51d5ff2021141fcd4",
+        blake3 = "dca1071b89410ac4193190f78fa68207528712d37a4dafe2a992bf9ef7b43246",
         role = "production-called verified transition kernel",
       },
       {
-        path = "crates/choregraph-core/src/verified_topology.rs",
-        blake3 = "3419696ccb3e4c768b03f2d76dc911b834b25866bbf10fb1464cb4660d45721a",
+        path = "crates/choregraph-core/src/verified/topology.rs",
+        blake3 = "4d28285eab8a9e1374a73b78d165340b285f79002bf9223aed7ec41655bbbb2d",
         role = "production-called verified graph admission gate",
       },
       {
@@ -166,7 +166,7 @@ let ProofManifest = {
       },
       {
         path = "flake.nix",
-        blake3 = "83aaedd1dfe4c8f45b82a86d9e236b79bc9753307d8ea20fb063318f5c57ca56",
+        blake3 = "d1468cb685799096113c8c8f5357ab3dae6a89cfaba90d323b3c2161bc5c4d14",
         role = "maintained proof and failure-fixture gate",
       },
       {
@@ -191,7 +191,7 @@ let ProofManifest = {
       },
       {
         path = "verus/failure-fixtures/topological_edge_reversal.rs",
-        blake3 = "22afe041b24c5b96b3946c44dde7077e5fc44159cf9965c4a2167bf972a7cbe2",
+        blake3 = "86b8cc37f5aca10041ed0aa13d6092289740309e397a701e4592161241488589",
         role = "negative graph-order fixture",
       },
       {
@@ -201,7 +201,7 @@ let ProofManifest = {
       },
       {
         path = "verus/proofs/single_step.rs",
-        blake3 = "05dd928cc9ea66ded6b1dca60a16202eecd815a7365a7e108ffd6f23cd935cc6",
+        blake3 = "6b255a130a0a20d2e7369e4f1e0764129efadb6cf6c1c97ce322c7e4b65fd24e",
         role = "positive proof root that includes production sources",
       },
     ],

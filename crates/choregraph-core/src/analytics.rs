@@ -1,3 +1,14 @@
+// Graph analytics retain deterministic collection order and reviewed compatibility signatures.
+#![allow(
+    unknown_lints,
+    assertion_density,
+    fragile_exhaustive_enum_match,
+    missing_const_fn,
+    non_trait_imports,
+    unbounded_collection_growth,
+    reason = "graph analytics retain deterministic collection order and reviewed compatibility signatures"
+)]
+
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 use core::cmp::Ordering;

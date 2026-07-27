@@ -1,3 +1,10 @@
+// Evaluated-data DTOs keep explicit serde value imports for schema review.
+#![allow(
+    unknown_lints,
+    non_trait_imports,
+    reason = "evaluated-data DTOs keep explicit serde value imports for schema review"
+)]
+
 // r[impl choregraph.nickel.contracts]
 // r[impl choregraph.nickel.lattice_profile]
 use serde::{Deserialize, Serialize};

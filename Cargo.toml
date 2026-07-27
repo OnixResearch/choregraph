@@ -9,6 +9,10 @@ members = [
 ]
 resolver = "3"
 
+[workspace.metadata.octet]
+default_scope = ["--workspace"]
+cargo_check_args = ["--all-targets", "--ignore-rust-version"]
+
 [workspace.package]
 version = "0.1.0"
 edition = "2024"

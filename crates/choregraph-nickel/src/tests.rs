@@ -1,3 +1,12 @@
+// The restricted-Nickel corpus keeps explicit boundary sizes and compatibility scenarios.
+#![allow(
+    unknown_lints,
+    function_length,
+    non_trait_imports,
+    numeric_units,
+    reason = "the restricted-Nickel corpus keeps explicit boundary sizes and compatibility scenarios"
+)]
+
 // r[impl choregraph.nickel.fixtures]
 use crate::{
     FrontendIssueCode, FrontendLimits, LoweredSourceFormat, MAX_SAFE_SUMMARY_BYTES, ObservedImport,

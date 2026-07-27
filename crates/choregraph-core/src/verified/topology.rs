@@ -1,4 +1,16 @@
-#![allow(clippy::assign_op_pattern)]
+// Verus topology proofs require these local indexed-arithmetic and specification shapes.
+#![allow(
+    unknown_lints,
+    ambiguous_params,
+    assertion_density,
+    bool_naming,
+    clippy::assign_op_pattern,
+    compound_condition,
+    non_trait_imports,
+    raw_arithmetic_overflow,
+    usize_in_public_api,
+    reason = "Verus topology proofs require these local indexed-arithmetic and specification shapes"
+)]
 
 // r[impl choregraph.proof.single_step.specifications]
 // r[impl choregraph.proof.single_step.graph]

@@ -10,6 +10,7 @@ mod invariant;
 mod model;
 mod transition;
 mod verified;
+#[path = "verified/topology.rs"]
 mod verified_topology;
 
 pub use analytics::{

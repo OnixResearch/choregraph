@@ -1,10 +1,5 @@
 mod corpus;
 
-use choregraph_core::{Capability, FOUNDATION_CLAIM, MACHINE_CLAIM, permits};
-use choregraph_kamacite::{InterchangeClaim, supports as supports_interchange};
-use choregraph_nickel::{LoweringInputStage, accepts as accepts_lowering};
-use choregraph_seaglass::{CompatibilityMode, accepts as accepts_compatibility};
-
 pub use corpus::{KamaciteCorpusEntry, build_kamacite_corpus};
 
 /// A command accepted by the imperative shell.
@@ -32,40 +27,50 @@ pub fn parse_command(arguments: &[String]) -> Result<Command, &'static str> {
 }
 
 /// Renders the bounded, unverified foundation report.
+// This pure report composes claim predicates; their owner functions assert local invariants.
+#[allow(
+    unknown_lints,
+    assertion_density,
+    reason = "this pure report composes claim predicates; their owner functions assert local invariants"
+)]
 #[must_use]
 pub fn render_foundation_report() -> String {
-    let core_is_pure = permits(Capability::DeterministicDecision);
-    let kamacite_is_identity_only =
-        supports_interchange(InterchangeClaim::CanonicalIdentityBinding)
-            && !supports_interchange(InterchangeClaim::BehavioralProof);
-    let nickel_is_evaluated_data_only = accepts_lowering(LoweringInputStage::EvaluatedData)
-        && !accepts_lowering(LoweringInputStage::NickelSource);
-    let seaglass_is_delegate_only =
-        accepts_compatibility(CompatibilityMode::DelegateToChoregraphCore)
-            && !accepts_compatibility(CompatibilityMode::IndependentTransitionImplementation);
+    let foundation_claim = choregraph_core::FOUNDATION_CLAIM;
+    let machine_claim = choregraph_core::MACHINE_CLAIM;
+    let is_core_pure = choregraph_core::permits(choregraph_core::Capability::DeterministicDecision);
+    let is_kamacite_identity_only =
+        choregraph_kamacite::supports(
+            choregraph_kamacite::InterchangeClaim::CanonicalIdentityBinding,
+        ) && !choregraph_kamacite::supports(choregraph_kamacite::InterchangeClaim::BehavioralProof);
+    let is_nickel_evaluated_data_only =
+        choregraph_nickel::accepts(choregraph_nickel::LoweringInputStage::EvaluatedData)
+            && !choregraph_nickel::accepts(choregraph_nickel::LoweringInputStage::NickelSource);
+    let is_seaglass_delegate_only = choregraph_seaglass::accepts(
+        choregraph_seaglass::CompatibilityMode::DelegateToChoregraphCore,
+    ) && !choregraph_seaglass::accepts(
+        choregraph_seaglass::CompatibilityMode::IndependentTransitionImplementation,
+    );
 
     format!(
-        "status={FOUNDATION_CLAIM}\nmachine-status={MACHINE_CLAIM}\ncore-pure={core_is_pure}\nkamacite-identity-only={kamacite_is_identity_only}\nnickel-evaluated-data-only={nickel_is_evaluated_data_only}\nseaglass-delegate-only={seaglass_is_delegate_only}\n"
+        "status={foundation_claim}\nmachine-status={machine_claim}\ncore-pure={is_core_pure}\nkamacite-identity-only={is_kamacite_identity_only}\nnickel-evaluated-data-only={is_nickel_evaluated_data_only}\nseaglass-delegate-only={is_seaglass_delegate_only}\n"
     )
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Command, parse_command, render_foundation_report};
-
     #[test]
     fn parses_default_and_explicit_boundary_commands() {
-        assert_eq!(parse_command(&[]), Ok(Command::Boundary));
+        assert_eq!(super::parse_command(&[]), Ok(super::Command::Boundary));
         assert_eq!(
-            parse_command(&[String::from("boundary")]),
-            Ok(Command::Boundary)
+            super::parse_command(&[String::from("boundary")]),
+            Ok(super::Command::Boundary)
         );
         assert_eq!(
-            parse_command(&[
+            super::parse_command(&[
                 String::from("write-kamacite-corpus"),
                 String::from("fixtures/kamacite"),
             ]),
-            Ok(Command::WriteKamaciteCorpus {
+            Ok(super::Command::WriteKamaciteCorpus {
                 output_directory: String::from("fixtures/kamacite"),
             })
         );
@@ -73,15 +78,15 @@ mod tests {
 
     #[test]
     fn rejects_unknown_incomplete_or_extra_arguments() {
-        assert!(parse_command(&[String::from("run")]).is_err());
-        assert!(parse_command(&[String::from("write-kamacite-corpus")]).is_err());
-        assert!(parse_command(&[String::from("boundary"), String::from("extra")]).is_err());
+        assert!(super::parse_command(&[String::from("run")]).is_err());
+        assert!(super::parse_command(&[String::from("write-kamacite-corpus")]).is_err());
+        assert!(super::parse_command(&[String::from("boundary"), String::from("extra")]).is_err());
     }
 
     #[test]
     fn report_keeps_the_foundation_claim_bounded() {
-        let report = render_foundation_report();
-        assert!(report.contains("status=repository-boundary-only-unverified"));
-        assert!(report.contains("seaglass-delegate-only=true"));
+        let foundation_output_text = super::render_foundation_report();
+        assert!(foundation_output_text.contains("status=repository-boundary-only-unverified"));
+        assert!(foundation_output_text.contains("seaglass-delegate-only=true"));
     }
 }

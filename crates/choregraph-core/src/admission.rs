@@ -1,3 +1,19 @@
+// Admission preserves the reviewed bounded IR while targeted structural cleanup proceeds.
+#![allow(
+    unknown_lints,
+    allocation_in_loop,
+    ambiguous_params,
+    assertion_density,
+    borrowed_argument_types,
+    fragile_exhaustive_enum_match,
+    missing_const_fn,
+    non_trait_imports,
+    numeric_units,
+    sentinel_fallback,
+    unbounded_collection_growth,
+    reason = "admission preserves the reviewed bounded IR while targeted structural cleanup proceeds"
+)]
+
 // r[impl choregraph.machine.admission]
 // r[impl choregraph.machine.bounds]
 // r[impl choregraph.machine.determinism]

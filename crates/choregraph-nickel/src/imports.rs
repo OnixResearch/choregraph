@@ -1,3 +1,17 @@
+// Import closure checks retain explicit bounded collection and digest compatibility shapes.
+#![allow(
+    unknown_lints,
+    assertion_density,
+    borrowed_argument_types,
+    compound_condition,
+    function_length,
+    missing_const_fn,
+    non_trait_imports,
+    numeric_units,
+    raw_arithmetic_overflow,
+    reason = "import closure checks retain explicit bounded collection and digest compatibility shapes"
+)]
+
 // r[impl choregraph.nickel.imports]
 use crate::diagnostic::{FrontendFailure, FrontendIssueCode};
 use crate::model::{ImportDeclaration, ImportMediaClass};

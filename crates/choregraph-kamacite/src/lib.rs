@@ -11,8 +11,23 @@ mod receipt;
 #[cfg(test)]
 mod tests;
 
-#[allow(dead_code)]
-#[path = "../../../vendor/kamacite-core-selected/preserves_codec.rs"]
+// The complete reviewed codec stays source-identical for reproducible canonical compatibility.
+#[allow(
+    unknown_lints,
+    ambiguous_params,
+    assertion_density,
+    dead_code,
+    explicit_defaults,
+    fragile_exhaustive_enum_match,
+    function_length,
+    missing_const_fn,
+    non_trait_imports,
+    path_segment_repetition,
+    renamed_imports,
+    unbounded_collection_growth,
+    reason = "the complete reviewed codec stays source-identical for reproducible canonical compatibility"
+)]
+#[path = "../../../vendor/kamacite-core-selected/preserves/codec.rs"]
 mod selected_kamacite_codec;
 
 pub use aggregate::{
