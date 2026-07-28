@@ -119,3 +119,4 @@ Choregraph preserves the source implementation license: `AGPL-3.0-or-later`. No 
 - [Bounded Exec](https://git.onix.computer/z2CpqLFpdP36fZXYUK5ZNWxMibpCo.git) — bounded evaluator process execution without sandbox or evaluator-correctness claims.
 - [cap-root](rad://z3cWBCK7VPbEmbL5MAvKJWKjCE745) — pure lexical path admission before capability-relative I/O.
 - [`cap-std`](https://github.com/bytecodealliance/cap-std) — capability-oriented filesystem I/O used by consumer shells.
+- [Swamp](https://github.com/swamp-club/swamp) — AGPL product reference for durable workflow suspension that persists a wait and resumes from recorded state. Choregraph adapts only the clean-room pure lifecycle mechanism and does not adopt Swamp runtime code, product approval authority, YAML/CEL authoring, or dynamic TypeScript loading.
