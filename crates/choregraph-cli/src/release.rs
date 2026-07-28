@@ -22,6 +22,7 @@ use choregraph_release::{
 const MAX_ARTIFACT_BYTES: usize = 16_777_216;
 const MAX_TOTAL_ARTIFACT_BYTES: usize = 67_108_864;
 const MAX_MANIFEST_BYTES: usize = 1_048_576;
+const MAX_SOURCE_ARCHIVE_BYTES: usize = 33_554_432;
 const ARTIFACT_COUNT: usize = 30;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -170,8 +171,11 @@ pub struct VerifyReleaseBundleRequest {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ValidatePublicationCandidateRequest {
     pub source_revision: String,
-    pub source_archive_blake3: String,
-    pub release_bundle_blake3: String,
+    pub source_archive_root: PathBuf,
+    pub source_archive_path: PathBuf,
+    pub artifact_root: PathBuf,
+    pub manifest_root: PathBuf,
+    pub manifest_path: PathBuf,
     pub rollback_revision: String,
 }
 
@@ -390,9 +394,21 @@ pub fn verify_release_bundle_file(
 pub fn validate_publication_candidate(
     request: &ValidatePublicationCandidateRequest,
 ) -> Result<PublicationCandidateReport, ReleaseShellFailure> {
-    let source_archive = ArtifactDigest::from_hex(&request.source_archive_blake3)
-        .ok_or_else(|| ReleaseShellFailure::one(ReleaseShellIssueCode::InvalidIdentity, None))?;
-    let bundle = BundleIdentity::from_hex(&request.release_bundle_blake3)
+    let source_archive_root = open_root(&request.source_archive_root)?;
+    let source_archive_bytes = crate::capability::read_relative(
+        &source_archive_root,
+        &request.source_archive_path,
+        MAX_SOURCE_ARCHIVE_BYTES,
+    )
+    .map_err(|_| ReleaseShellFailure::one(ReleaseShellIssueCode::InputUnavailable, None))?;
+    let source_archive =
+        ArtifactDigest::from_bytes(*blake3::hash(&source_archive_bytes).as_bytes());
+    let bundle_report = verify_release_bundle_file(&VerifyReleaseBundleRequest {
+        artifact_root: request.artifact_root.clone(),
+        manifest_root: request.manifest_root.clone(),
+        manifest_path: request.manifest_path.clone(),
+    })?;
+    let bundle = BundleIdentity::from_hex(&bundle_report.bundle_blake3)
         .ok_or_else(|| ReleaseShellFailure::one(ReleaseShellIssueCode::InvalidIdentity, None))?;
     let input = PublicationCandidateInput {
         source_revision: request.source_revision.clone(),
@@ -430,8 +446,7 @@ mod tests {
     const FIXTURE_BYTES: &[u8] = b"reviewed release artifact";
     const SOURCE_REVISION: &str = "1111111111111111111111111111111111111111";
     const ROLLBACK_REVISION: &str = "2222222222222222222222222222222222222222";
-    const SOURCE_ARCHIVE: &str = "3333333333333333333333333333333333333333333333333333333333333333";
-    const RELEASE_BUNDLE: &str = "4444444444444444444444444444444444444444444444444444444444444444";
+    const SOURCE_ARCHIVE_BYTES: &[u8] = b"immutable source archive";
 
     #[allow(
         unknown_lints,
@@ -494,6 +509,31 @@ mod tests {
         };
         let verified = must(verify_release_bundle_file(&verify_request));
         assert_eq!(verified.bundle_blake3, report.bundle_blake3);
+        must(fs::write(
+            output_root.path().join("source.tar"),
+            SOURCE_ARCHIVE_BYTES,
+        ));
+        let candidate_request = ValidatePublicationCandidateRequest {
+            source_revision: String::from(SOURCE_REVISION),
+            source_archive_root: output_root.path().to_path_buf(),
+            source_archive_path: PathBuf::from("source.tar"),
+            artifact_root: artifact_root.path().to_path_buf(),
+            manifest_root: output_root.path().to_path_buf(),
+            manifest_path: PathBuf::from("release.bundle"),
+            rollback_revision: String::from(ROLLBACK_REVISION),
+        };
+        let candidate = must(validate_publication_candidate(&candidate_request));
+        assert_eq!(candidate.release_bundle_blake3, report.bundle_blake3);
+        assert_eq!(
+            candidate.source_archive_blake3,
+            blake3::hash(SOURCE_ARCHIVE_BYTES).to_hex().as_str()
+        );
+        let mut floating_candidate = candidate_request;
+        floating_candidate.source_revision = String::from("main");
+        assert_eq!(
+            issue_code(validate_publication_candidate(&floating_candidate)),
+            ReleaseShellIssueCode::CandidateRejected
+        );
         assert_eq!(
             issue_code(write_release_bundle(&request)),
             ReleaseShellIssueCode::OutputRejected
@@ -507,35 +547,6 @@ mod tests {
         assert_eq!(
             issue_code(verify_release_bundle_file(&verify_request)),
             ReleaseShellIssueCode::ManifestMismatch
-        );
-    }
-
-    #[test]
-    fn local_publication_candidate_is_exact_and_fail_closed() {
-        let request = ValidatePublicationCandidateRequest {
-            source_revision: String::from(SOURCE_REVISION),
-            source_archive_blake3: String::from(SOURCE_ARCHIVE),
-            release_bundle_blake3: String::from(RELEASE_BUNDLE),
-            rollback_revision: String::from(ROLLBACK_REVISION),
-        };
-        let candidate = must(validate_publication_candidate(&request));
-        assert_eq!(candidate.source_revision, SOURCE_REVISION);
-        assert_eq!(candidate.source_archive_blake3, SOURCE_ARCHIVE);
-        assert_eq!(candidate.release_bundle_blake3, RELEASE_BUNDLE);
-        assert_eq!(candidate.rollback_revision, ROLLBACK_REVISION);
-
-        let mut floating = request.clone();
-        floating.source_revision = String::from("main");
-        assert_eq!(
-            issue_code(validate_publication_candidate(&floating)),
-            ReleaseShellIssueCode::CandidateRejected
-        );
-
-        let mut malformed = request;
-        malformed.release_bundle_blake3 = String::from("not-a-digest");
-        assert_eq!(
-            issue_code(validate_publication_candidate(&malformed)),
-            ReleaseShellIssueCode::InvalidIdentity
         );
     }
 

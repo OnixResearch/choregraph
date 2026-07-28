@@ -80,15 +80,21 @@ fn parse_release_command(arguments: &[String]) -> Option<Result<Command, &'stati
         [
             command,
             source_revision,
-            source_archive,
-            release_bundle,
+            source_archive_root,
+            source_archive_path,
+            artifact_root,
+            manifest_root,
+            manifest_path,
             rollback_revision,
         ] if command == "validate-publication-candidate" => {
             Some(Ok(Command::ValidatePublicationCandidate {
                 request: ValidatePublicationCandidateRequest {
                     source_revision: source_revision.clone(),
-                    source_archive_blake3: source_archive.clone(),
-                    release_bundle_blake3: release_bundle.clone(),
+                    source_archive_root: std::path::PathBuf::from(source_archive_root),
+                    source_archive_path: std::path::PathBuf::from(source_archive_path),
+                    artifact_root: std::path::PathBuf::from(artifact_root),
+                    manifest_root: std::path::PathBuf::from(manifest_root),
+                    manifest_path: std::path::PathBuf::from(manifest_path),
                     rollback_revision: rollback_revision.clone(),
                 },
             }))
@@ -139,7 +145,7 @@ fn parse_non_release_command(arguments: &[String]) -> Result<Command, &'static s
             })
         }
         _ => Err(
-            "usage: choregraph [boundary | compile-nickel <evaluator> <source-root> <source-path> <contract-root> <scratch-root> <output-root> <output-path> [<import-id>=<import-root> ...] | write-kamacite-corpus <output-directory> | write-release-bundle <artifact-root> <output-root> <output-path> | verify-release-bundle <artifact-root> <manifest-root> <manifest-path> | validate-publication-candidate <source-revision> <source-archive-blake3> <release-bundle-blake3> <rollback-revision>]",
+            "usage: choregraph [boundary | compile-nickel <evaluator> <source-root> <source-path> <contract-root> <scratch-root> <output-root> <output-path> [<import-id>=<import-root> ...] | write-kamacite-corpus <output-directory> | write-release-bundle <artifact-root> <output-root> <output-path> | verify-release-bundle <artifact-root> <manifest-root> <manifest-path> | validate-publication-candidate <source-revision> <source-archive-root> <source-archive-path> <artifact-root> <manifest-root> <manifest-path> <rollback-revision>]",
         ),
     }
 }
@@ -271,15 +277,21 @@ mod tests {
             super::parse_command(&[
                 String::from("validate-publication-candidate"),
                 String::from("source-revision"),
-                String::from("source-archive"),
-                String::from("release-bundle"),
+                String::from("/archive"),
+                String::from("source.tar"),
+                String::from("/source"),
+                String::from("/manifest"),
+                String::from("release.bundle"),
                 String::from("rollback-revision"),
             ]),
             Ok(super::Command::ValidatePublicationCandidate {
                 request: super::ValidatePublicationCandidateRequest {
                     source_revision: String::from("source-revision"),
-                    source_archive_blake3: String::from("source-archive"),
-                    release_bundle_blake3: String::from("release-bundle"),
+                    source_archive_root: std::path::PathBuf::from("/archive"),
+                    source_archive_path: std::path::PathBuf::from("source.tar"),
+                    artifact_root: std::path::PathBuf::from("/source"),
+                    manifest_root: std::path::PathBuf::from("/manifest"),
+                    manifest_path: std::path::PathBuf::from("release.bundle"),
                     rollback_revision: String::from("rollback-revision"),
                 },
             })
