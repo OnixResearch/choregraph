@@ -29,4 +29,4 @@
 - [x] [serial] Run focused workspace tests, no-std checks, Clippy, foundation, Verus, Nickel, Kamacite, Seaglass, Octet, Cairn, Tracey, downstream, and Nix gates. r[choregraph.effect_v2.fixtures] r[choregraph.effect_v2.release]
 - [x] [serial] Regenerate proof identities, canonical corpora, manifests, and the release bundle from current bytes, then independently verify exact equality. r[choregraph.effect_v2.release]
 - [x] [serial] Record the exact Lattice handoff and publication blocker, and do not publish without explicit repository authority. r[choregraph.effect_v2.lattice_handoff] r[choregraph.effect_v2.non_claims]
-- [ ] [serial] Sync the accepted concrete-effect-intents specification, confirm Tracey has no new gaps, archive the completed change, and rerun post-archive checks. r[choregraph.effect_v2.release]
+- [x] [serial] Sync the accepted concrete-effect-intents specification, confirm Tracey has no new gaps, archive the completed change, and rerun post-archive checks. r[choregraph.effect_v2.release]
