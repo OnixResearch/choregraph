@@ -111,7 +111,7 @@
         "role": "canonical machine schema binding"
       },
       {
-        "blake3": "584be28e6181e7289f69c8ece9a77bd838d6b2261322d1258056e50f8c981de1",
+        "blake3": "9bea1c4bd45f91be4a4e2d40ceaedd824bdb74fd869c45974f5d2b72d0df5186",
         "path": "evidence/generated/source-baseline.json",
         "role": "canonical selected-source baseline"
       },
