@@ -69,11 +69,16 @@ The pure candidate model requires:
 
 Candidate construction performs no publication, signing, push, remote update, rollback, or source acquisition.
 
+The local candidate is `evidence/release/publication-candidate.ncl`. It binds source revision `fc47c5f4ecbb7b4341af690fa42199f25d57f54c`, its deterministic source archive, release bundle `a2ac1336679542fa9573b356daddc18266fdda8147ddbe28f85aa37d135030d9`, and rollback revision `2772442d14bfc90579027e4fbff545d7f829c76c`.
+
+The Radicle RID is explicitly unassigned. The candidate is not a publication receipt.
+
 ## Local commands
 
 ```text
 choregraph write-release-bundle <artifact-root> <output-root> <output-path>
 choregraph verify-release-bundle <artifact-root> <manifest-root> <manifest-path>
+choregraph validate-publication-candidate <source-revision> <source-archive-root> <source-archive-path> <artifact-root> <manifest-root> <manifest-path> <rollback-revision>
 ```
 
 All roots are absolute operator inputs. All artifact and output names under those roots are fixed or capability-admitted relative paths.
