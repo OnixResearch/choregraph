@@ -42,6 +42,7 @@ const CORE_FORBIDDEN_DEPENDENCIES: &[&str] = &[
 
 const NO_INTERNAL_DEPENDENCIES: &[&str] = &[];
 const CORE_ONLY: &[&str] = &[CORE_PACKAGE];
+const SEAGLASS_DEPENDENCIES: &[&str] = &[CORE_PACKAGE, "choregraph-nickel"];
 const CLI_DEPENDENCIES: &[&str] = &[
     CORE_PACKAGE,
     "choregraph-kamacite",
@@ -81,7 +82,8 @@ pub(crate) fn issue(facts: IssueFacts<'_>) -> crate::types::ValidationIssue {
 fn allowed_internal_dependencies(package: &str) -> Option<&'static [&'static str]> {
     match package {
         CORE_PACKAGE | FOUNDATION_CHECK_PACKAGE => Some(NO_INTERNAL_DEPENDENCIES),
-        "choregraph-kamacite" | "choregraph-nickel" | "choregraph-seaglass" => Some(CORE_ONLY),
+        "choregraph-kamacite" | "choregraph-nickel" => Some(CORE_ONLY),
+        "choregraph-seaglass" => Some(SEAGLASS_DEPENDENCIES),
         "choregraph-cli" => Some(CLI_DEPENDENCIES),
         _ => None,
     }

@@ -33,6 +33,7 @@ let reviewed_execution_graph_oracle = {
     package "choregraph-nickel" [workspace "choregraph-core"],
     package "choregraph-seaglass" [
       workspace "choregraph-core",
+      workspace "choregraph-nickel",
       reviewed_execution_graph_oracle,
     ],
     package "choregraph-cli" [

@@ -59,6 +59,7 @@ fn allowed_model() -> crate::types::WorkspaceModel {
                 "choregraph-seaglass",
                 vec![
                     workspace_dependency("choregraph-core"),
+                    workspace_dependency("choregraph-nickel"),
                     reviewed_execution_graph_oracle(),
                 ],
             ),
