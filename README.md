@@ -12,7 +12,9 @@ The restricted Nickel frontend now reads operator-rooted source and imports thro
 
 Production-linked Verus rails now prove the named single-step and finite-trace properties of the indexed kernel. Replay folds the production `step` relation, reports the first denial, and returns no dispatchable intents. A pinned Octet consumer gate checks every workspace target with all Octet lints at error severity.
 
-The conversion-only Seaglass adapter passes the selected behavior matrix. The exact reviewed Lattice runner also passes its 21 tests in a disposable source archive with `choregraph-seaglass` substituted for the legacy package. Consumer cutover and release evidence are not complete.
+The conversion-only Seaglass adapter passes the selected behavior matrix. The exact reviewed Lattice runner also passes its 21 tests in a disposable source archive with `choregraph-seaglass` substituted for the legacy package.
+
+The deterministic release bundle and local immutable publication candidate are complete. Publication and consumer cutover remain blocked until an operator assigns a Radicle RID and each consumer passes its own gates.
 
 ## Owned boundary
 
