@@ -24,6 +24,10 @@ const CANDIDATE_IDENTITY_CONTEXT: &str = "choregraph publication candidate ident
 const LENGTH_FRAME_BYTES: usize = size_of::<u64>();
 const GIT_REVISION_HEX_BYTES: usize = 40;
 const DIGEST_BYTES: usize = 32;
+const HEX_CHARACTERS_PER_BYTE: usize = 2;
+const DIGEST_HEX_BYTES: usize = 64;
+const NIBBLE_SHIFT_BITS: u32 = 4;
+const HEX_ALPHA_OFFSET: u8 = 10;
 const REQUIRED_ROLE_COUNT: usize = 30;
 
 pub const REQUIRED_NON_CLAIMS: &[&str] = &[
@@ -169,6 +173,33 @@ impl ArtifactStatus {
     }
 }
 
+fn decode_hex_nibble(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => byte.checked_sub(b'0'),
+        b'a'..=b'f' => byte
+            .checked_sub(b'a')
+            .and_then(|value| value.checked_add(HEX_ALPHA_OFFSET)),
+        _ => None,
+    }
+}
+
+fn decode_digest_hex(value: &str) -> Option<[u8; DIGEST_BYTES]> {
+    if value.len() != DIGEST_HEX_BYTES {
+        return None;
+    }
+    let mut decoded = [0u8; DIGEST_BYTES];
+    for (index, pair) in value
+        .as_bytes()
+        .chunks_exact(HEX_CHARACTERS_PER_BYTE)
+        .enumerate()
+    {
+        let high = decode_hex_nibble(pair[0])?;
+        let low = decode_hex_nibble(pair[1])?;
+        decoded[index] = high.checked_shl(NIBBLE_SHIFT_BITS)? | low;
+    }
+    Some(decoded)
+}
+
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ArtifactDigest([u8; DIGEST_BYTES]);
 
@@ -181,6 +212,11 @@ impl ArtifactDigest {
     #[must_use]
     pub const fn bytes(self) -> [u8; DIGEST_BYTES] {
         self.0
+    }
+
+    #[must_use]
+    pub fn from_hex(value: &str) -> Option<Self> {
+        decode_digest_hex(value).map(Self)
     }
 
     #[must_use]
@@ -201,6 +237,11 @@ impl BundleIdentity {
     #[must_use]
     pub const fn bytes(self) -> [u8; DIGEST_BYTES] {
         self.0
+    }
+
+    #[must_use]
+    pub fn from_hex(value: &str) -> Option<Self> {
+        decode_digest_hex(value).map(Self)
     }
 
     #[must_use]
@@ -246,6 +287,7 @@ pub enum ReleaseIssueCode {
     LicenseMismatch,
     PackageSetMismatch,
     AcquisitionAdapterMismatch,
+    CandidateMismatch,
     ProjectionMismatch,
 }
 
@@ -686,6 +728,20 @@ pub fn build_publication_candidate(
     })
 }
 
+pub fn verify_publication_candidate(
+    candidate: &PublicationCandidate,
+    expected_input: PublicationCandidateInput,
+) -> Result<(), ReleaseFailure> {
+    let expected = build_publication_candidate(expected_input)?;
+    if candidate != &expected {
+        return Err(ReleaseFailure::one(
+            ReleaseIssueCode::CandidateMismatch,
+            None,
+        ));
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use alloc::format;
@@ -769,6 +825,19 @@ mod tests {
             bundle,
             rollback_revision: String::from(ROLLBACK_REVISION),
         }
+    }
+
+    #[test]
+    fn digest_hex_parsing_is_exact_and_lowercase() {
+        let digest = ArtifactDigest::from_bytes([SOURCE_ARCHIVE_BYTE; DIGEST_BYTES]);
+        let identity = BundleIdentity::from_bytes([BUNDLE_BYTE; DIGEST_BYTES]);
+        assert_eq!(ArtifactDigest::from_hex(&digest.hex()), Some(digest));
+        assert_eq!(BundleIdentity::from_hex(&identity.hex()), Some(identity));
+        assert_eq!(ArtifactDigest::from_hex("short"), None);
+        assert_eq!(
+            BundleIdentity::from_hex(&"A".repeat(DIGEST_HEX_BYTES)),
+            None
+        );
     }
 
     #[test]
@@ -878,6 +947,17 @@ mod tests {
         let candidate = must(build_publication_candidate(candidate_input(bundle)));
         assert_eq!(candidate.packages.len(), REQUIRED_PACKAGES.len());
         assert_eq!(candidate.bundle, bundle);
+        assert!(verify_publication_candidate(&candidate, candidate_input(bundle)).is_ok());
+
+        let mut stale_candidate = candidate.clone();
+        stale_candidate.rollback_revision = String::from(SOURCE_REVISION);
+        assert_eq!(
+            issue_code(verify_publication_candidate(
+                &stale_candidate,
+                candidate_input(bundle)
+            )),
+            ReleaseIssueCode::CandidateMismatch
+        );
 
         let mut floating = candidate_input(bundle);
         floating.source_revision = String::from("main");

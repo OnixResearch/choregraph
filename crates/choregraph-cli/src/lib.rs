@@ -5,18 +5,30 @@ mod release;
 pub use capability::{CompilationReport, CompileNickelRequest, OperatorRootSpec, compile_nickel};
 pub use corpus::{KamaciteCorpusEntry, build_kamacite_corpus};
 pub use release::{
-    ReleaseBundleReport, ReleaseShellFailure, ReleaseShellIssueCode, VerifyReleaseBundleRequest,
-    WriteReleaseBundleRequest, verify_release_bundle_file, write_release_bundle,
+    PublicationCandidateReport, ReleaseBundleReport, ReleaseShellFailure, ReleaseShellIssueCode,
+    ValidatePublicationCandidateRequest, VerifyReleaseBundleRequest, WriteReleaseBundleRequest,
+    validate_publication_candidate, verify_release_bundle_file, write_release_bundle,
 };
 
 /// A command accepted by the imperative shell.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Command {
     Boundary,
-    CompileNickel { request: Box<CompileNickelRequest> },
-    WriteKamaciteCorpus { output_directory: String },
-    WriteReleaseBundle { request: WriteReleaseBundleRequest },
-    VerifyReleaseBundle { request: VerifyReleaseBundleRequest },
+    CompileNickel {
+        request: Box<CompileNickelRequest>,
+    },
+    WriteKamaciteCorpus {
+        output_directory: String,
+    },
+    WriteReleaseBundle {
+        request: WriteReleaseBundleRequest,
+    },
+    VerifyReleaseBundle {
+        request: VerifyReleaseBundleRequest,
+    },
+    ValidatePublicationCandidate {
+        request: ValidatePublicationCandidateRequest,
+    },
 }
 
 fn parse_operator_root(value: &str) -> Result<OperatorRootSpec, &'static str> {
@@ -62,6 +74,22 @@ fn parse_release_command(arguments: &[String]) -> Option<Result<Command, &'stati
                     artifact_root: std::path::PathBuf::from(artifact_root),
                     manifest_root: std::path::PathBuf::from(manifest_root),
                     manifest_path: std::path::PathBuf::from(manifest_path),
+                },
+            }))
+        }
+        [
+            command,
+            source_revision,
+            source_archive,
+            release_bundle,
+            rollback_revision,
+        ] if command == "validate-publication-candidate" => {
+            Some(Ok(Command::ValidatePublicationCandidate {
+                request: ValidatePublicationCandidateRequest {
+                    source_revision: source_revision.clone(),
+                    source_archive_blake3: source_archive.clone(),
+                    release_bundle_blake3: release_bundle.clone(),
+                    rollback_revision: rollback_revision.clone(),
                 },
             }))
         }
@@ -111,7 +139,7 @@ fn parse_non_release_command(arguments: &[String]) -> Result<Command, &'static s
             })
         }
         _ => Err(
-            "usage: choregraph [boundary | compile-nickel <evaluator> <source-root> <source-path> <contract-root> <scratch-root> <output-root> <output-path> [<import-id>=<import-root> ...] | write-kamacite-corpus <output-directory> | write-release-bundle <artifact-root> <output-root> <output-path> | verify-release-bundle <artifact-root> <manifest-root> <manifest-path>]",
+            "usage: choregraph [boundary | compile-nickel <evaluator> <source-root> <source-path> <contract-root> <scratch-root> <output-root> <output-path> [<import-id>=<import-root> ...] | write-kamacite-corpus <output-directory> | write-release-bundle <artifact-root> <output-root> <output-path> | verify-release-bundle <artifact-root> <manifest-root> <manifest-path> | validate-publication-candidate <source-revision> <source-archive-blake3> <release-bundle-blake3> <rollback-revision>]",
         ),
     }
 }
@@ -166,6 +194,17 @@ pub fn render_release_verification_report(report: &ReleaseBundleReport) -> Strin
     format!(
         "status=verified\nbundle-blake3={}\nartifacts={}\nartifact-bytes={}\nmanifest-bytes={}\n",
         report.bundle_blake3, report.artifact_count, report.artifact_bytes, report.manifest_bytes,
+    )
+}
+
+pub fn render_publication_candidate_report(report: &PublicationCandidateReport) -> String {
+    format!(
+        "status=local-candidate\ncandidate-blake3={}\nsource-revision={}\nsource-archive-blake3={}\nrelease-bundle-blake3={}\nrollback-revision={}\n",
+        report.candidate_blake3,
+        report.source_revision,
+        report.source_archive_blake3,
+        report.release_bundle_blake3,
+        report.rollback_revision,
     )
 }
 
@@ -225,6 +264,23 @@ mod tests {
                     artifact_root: std::path::PathBuf::from("/source"),
                     manifest_root: std::path::PathBuf::from("/output"),
                     manifest_path: std::path::PathBuf::from("release.bundle"),
+                },
+            })
+        );
+        assert_eq!(
+            super::parse_command(&[
+                String::from("validate-publication-candidate"),
+                String::from("source-revision"),
+                String::from("source-archive"),
+                String::from("release-bundle"),
+                String::from("rollback-revision"),
+            ]),
+            Ok(super::Command::ValidatePublicationCandidate {
+                request: super::ValidatePublicationCandidateRequest {
+                    source_revision: String::from("source-revision"),
+                    source_archive_blake3: String::from("source-archive"),
+                    release_bundle_blake3: String::from("release-bundle"),
+                    rollback_revision: String::from("rollback-revision"),
                 },
             })
         );

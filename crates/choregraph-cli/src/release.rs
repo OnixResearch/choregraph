@@ -12,8 +12,10 @@ use std::path::{Path, PathBuf};
 
 use cap_std::fs::Dir;
 use choregraph_release::{
-    ArtifactDigest, ArtifactObservation, REQUIRED_NON_CLAIMS, ReleaseBundle, ReleaseRole,
-    build_release_bundle, expected_schema, expected_status, project_valence, verify_release_bundle,
+    ACQUISITION_ADAPTER, ArtifactDigest, ArtifactObservation, BundleIdentity, PROJECT_LICENSE,
+    PublicationCandidateInput, REQUIRED_NON_CLAIMS, REQUIRED_PACKAGES, ReleaseBundle, ReleaseRole,
+    build_publication_candidate, build_release_bundle, expected_schema, expected_status,
+    project_valence, verify_publication_candidate, verify_release_bundle,
     verify_valence_projection,
 };
 
@@ -166,6 +168,23 @@ pub struct VerifyReleaseBundleRequest {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ValidatePublicationCandidateRequest {
+    pub source_revision: String,
+    pub source_archive_blake3: String,
+    pub release_bundle_blake3: String,
+    pub rollback_revision: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PublicationCandidateReport {
+    pub candidate_blake3: String,
+    pub source_revision: String,
+    pub source_archive_blake3: String,
+    pub release_bundle_blake3: String,
+    pub rollback_revision: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ReleaseBundleReport {
     pub bundle_blake3: String,
     pub artifact_count: usize,
@@ -183,6 +202,8 @@ pub enum ReleaseShellIssueCode {
     OutputRejected,
     ManifestLimitExceeded,
     ManifestMismatch,
+    InvalidIdentity,
+    CandidateRejected,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -366,6 +387,40 @@ pub fn verify_release_bundle_file(
     ))
 }
 
+pub fn validate_publication_candidate(
+    request: &ValidatePublicationCandidateRequest,
+) -> Result<PublicationCandidateReport, ReleaseShellFailure> {
+    let source_archive = ArtifactDigest::from_hex(&request.source_archive_blake3)
+        .ok_or_else(|| ReleaseShellFailure::one(ReleaseShellIssueCode::InvalidIdentity, None))?;
+    let bundle = BundleIdentity::from_hex(&request.release_bundle_blake3)
+        .ok_or_else(|| ReleaseShellFailure::one(ReleaseShellIssueCode::InvalidIdentity, None))?;
+    let input = PublicationCandidateInput {
+        source_revision: request.source_revision.clone(),
+        source_archive,
+        license: String::from(PROJECT_LICENSE),
+        packages: REQUIRED_PACKAGES
+            .iter()
+            .map(|package| String::from(*package))
+            .collect(),
+        acquisition_adapter: String::from(ACQUISITION_ADAPTER),
+        bundle,
+        rollback_revision: request.rollback_revision.clone(),
+    };
+    let candidate = build_publication_candidate(input.clone())
+        .map_err(|_| ReleaseShellFailure::one(ReleaseShellIssueCode::CandidateRejected, None))?;
+    verify_publication_candidate(&candidate, input)
+        .map_err(|_| ReleaseShellFailure::one(ReleaseShellIssueCode::CandidateRejected, None))?;
+    debug_assert_eq!(candidate.source_revision, request.source_revision);
+    debug_assert_eq!(candidate.rollback_revision, request.rollback_revision);
+    Ok(PublicationCandidateReport {
+        candidate_blake3: candidate.identity.hex(),
+        source_revision: candidate.source_revision,
+        source_archive_blake3: candidate.source_archive.hex(),
+        release_bundle_blake3: candidate.bundle.hex(),
+        rollback_revision: candidate.rollback_revision,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use std::fs;
@@ -373,6 +428,10 @@ mod tests {
     use super::*;
 
     const FIXTURE_BYTES: &[u8] = b"reviewed release artifact";
+    const SOURCE_REVISION: &str = "1111111111111111111111111111111111111111";
+    const ROLLBACK_REVISION: &str = "2222222222222222222222222222222222222222";
+    const SOURCE_ARCHIVE: &str = "3333333333333333333333333333333333333333333333333333333333333333";
+    const RELEASE_BUNDLE: &str = "4444444444444444444444444444444444444444444444444444444444444444";
 
     #[allow(
         unknown_lints,
@@ -391,9 +450,7 @@ mod tests {
         no_panic,
         reason = "negative shell fixtures must stop when a rejected request unexpectedly succeeds"
     )]
-    fn issue_code(
-        result: Result<ReleaseBundleReport, ReleaseShellFailure>,
-    ) -> ReleaseShellIssueCode {
+    fn issue_code<T>(result: Result<T, ReleaseShellFailure>) -> ReleaseShellIssueCode {
         match result {
             Err(failure) => failure.code,
             Ok(_) => panic!("expected release shell failure"),
@@ -450,6 +507,35 @@ mod tests {
         assert_eq!(
             issue_code(verify_release_bundle_file(&verify_request)),
             ReleaseShellIssueCode::ManifestMismatch
+        );
+    }
+
+    #[test]
+    fn local_publication_candidate_is_exact_and_fail_closed() {
+        let request = ValidatePublicationCandidateRequest {
+            source_revision: String::from(SOURCE_REVISION),
+            source_archive_blake3: String::from(SOURCE_ARCHIVE),
+            release_bundle_blake3: String::from(RELEASE_BUNDLE),
+            rollback_revision: String::from(ROLLBACK_REVISION),
+        };
+        let candidate = must(validate_publication_candidate(&request));
+        assert_eq!(candidate.source_revision, SOURCE_REVISION);
+        assert_eq!(candidate.source_archive_blake3, SOURCE_ARCHIVE);
+        assert_eq!(candidate.release_bundle_blake3, RELEASE_BUNDLE);
+        assert_eq!(candidate.rollback_revision, ROLLBACK_REVISION);
+
+        let mut floating = request.clone();
+        floating.source_revision = String::from("main");
+        assert_eq!(
+            issue_code(validate_publication_candidate(&floating)),
+            ReleaseShellIssueCode::CandidateRejected
+        );
+
+        let mut malformed = request;
+        malformed.release_bundle_blake3 = String::from("not-a-digest");
+        assert_eq!(
+            issue_code(validate_publication_candidate(&malformed)),
+            ReleaseShellIssueCode::InvalidIdentity
         );
     }
 

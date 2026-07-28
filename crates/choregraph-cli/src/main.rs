@@ -12,8 +12,9 @@ use std::process::ExitCode;
 
 use choregraph_cli::{
     Command, KamaciteCorpusEntry, build_kamacite_corpus, compile_nickel, parse_command,
-    render_compilation_report, render_foundation_report, render_release_bundle_report,
-    render_release_verification_report, verify_release_bundle_file, write_release_bundle,
+    render_compilation_report, render_foundation_report, render_publication_candidate_report,
+    render_release_bundle_report, render_release_verification_report,
+    validate_publication_candidate, verify_release_bundle_file, write_release_bundle,
 };
 
 // This I/O shell returns bounded errors; pure corpus validation stays in the library core.
@@ -74,6 +75,12 @@ fn run(arguments: &[String]) -> Result<(), String> {
             let bundle_result = verify_release_bundle_file(&request)
                 .map_err(|failure| format!("release bundle rejected: {:?}", failure.code))?;
             print!("{}", render_release_verification_report(&bundle_result));
+            Ok(())
+        }
+        Command::ValidatePublicationCandidate { request } => {
+            let candidate = validate_publication_candidate(&request)
+                .map_err(|failure| format!("publication candidate rejected: {:?}", failure.code))?;
+            print!("{}", render_publication_candidate_report(&candidate));
             Ok(())
         }
     }
