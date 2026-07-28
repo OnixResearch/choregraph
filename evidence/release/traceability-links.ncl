@@ -52,5 +52,9 @@
     { requirement = "choregraph.release.acquisition", evidence = "record-choregraph-publication evidence" },
     # r[verify choregraph.release.publication_validation]
     { requirement = "choregraph.release.publication_validation", evidence = "publication receipt contract and negative fixture" },
+    # r[impl choregraph.release.compatibility_publication]
+    { requirement = "choregraph.release.compatibility_publication", evidence = "evidence/release/compatibility-publication-receipt.ncl" },
+    # r[verify choregraph.release.compatibility_acquisition]
+    { requirement = "choregraph.release.compatibility_acquisition", evidence = "record-compatibility-publication evidence" },
   ],
 }

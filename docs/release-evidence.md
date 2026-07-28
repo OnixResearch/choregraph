@@ -77,7 +77,9 @@ That candidate is published as `rad:zL2ncTUeASVYwcoGkEXv9JKgGbAF`. The exact rea
 
 The compiler-compatibility candidate is `evidence/release/compatibility-publication-candidate.ncl`. It binds source revision `81b260da2256147ec82cb5dd44c0a0c1dcb7500d`, source archive `41adfbdae4bc5b688ef92ab11cd39ed9c8f572bf6214f522d9b4a1290e5f84d5`, and release bundle `6912c485313908411040fa533bd75a1cfd2611d7589605268ae111b3ba1472bc`. Its rollback revision is the published source revision.
 
-The compatibility candidate has no publication authority or receipt. It is not pushed, published, signed, replicated, or available through the read-only adapter.
+The operator separately authorized publication of the unchanged compatibility candidate. `evidence/release/compatibility-publication-receipt.ncl` binds it to the existing RID, current parent-feature signed refs, three observed replicas, and exact HTTPS acquisition.
+
+Radicle `main` and `candidate` now resolve to `81b260da2256147ec82cb5dd44c0a0c1dcb7500d`. The earlier candidate and publication receipt remain unchanged.
 
 ## Local commands
 
