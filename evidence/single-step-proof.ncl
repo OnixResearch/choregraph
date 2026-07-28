@@ -101,7 +101,7 @@ let ProofManifest = {
     sources = [
       {
         path = "Cargo.lock",
-        blake3 = "078fdad947e0fa60d8f0d64780fa5383feca9d835daa2397066d5e08677a2b8e",
+        blake3 = "0669dd831ea72609c40bdc3b42330d859fc32d0b6fad026bf958b4f2607caadb",
         role = "resolved Rust dependency identity",
       },
       {
@@ -156,17 +156,17 @@ let ProofManifest = {
       },
       {
         path = "evidence/generated/source-baseline.json",
-        blake3 = "1919b2980372348ed9d22acfefb77fc8b750af371f715020eef542cf3fe50c4d",
+        blake3 = "584be28e6181e7289f69c8ece9a77bd838d6b2261322d1258056e50f8c981de1",
         role = "canonical selected-source baseline",
       },
       {
         path = "evidence/source-baseline.ncl",
-        blake3 = "fbdb00433203bf7a44feb1466af6b59db11a3e281bfada680727bc75dac13efe",
+        blake3 = "fcc27fcef0c011965b2bda4caaffb526dbb6d6af79935d51fa531d285753b7ea",
         role = "reviewed selected-source baseline",
       },
       {
         path = "flake.nix",
-        blake3 = "fb47ec17f807ac8d57b041ef12aa67cd972acbfa15bfdef57aa918d4ca23fb38",
+        blake3 = "6aa9e660651872a4fa27f7b56e97c355aefa6a7ab90c06a529d754d3a0b1dda6",
         role = "maintained proof and failure-fixture gate",
       },
       {

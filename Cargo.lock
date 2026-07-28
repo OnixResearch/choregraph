@@ -238,6 +238,7 @@ name = "choregraph-seaglass"
 version = "0.1.0"
 dependencies = [
  "choregraph-core",
+ "execution-graph-core",
 ]
 
 [[package]]
@@ -260,6 +261,14 @@ checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "execution-graph-core"
+version = "0.1.0"
+source = "git+https://git.onix.computer/z2oYsb9jGTyp68BKYhzpivY1eK58a.git?rev=03736f1ec46c377ff86b451260ad68aa70ff3b0b#03736f1ec46c377ff86b451260ad68aa70ff3b0b"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

@@ -18,7 +18,7 @@ choregraph-core + all adapters
 
 ## Core boundary
 
-`choregraph-core` uses `no_std` plus `alloc`. It owns immutable machine data and deterministic decisions after later changes implement them.
+`choregraph-core` uses `no_std` plus `alloc`. It owns immutable machine data, admission, analytics, replay, and deterministic decisions.
 
 The core excludes:
 
@@ -38,7 +38,9 @@ The foundation checker rejects forbidden dependencies, source tokens, path depen
 
 `choregraph-nickel` accepts only evaluated data. Source discovery, imports, contracts, and Nickel evaluation remain in a shell.
 
-`choregraph-seaglass` is a conversion-only compatibility boundary. It cannot contain an independent transition implementation.
+`choregraph-seaglass` is a conversion-only compatibility boundary. It delegates admission, graph queries, analytics, lifecycle, readiness, resume, aggregate steps, and cycle probes to `choregraph-core`.
+
+The exact execution-graph implementation is compiled only as a conformance-test oracle. It is not a production dependency.
 
 `choregraph-cli` owns process arguments and terminal output. Later shell behavior must remain separate from the pure core.
 

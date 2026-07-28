@@ -19,7 +19,7 @@ Execution-graph passed all seven unit tests. The focused Lattice runner passed a
 
 | Current behavior | Choregraph disposition |
 |---|---|
-| Graph and node constructors | The later facade converts values into `MachineSpec`. |
+| Graph and node constructors | `choregraph-seaglass` converts values into `MachineSpec`. |
 | Empty graph admission | Preserved as an empty admitted machine. |
 | Duplicate and empty node diagnostics | Preserved with typed Choregraph diagnostic codes. |
 | Duplicate, missing, and self-loop edge diagnostics | Preserved with typed Choregraph diagnostic codes. |
@@ -36,13 +36,21 @@ Execution-graph passed all seven unit tests. The focused Lattice runner passed a
 | Resume decisions | Preserved for admitted nodes and exact state. Unknown nodes now fail closed. |
 | Cycle probe for a proposed edge | Preserved through `would_create_cycle`. |
 | Serde field representation | Deferred to the Kamacite and compatibility changes. |
-| Diagnostic display text | Deferred to the compatibility change. Typed codes are authoritative now. |
+| Diagnostic display text | Stable compatibility text is derived from typed Choregraph admission codes. |
+
+## Parity result
+
+The adapter dual-runs the exact execution-graph source at revision `03736f1ec46c377ff86b451260ad68aa70ff3b0b`. Eight integration tests cover the complete selected matrix. The legacy source is a test-only dependency.
+
+Production adapter decisions call Choregraph admission, indexes, analytics, lifecycle, readiness, resume, aggregate step, and cycle-probe functions. The adapter does not contain graph traversal or transition algorithms.
 
 ## Intentional strictness
 
 The current execution-graph helper treats missing state entries as pending. Choregraph requires exact state coverage.
 
-The Lattice adapter must expand its sparse persisted map before it calls Choregraph. Unknown or extra entries must fail closed.
+The Lattice adapter expands its sparse persisted map before it calls Choregraph. Unknown, extra, malformed, or dependency-inconsistent entries fail closed.
+
+The legacy helper accepted some non-empty identifiers outside the Choregraph profile and treated an unknown resume node as an implicit pending root. Choregraph rejects those cases with `InvalidNodeId` or `UnknownNode`.
 
 Effect declarations are permissions for matching event requests. A declaration does not require every matching event to request that effect.
 

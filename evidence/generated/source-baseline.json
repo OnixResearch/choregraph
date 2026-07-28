@@ -70,9 +70,25 @@
         "license": "AGPL-3.0-or-later",
         "repository": "https://git.onix.computer/z2oYsb9jGTyp68BKYhzpivY1eK58a.git",
         "revision": "c415ddf2c8252dd9ba6cb267a4e6346158069823",
-        "role": "behavior and compatibility baseline",
+        "role": "current behavior and lifecycle baseline",
         "source_scopes": [
           "src"
+        ],
+        "working_tree_used": false
+      },
+      {
+        "acquisition_status": "exact-radicle-git-dev-dependency",
+        "content_blake3": "91450b94f6256c71057507b6ae97f63e505dc57377198be38087530bedefccb4",
+        "hash_protocol": "blake3-file-bytes-v1",
+        "hash_scope": "exact Rust source compiled only by conformance tests",
+        "id": "execution-graph-parity-oracle",
+        "imported": true,
+        "license": "AGPL-3.0-or-later",
+        "repository": "https://git.onix.computer/z2oYsb9jGTyp68BKYhzpivY1eK58a.git",
+        "revision": "03736f1ec46c377ff86b451260ad68aa70ff3b0b",
+        "role": "test-only exact compatibility oracle",
+        "source_scopes": [
+          "src/lib.rs"
         ],
         "working_tree_used": false
       },

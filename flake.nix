@@ -721,7 +721,7 @@
                   and ($ids == ($ids | sort))
                   and (($ids | length) == ($ids | unique | length))
                   and ([.baseline.sources[].working_tree_used] | all(. == false))
-                  and ([.baseline.sources[] | select(.imported == true) | .id] == ["bounded-exec-process-mechanism", "cap-root-lexical-boundary", "kamacite-interchange-boundary", "trellis-proof-reference"])
+                  and ([.baseline.sources[] | select(.imported == true) | .id] == ["bounded-exec-process-mechanism", "cap-root-lexical-boundary", "execution-graph-parity-oracle", "kamacite-interchange-boundary", "trellis-proof-reference"])
                 ' "$TMPDIR/source-baseline.json" > /dev/null
 
                 if nickel export --format json \

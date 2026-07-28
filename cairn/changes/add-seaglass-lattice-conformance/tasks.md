@@ -1,8 +1,8 @@
 ## Tasks
 
 - [x] [serial] Record exact execution-graph, Seaglass, and Lattice source revisions, behavior entry points, fixtures, package sources, and rollback states. r[choregraph.conformance.sources] r[choregraph.conformance.inventory]
-- [ ] [serial] Implement conversion-only Seaglass compatibility mappings over Choregraph production types. r[choregraph.conformance.adapter]
-- [ ] [depends:compatibility-adapter] Dual-run admission, cycle, order, dependency, group, readiness, lifecycle, resume, critical-path, bottleneck, state, and event behavior. r[choregraph.conformance.parity]
+- [x] [serial] Implement conversion-only Seaglass compatibility mappings over Choregraph production types. r[choregraph.conformance.adapter]
+- [x] [depends:compatibility-adapter] Dual-run admission, cycle, order, dependency, group, readiness, lifecycle, resume, critical-path, bottleneck, state, and event behavior. r[choregraph.conformance.parity]
 - [ ] [depends:nickel-lowering] Add the Lattice diamond Nickel-to-machine end-to-end positive fixture. r[choregraph.conformance.lattice]
 - [ ] [parallel] Add malformed graph, invalid lifecycle, replay, undeclared-effect, authorization-denial-result, stale-source, receipt-mismatch, and no-fallback negative fixtures. r[choregraph.conformance.negative]
 - [ ] [depends:lattice-fixture] Add a disposable downstream integration check against one exact reviewed Lattice revision. r[choregraph.conformance.downstream]
