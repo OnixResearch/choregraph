@@ -14,8 +14,8 @@ The Lattice cutover is blocked until one immutable Choregraph release source exi
 | Lattice diamond integration | pass | conformance diamond evidence |
 | exact Lattice disposable compile | pass | conformance downstream evidence |
 | local immutable publication candidate | pass | `evidence/release/publication-candidate.ncl` |
-| published immutable Choregraph source | blocked | the candidate has no Radicle RID |
-| Cargo and Nix consumer source alignment | blocked | no published release source is selected |
+| published immutable Choregraph source | pass | `rad:zL2ncTUeASVYwcoGkEXv9JKgGbAF` at the exact candidate revision |
+| Cargo and Nix consumer source alignment | blocked | each consumer must select the exact HTTPS adapter and revision |
 | execution-graph legacy removal | blocked | the consumer repository still owns its old implementation |
 | Lattice duplicate removal | blocked | Lattice still consumes its legacy vendor package |
 
@@ -32,7 +32,7 @@ The local handoff candidate binds:
 - license `AGPL-3.0-or-later`;
 - acquisition adapter `radicle-rid-exact-revision-v1`.
 
-The candidate is not published. Its Radicle RID is unassigned. Consumers must not admit it as a remote source until an operator supplies a RID and acquisition evidence.
+The candidate is published as `rad:zL2ncTUeASVYwcoGkEXv9JKgGbAF`. Consumers must use `https://git.onix.computer/zL2ncTUeASVYwcoGkEXv9JKgGbAF.git` at the exact candidate revision and must rerun their own source gates.
 
 ## Required cutover order
 
@@ -112,4 +112,4 @@ Choregraph conformance does not complete those changes.
 
 ## Claim boundary
 
-This document records gate order, source rules, duplicate-removal rules, and rollback identities. It does not claim that consumer cutover, publication, rollback testing, runtime authorization, or release is complete.
+This document records gate order, source rules, duplicate-removal rules, and rollback identities. Publication is complete. Consumer cutover, rollback testing, runtime authorization, and consumer release remain separate.

@@ -46,5 +46,11 @@
     { requirement = "choregraph.release.authority", evidence = "release authority audit" },
     # r[impl choregraph.release.claim_boundary]
     { requirement = "choregraph.release.claim_boundary", evidence = "REQUIRED_NON_CLAIMS and docs/release-evidence.md" },
+    # r[impl choregraph.release.publication]
+    { requirement = "choregraph.release.publication", evidence = "evidence/release/publication-receipt.ncl" },
+    # r[verify choregraph.release.acquisition]
+    { requirement = "choregraph.release.acquisition", evidence = "record-choregraph-publication evidence" },
+    # r[verify choregraph.release.publication_validation]
+    { requirement = "choregraph.release.publication_validation", evidence = "publication receipt contract and negative fixture" },
   ],
 }

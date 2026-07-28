@@ -71,7 +71,9 @@ Candidate construction performs no publication, signing, push, remote update, ro
 
 The local candidate is `evidence/release/publication-candidate.ncl`. It binds source revision `fc47c5f4ecbb7b4341af690fa42199f25d57f54c`, its deterministic source archive, release bundle `a2ac1336679542fa9573b356daddc18266fdda8147ddbe28f85aa37d135030d9`, and rollback revision `2772442d14bfc90579027e4fbff545d7f829c76c`.
 
-The Radicle RID is explicitly unassigned. The candidate is not a publication receipt.
+The candidate is published as `rad:zL2ncTUeASVYwcoGkEXv9JKgGbAF`. The exact read-only adapter is `https://git.onix.computer/zL2ncTUeASVYwcoGkEXv9JKgGbAF.git`.
+
+`evidence/release/publication-receipt.ncl` binds the unchanged candidate to operator authority, parent-feature signed refs, three observed replicas, and exact HTTPS acquisition. Replication does not prove indefinite availability or consumer acceptance.
 
 ## Local commands
 

@@ -14,7 +14,7 @@ Production-linked Verus rails now prove the named single-step and finite-trace p
 
 The conversion-only Seaglass adapter passes the selected behavior matrix. The exact reviewed Lattice runner also passes its 21 tests in a disposable source archive with `choregraph-seaglass` substituted for the legacy package.
 
-The deterministic release bundle and local immutable publication candidate are complete. Publication and consumer cutover remain blocked until an operator assigns a Radicle RID and each consumer passes its own gates.
+The deterministic release bundle is published as `rad:zL2ncTUeASVYwcoGkEXv9JKgGbAF` at the exact candidate revision. Consumer cutover remains blocked until each consumer passes its own gates.
 
 ## Owned boundary
 
@@ -110,6 +110,7 @@ Choregraph preserves the source implementation license: `AGPL-3.0-or-later`. No 
 
 ## References
 
+- [Choregraph publication](https://git.onix.computer/zL2ncTUeASVYwcoGkEXv9JKgGbAF.git) — exact read-only adapter for the published candidate.
 - [execution-graph](https://git.onix.computer/z2oYsb9jGTyp68BKYhzpivY1eK58a.git) — existing deterministic DAG implementation and compatibility baseline.
 - [Trellis](https://github.com/OnixResearch/trellis) — verified DAG, lifecycle, scheduler, replay, and choreography primitives.
 - [Kamacite](https://github.com/OnixResearch/kamacite) — canonical Preserves artifacts, source envelopes, FSM descriptors, and receipts.
