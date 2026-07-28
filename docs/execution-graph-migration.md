@@ -11,9 +11,11 @@ Choregraph must become the only production transition implementation.
 5. Change `execution-graph-core` into a conversion-only Choregraph facade.
 6. Remove the old transition algorithm and temporary dual-run code.
 
-`choregraph-seaglass` now provides the conversion-only adapter and test-only comparator. It preserves selected types, errors, ordering, readiness, lifecycle, resume, and analytics behavior.
+`choregraph-seaglass` now provides the conversion-only adapter and test-only comparator. Its legacy-shaped entry points preserve the selected package signatures. Checked companion entry points return explicit conversion failures.
 
-The adapter rejects identifiers outside the Choregraph profile, unknown resume nodes, and invalid sparse state. These fail-closed differences are explicit migration inputs.
+The adapter rejects identifiers outside the Choregraph profile, unknown resume nodes, and invalid sparse state. Legacy-shaped collection calls return no result for these failures. Legacy-shaped resume calls return `RejectTerminalMutation`. Checked calls retain the exact failure class.
+
+`tools/check-lattice-downstream.rs` archives exact Lattice revision `c8d56ad83a57287064edb85f58808f53e4bf4536`. It substitutes only the Seaglass package dependency and runs the 21 focused runner tests in a disposable directory.
 
 ## Release gate
 

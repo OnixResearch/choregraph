@@ -50,7 +50,9 @@ The current execution-graph helper treats missing state entries as pending. Chor
 
 The Lattice adapter expands its sparse persisted map before it calls Choregraph. Unknown, extra, malformed, or dependency-inconsistent entries fail closed.
 
-The legacy helper accepted some non-empty identifiers outside the Choregraph profile and treated an unknown resume node as an implicit pending root. Choregraph rejects those cases with `InvalidNodeId` or `UnknownNode`.
+The legacy helper accepted some non-empty identifiers outside the Choregraph profile. It also treated an unknown resume node as an implicit pending root. Choregraph rejects those cases.
+
+The legacy-shaped facade uses an existing diagnostic category and `RejectTerminalMutation` so exhaustive downstream matches still compile. Checked companion APIs return the exact conversion failure.
 
 Effect declarations are permissions for matching event requests. A declaration does not require every matching event to request that effect.
 

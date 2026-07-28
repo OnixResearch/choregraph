@@ -10,7 +10,9 @@ The buildable foundation, executable machine semantics, and Kamacite interchange
 
 The restricted Nickel frontend now reads operator-rooted source and imports through `cap-root` and `cap-std`. It runs the selected evaluator through pinned Bounded Exec, lowers checked output, and publishes canonical machine artifacts without replacement.
 
-Production-linked Verus rails now prove the named single-step and finite-trace properties of the indexed kernel. Replay folds the production `step` relation, reports the first denial, and returns no dispatchable intents. A pinned Octet consumer gate checks every workspace target with all Octet lints at error severity. Compatibility parity and release evidence do not exist yet.
+Production-linked Verus rails now prove the named single-step and finite-trace properties of the indexed kernel. Replay folds the production `step` relation, reports the first denial, and returns no dispatchable intents. A pinned Octet consumer gate checks every workspace target with all Octet lints at error severity.
+
+The conversion-only Seaglass adapter passes the selected behavior matrix. The exact reviewed Lattice runner also passes its 21 tests in a disposable source archive with `choregraph-seaglass` substituted for the legacy package. Consumer cutover and release evidence are not complete.
 
 ## Owned boundary
 
@@ -86,6 +88,8 @@ nix develop -c cargo test --workspace --all-targets
 nix develop -c cargo clippy --workspace --all-targets -- --deny warnings
 nix develop -c cargo run -p choregraph-foundation-check -- --root .
 nix build .#checks.x86_64-linux.octet-deny-all --no-link -L
+./tools/check-lattice-downstream.rs --self-test
+./tools/check-lattice-downstream.rs ../lattice .
 nix flake check -L
 ```
 

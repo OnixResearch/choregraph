@@ -54,13 +54,13 @@ Selected valid graph, lifecycle, readiness, resume, and analytics inputs match t
 
 Three legacy behaviors are intentionally stricter:
 
-- A non-empty identifier outside the Choregraph ASCII profile is rejected as `InvalidNodeId`.
-- An unknown resume node returns `UnknownNode`; the legacy helper treated it as an implicit pending root.
-- A sparse state that violates dependency invariants returns `InvalidState`; the legacy helper tolerated the inconsistent map.
+- A non-empty identifier outside the Choregraph ASCII profile is rejected under an existing legacy diagnostic category.
+- An unknown resume node returns legacy `RejectTerminalMutation`; the legacy helper treated it as an implicit pending root.
+- A sparse state that violates dependency invariants returns no ready nodes; the legacy helper tolerated the inconsistent map.
 
 These differences fail closed and remain visible in negative tests. They are not presented as exact legacy behavior.
 
-Checked graph queries also return typed conversion errors instead of hiding malformed input behind an empty collection.
+Legacy-shaped entry points preserve the original signatures and closed enums so existing exhaustive matches compile. Checked companion entry points return typed conversion, resume, and state failures.
 
 ## Adversarial audit
 

@@ -173,11 +173,11 @@ fn diamond_admission_queries_groups_and_analytics_match() {
         legacy_plan.topological_order
     );
     assert_eq!(
-        must(compatibility_plan.dependencies(NODE_D)),
+        compatibility_plan.dependencies(NODE_D),
         legacy_plan.dependencies(NODE_D)
     );
     assert_eq!(
-        must(compatibility_plan.dependents(NODE_A)),
+        compatibility_plan.dependents(NODE_A),
         legacy_plan.dependents(NODE_A)
     );
 
@@ -186,7 +186,8 @@ fn diamond_admission_queries_groups_and_analytics_match() {
         .into_iter()
         .map(|group| (group.node_ids, group.level, group.can_parallelize))
         .collect::<Vec<_>>();
-    let compatibility_groups = must(compatibility_plan.parallel_groups())
+    let compatibility_groups = compatibility_plan
+        .parallel_groups()
         .into_iter()
         .map(|group| (group.node_ids, group.level, group.can_parallelize))
         .collect::<Vec<_>>();
@@ -202,7 +203,8 @@ fn diamond_admission_queries_groups_and_analytics_match() {
         .into_iter()
         .map(|item| (item.node_id, item.dependent_count))
         .collect::<Vec<_>>();
-    let compatibility_bottlenecks = must(compatibility_plan.bottlenecks())
+    let compatibility_bottlenecks = compatibility_plan
+        .bottlenecks()
         .into_iter()
         .map(|item| (item.node_id, item.dependent_count))
         .collect::<Vec<_>>();
@@ -225,12 +227,12 @@ fn empty_graph_is_an_exact_no_work_plan() {
         compatibility_plan.topological_order,
         legacy_plan.topological_order
     );
-    assert_eq!(must(compatibility_plan.parallel_groups()), Vec::new());
+    assert_eq!(compatibility_plan.parallel_groups(), Vec::new());
     assert_eq!(
         compatibility_plan.critical_path(),
         legacy_plan.critical_path()
     );
-    assert_eq!(must(compatibility_plan.bottlenecks()), Vec::new());
+    assert_eq!(compatibility_plan.bottlenecks(), Vec::new());
 }
 
 #[test]
@@ -316,23 +318,11 @@ fn cycle_rejection_and_cycle_probes_match() {
         vec![choregraph_seaglass::ExecutionEdge::new(NODE_A, NODE_B)],
     );
     assert_eq!(
-        must(choregraph_seaglass::would_create_cycle(
-            choregraph_seaglass::CycleProbe {
-                graph: &compatibility_graph,
-                source: NODE_B,
-                target: NODE_A,
-            }
-        )),
+        choregraph_seaglass::would_create_cycle(&compatibility_graph, NODE_B, NODE_A),
         legacy_execution_graph::would_create_cycle(&legacy_graph, NODE_B, NODE_A)
     );
     assert_eq!(
-        must(choregraph_seaglass::would_create_cycle(
-            choregraph_seaglass::CycleProbe {
-                graph: &compatibility_graph,
-                source: NODE_A,
-                target: MISSING_NODE,
-            }
-        )),
+        choregraph_seaglass::would_create_cycle(&compatibility_graph, NODE_A, MISSING_NODE),
         legacy_execution_graph::would_create_cycle(&legacy_graph, NODE_A, MISSING_NODE)
     );
 }
@@ -396,10 +386,7 @@ fn ready_and_resume_decisions_match_for_valid_sparse_states() {
     let mut compatibility_states = BTreeMap::new();
 
     assert_eq!(
-        must(choregraph_seaglass::ready_nodes(
-            &compatibility_plan,
-            &compatibility_states
-        )),
+        choregraph_seaglass::ready_nodes(&compatibility_plan, &compatibility_states),
         legacy_execution_graph::ready_nodes(&legacy_plan, &legacy_states)
     );
     assert_eq!(
@@ -420,10 +407,7 @@ fn ready_and_resume_decisions_match_for_valid_sparse_states() {
         choregraph_seaglass::StepState::Completed,
     );
     assert_eq!(
-        must(choregraph_seaglass::ready_nodes(
-            &compatibility_plan,
-            &compatibility_states
-        )),
+        choregraph_seaglass::ready_nodes(&compatibility_plan, &compatibility_states),
         legacy_execution_graph::ready_nodes(&legacy_plan, &legacy_states)
     );
     assert_eq!(
@@ -441,10 +425,7 @@ fn ready_and_resume_decisions_match_for_valid_sparse_states() {
     );
     compatibility_states.insert(NODE_A.to_string(), choregraph_seaglass::StepState::Failed);
     assert_eq!(
-        must(choregraph_seaglass::ready_nodes(
-            &compatibility_plan,
-            &compatibility_states
-        )),
+        choregraph_seaglass::ready_nodes(&compatibility_plan, &compatibility_states),
         legacy_execution_graph::ready_nodes(&legacy_plan, &legacy_states)
     );
     assert_eq!(
@@ -503,7 +484,7 @@ fn stricter_identifier_state_and_unknown_node_cases_fail_closed() {
     assert!(
         choregraph_seaglass::validate_graph(&compatibility_graph)
             .iter()
-            .any(|item| item.code == choregraph_seaglass::GraphDiagnosticCode::InvalidNodeId)
+            .any(|item| item.code == choregraph_seaglass::GraphDiagnosticCode::GraphTooLarge)
     );
 
     let legacy_plan = must(legacy_execution_graph::admit_graph(&legacy_diamond()));
@@ -514,15 +495,24 @@ fn stricter_identifier_state_and_unknown_node_cases_fail_closed() {
     );
     assert_eq!(
         choregraph_seaglass::resume_decision(&compatibility_plan, &BTreeMap::new(), MISSING_NODE),
-        choregraph_seaglass::ResumeDecision::UnknownNode
+        choregraph_seaglass::ResumeDecision::RejectTerminalMutation
+    );
+    assert_eq!(
+        choregraph_seaglass::resume_decision_checked(
+            &compatibility_plan,
+            &BTreeMap::new(),
+            MISSING_NODE,
+        ),
+        Err(choregraph_seaglass::ResumeDecisionError::UnknownNode)
     );
 
     let inconsistent_states = BTreeMap::from([(
         NODE_D.to_string(),
         choregraph_seaglass::StepState::Completed,
     )]);
+    assert!(choregraph_seaglass::ready_nodes(&compatibility_plan, &inconsistent_states).is_empty());
     assert!(matches!(
-        choregraph_seaglass::ready_nodes(&compatibility_plan, &inconsistent_states),
+        choregraph_seaglass::ready_nodes_checked(&compatibility_plan, &inconsistent_states),
         Err(choregraph_seaglass::StateConversionError::InvalidState(_))
     ));
 }

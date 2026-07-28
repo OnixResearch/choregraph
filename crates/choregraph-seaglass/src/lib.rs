@@ -20,9 +20,6 @@ const LEGACY_SELF_LOOP_MESSAGE: &str = "execution graph edge cannot connect a no
 const LEGACY_CYCLE_MESSAGE: &str = "execution graph contains a cycle";
 const LEGACY_GRAPH_TOO_LARGE_MESSAGE: &str =
     "execution graph has more nodes than the supported level and analytics range";
-const INVALID_IDENTIFIER_MESSAGE: &str =
-    "execution graph node id is outside the Choregraph profile";
-const INCOMPATIBLE_GRAPH_MESSAGE: &str = "execution graph is outside the compatibility profile";
 
 /// A possible implementation mode for the Seaglass compatibility surface.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -86,8 +83,6 @@ pub enum GraphDiagnosticCode {
     SelfLoop,
     CycleDetected,
     GraphTooLarge,
-    InvalidNodeId,
-    IncompatibleGraph,
 }
 
 /// One stable compatibility admission diagnostic.
@@ -97,6 +92,12 @@ pub struct GraphDiagnostic {
     pub node_id: Option<String>,
     pub related_node_id: Option<String>,
     pub message: String,
+}
+
+impl core::fmt::Display for GraphDiagnostic {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        formatter.write_str(&self.message)
+    }
 }
 
 /// One converted graph level.
@@ -150,8 +151,13 @@ pub enum ResumeDecision {
     SkipCompleted,
     RejectTerminalMutation,
     BlockedByFailedDependency,
+}
+
+/// A checked resume conversion failure for new consumers.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ResumeDecisionError {
     UnknownNode,
-    InvalidState,
+    InvalidState(Vec<choregraph_core::InvariantIssue>),
 }
 
 /// A state conversion failure before a production decision call.
@@ -210,7 +216,21 @@ impl ExecutionPlan {
         &self.machine
     }
 
-    pub fn dependencies(&self, node_id: &str) -> Result<Vec<String>, QueryError> {
+    /// Returns legacy-shaped dependencies and fails closed to no result on conversion failure.
+    #[must_use]
+    #[allow(
+        clippy::manual_unwrap_or_default,
+        reason = "explicit compatibility control flow keeps the fail-closed branch visible"
+    )]
+    pub fn dependencies(&self, node_id: &str) -> Vec<String> {
+        match self.dependencies_checked(node_id) {
+            Ok(results) => results,
+            Err(_) => Vec::new(),
+        }
+    }
+
+    /// Returns dependencies with explicit conversion failures for new consumers.
+    pub fn dependencies_checked(&self, node_id: &str) -> Result<Vec<String>, QueryError> {
         let node_id = parse_node_id(&self.machine, node_id)?;
         self.machine
             .dependencies(&node_id)
@@ -218,7 +238,21 @@ impl ExecutionPlan {
             .ok_or(QueryError::UnknownNode)
     }
 
-    pub fn dependents(&self, node_id: &str) -> Result<Vec<String>, QueryError> {
+    /// Returns legacy-shaped dependents and fails closed to no result on conversion failure.
+    #[must_use]
+    #[allow(
+        clippy::manual_unwrap_or_default,
+        reason = "explicit compatibility control flow keeps the fail-closed branch visible"
+    )]
+    pub fn dependents(&self, node_id: &str) -> Vec<String> {
+        match self.dependents_checked(node_id) {
+            Ok(results) => results,
+            Err(_) => Vec::new(),
+        }
+    }
+
+    /// Returns dependents with explicit conversion failures for new consumers.
+    pub fn dependents_checked(&self, node_id: &str) -> Result<Vec<String>, QueryError> {
         let node_id = parse_node_id(&self.machine, node_id)?;
         self.machine
             .dependents(&node_id)
@@ -226,7 +260,21 @@ impl ExecutionPlan {
             .ok_or(QueryError::UnknownNode)
     }
 
-    pub fn parallel_groups(&self) -> Result<Vec<ExecutionGroup>, QueryError> {
+    /// Returns legacy-shaped groups and fails closed to no result on conversion failure.
+    #[must_use]
+    #[allow(
+        clippy::manual_unwrap_or_default,
+        reason = "explicit compatibility control flow keeps the fail-closed branch visible"
+    )]
+    pub fn parallel_groups(&self) -> Vec<ExecutionGroup> {
+        match self.parallel_groups_checked() {
+            Ok(results) => results,
+            Err(_) => Vec::new(),
+        }
+    }
+
+    /// Returns groups with explicit conversion failures for new consumers.
+    pub fn parallel_groups_checked(&self) -> Result<Vec<ExecutionGroup>, QueryError> {
         choregraph_core::parallel_groups(&self.machine)
             .into_iter()
             .map(|group| {
@@ -245,7 +293,21 @@ impl ExecutionPlan {
         string_ids(&choregraph_core::critical_path(&self.machine))
     }
 
-    pub fn bottlenecks(&self) -> Result<Vec<Bottleneck>, QueryError> {
+    /// Returns legacy-shaped bottlenecks and fails closed to no result on conversion failure.
+    #[must_use]
+    #[allow(
+        clippy::manual_unwrap_or_default,
+        reason = "explicit compatibility control flow keeps the fail-closed branch visible"
+    )]
+    pub fn bottlenecks(&self) -> Vec<Bottleneck> {
+        match self.bottlenecks_checked() {
+            Ok(results) => results,
+            Err(_) => Vec::new(),
+        }
+    }
+
+    /// Returns bottlenecks with explicit conversion failures for new consumers.
+    pub fn bottlenecks_checked(&self) -> Result<Vec<Bottleneck>, QueryError> {
         choregraph_core::bottlenecks(&self.machine)
             .into_iter()
             .map(|item| {
@@ -314,8 +376,6 @@ const fn diagnostic_message(code: GraphDiagnosticCode) -> &'static str {
         GraphDiagnosticCode::SelfLoop => LEGACY_SELF_LOOP_MESSAGE,
         GraphDiagnosticCode::CycleDetected => LEGACY_CYCLE_MESSAGE,
         GraphDiagnosticCode::GraphTooLarge => LEGACY_GRAPH_TOO_LARGE_MESSAGE,
-        GraphDiagnosticCode::InvalidNodeId => INVALID_IDENTIFIER_MESSAGE,
-        GraphDiagnosticCode::IncompatibleGraph => INCOMPATIBLE_GRAPH_MESSAGE,
     }
 }
 
@@ -359,7 +419,7 @@ fn diagnostic_code(diagnostic: &choregraph_core::AdmissionDiagnostic) -> GraphDi
         }
         choregraph_core::AdmissionDiagnosticCode::IdentifierTooLong
         | choregraph_core::AdmissionDiagnosticCode::MalformedIdentifier => {
-            GraphDiagnosticCode::InvalidNodeId
+            GraphDiagnosticCode::GraphTooLarge
         }
         choregraph_core::AdmissionDiagnosticCode::InconsistentLimits
         | choregraph_core::AdmissionDiagnosticCode::TooManyOperations
@@ -376,7 +436,7 @@ fn diagnostic_code(diagnostic: &choregraph_core::AdmissionDiagnostic) -> GraphDi
         | choregraph_core::AdmissionDiagnosticCode::IntentTooLarge
         | choregraph_core::AdmissionDiagnosticCode::TooManyIntentsForTransition
         | choregraph_core::AdmissionDiagnosticCode::NormalizationInvariant => {
-            GraphDiagnosticCode::IncompatibleGraph
+            GraphDiagnosticCode::GraphTooLarge
         }
     }
 }
@@ -525,8 +585,24 @@ pub fn expand_state(
     Ok(state)
 }
 
-/// Returns ready nodes after exact sparse-state expansion.
+/// Returns legacy-shaped ready nodes and fails closed to no result on invalid state input.
+#[must_use]
+#[expect(
+    clippy::manual_unwrap_or_default,
+    reason = "explicit compatibility control flow keeps the fail-closed branch visible"
+)]
 pub fn ready_nodes(
+    plan: &ExecutionPlan,
+    sparse_states: &BTreeMap<String, StepState>,
+) -> Vec<String> {
+    match ready_nodes_checked(plan, sparse_states) {
+        Ok(results) => results,
+        Err(_) => Vec::new(),
+    }
+}
+
+/// Returns ready nodes with explicit state conversion failures for new consumers.
+pub fn ready_nodes_checked(
     plan: &ExecutionPlan,
     sparse_states: &BTreeMap<String, StepState>,
 ) -> Result<Vec<String>, StateConversionError> {
@@ -536,33 +612,54 @@ pub fn ready_nodes(
     Ok(string_ids(&ready))
 }
 
-/// Returns one strict resume decision after exact sparse-state expansion.
+/// Returns one legacy-shaped resume decision and rejects conversion failures as terminal mutation.
 #[must_use]
 pub fn resume_decision(
     plan: &ExecutionPlan,
     sparse_states: &BTreeMap<String, StepState>,
     node_id: &str,
 ) -> ResumeDecision {
+    match resume_decision_checked(plan, sparse_states, node_id) {
+        Ok(decision) => decision,
+        Err(_) => ResumeDecision::RejectTerminalMutation,
+    }
+}
+
+/// Returns one strict resume decision with explicit conversion failures for new consumers.
+#[allow(
+    unknown_lints,
+    fragile_exhaustive_enum_match,
+    reason = "the public core decision vocabulary requires explicit fail-closed compatibility mapping"
+)]
+pub fn resume_decision_checked(
+    plan: &ExecutionPlan,
+    sparse_states: &BTreeMap<String, StepState>,
+    node_id: &str,
+) -> Result<ResumeDecision, ResumeDecisionError> {
     debug_assert!(choregraph_core::well_formed(&plan.machine));
     debug_assert_eq!(plan.machine.node_ids().len(), plan.graph.nodes.len());
-    let Ok(state) = expand_state(plan, sparse_states) else {
-        return ResumeDecision::InvalidState;
-    };
-    let Ok(node_id) = parse_node_id(&plan.machine, node_id) else {
-        return ResumeDecision::UnknownNode;
-    };
+    let state = expand_state(plan, sparse_states).map_err(|error| match error {
+        StateConversionError::InvalidState(issues) => ResumeDecisionError::InvalidState(issues),
+        StateConversionError::InvalidNodeId | StateConversionError::UnknownNode => {
+            ResumeDecisionError::UnknownNode
+        }
+    })?;
+    let node_id =
+        parse_node_id(&plan.machine, node_id).map_err(|_| ResumeDecisionError::UnknownNode)?;
     match choregraph_core::resume_decision(&plan.machine, &state, &node_id) {
-        choregraph_core::ResumeDecision::Execute => ResumeDecision::Execute,
-        choregraph_core::ResumeDecision::AwaitDependencies => ResumeDecision::AwaitDependencies,
-        choregraph_core::ResumeDecision::SkipCompleted => ResumeDecision::SkipCompleted,
+        choregraph_core::ResumeDecision::Execute => Ok(ResumeDecision::Execute),
+        choregraph_core::ResumeDecision::AwaitDependencies => Ok(ResumeDecision::AwaitDependencies),
+        choregraph_core::ResumeDecision::SkipCompleted => Ok(ResumeDecision::SkipCompleted),
         choregraph_core::ResumeDecision::RejectTerminalMutation => {
-            ResumeDecision::RejectTerminalMutation
+            Ok(ResumeDecision::RejectTerminalMutation)
         }
         choregraph_core::ResumeDecision::BlockedByFailedDependency => {
-            ResumeDecision::BlockedByFailedDependency
+            Ok(ResumeDecision::BlockedByFailedDependency)
         }
-        choregraph_core::ResumeDecision::UnknownNode => ResumeDecision::UnknownNode,
-        choregraph_core::ResumeDecision::InvalidState => ResumeDecision::InvalidState,
+        choregraph_core::ResumeDecision::UnknownNode => Err(ResumeDecisionError::UnknownNode),
+        choregraph_core::ResumeDecision::InvalidState => {
+            Err(ResumeDecisionError::InvalidState(Vec::new()))
+        }
     }
 }
 
@@ -585,7 +682,29 @@ pub fn step_machine(
 }
 
 /// Checks one proposed edge through the production Choregraph cycle probe.
-pub fn would_create_cycle(probe: CycleProbe<'_>) -> Result<bool, Vec<GraphDiagnostic>> {
+#[must_use]
+#[expect(
+    clippy::manual_unwrap_or,
+    reason = "explicit compatibility control flow keeps the conservative rejection branch visible"
+)]
+#[allow(
+    unknown_lints,
+    ambiguous_params,
+    reason = "the exact legacy cycle-probe signature has two adjacent identifier parameters"
+)]
+pub fn would_create_cycle(graph: &ExecutionGraph, source: &str, target: &str) -> bool {
+    match would_create_cycle_checked(CycleProbe {
+        graph,
+        source,
+        target,
+    }) {
+        Ok(decision) => decision,
+        Err(_) => true,
+    }
+}
+
+/// Checks one proposed edge with explicit graph conversion failures for new consumers.
+pub fn would_create_cycle_checked(probe: CycleProbe<'_>) -> Result<bool, Vec<GraphDiagnostic>> {
     let plan = admit_graph(probe.graph)?;
     let Ok(source) = parse_node_id(&plan.machine, probe.source) else {
         return Ok(false);
