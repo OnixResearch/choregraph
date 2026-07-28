@@ -153,7 +153,7 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/concrete.rs",
-        blake3 = "df6f54b8c7b53b93dfa51de49fb454b7d5c0f82b3dc11e75d066c0eb45adffde",
+        blake3 = "70b9855abd8fd318ee7d59c3d372cb6845179f7f203c6ec1aee018e8e486d64e",
         role = "production v2 replay event and intent boundary",
       },
       {
@@ -163,7 +163,7 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/model.rs",
-        blake3 = "054759627c005d7cdb3c4bff7f7dd50533476fa7052298f2f27a3226ee7e8b6c",
+        blake3 = "bbde5bac0289507bc3a385579947aa2ecde40ad2e2dc696894d0e824aba6be94",
         role = "bounded trace, binding, count, and failure types",
       },
       {

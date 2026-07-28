@@ -127,12 +127,12 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/concrete.rs",
-        blake3 = "df6f54b8c7b53b93dfa51de49fb454b7d5c0f82b3dc11e75d066c0eb45adffde",
+        blake3 = "70b9855abd8fd318ee7d59c3d372cb6845179f7f203c6ec1aee018e8e486d64e",
         role = "production concrete binding resolver and exact intent construction",
       },
       {
         path = "crates/choregraph-core/src/invariant.rs",
-        blake3 = "6f33222c644b3e683211c837bd1e896bbd8f19c4861307da860bffadca21d6ce",
+        blake3 = "ddea359369cf1739353684223ce492ac5e65dc4d211c5dfacf52ed8995dc2479",
         role = "production graph and post-step gates",
       },
       {
@@ -142,7 +142,7 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/model.rs",
-        blake3 = "054759627c005d7cdb3c4bff7f7dd50533476fa7052298f2f27a3226ee7e8b6c",
+        blake3 = "bbde5bac0289507bc3a385579947aa2ecde40ad2e2dc696894d0e824aba6be94",
         role = "production indexed machine fields",
       },
       {
