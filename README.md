@@ -60,6 +60,7 @@ See [`docs/implementation-order.md`](docs/implementation-order.md) for the depen
 crates/choregraph-core/
 crates/choregraph-kamacite/
 crates/choregraph-nickel/
+crates/choregraph-release/
 crates/choregraph-seaglass/
 crates/choregraph-cli/
 tools/choregraph-foundation-check/
@@ -84,6 +85,8 @@ See [`docs/octet-deny-all.md`](docs/octet-deny-all.md) for the pinned lint polic
 See [`docs/lattice-cutover-readiness.md`](docs/lattice-cutover-readiness.md) for ordered source, duplicate-removal, and rollback gates.
 
 See [`docs/lattice-authority-boundary.md`](docs/lattice-authority-boundary.md) for the intent handoff and retained Lattice authority.
+
+See [`docs/release-evidence.md`](docs/release-evidence.md) for deterministic bundle roles, verification, Valence projection, publication-candidate checks, and non-claims.
 
 ## Validation
 

@@ -15,6 +15,7 @@ const PRODUCT_PACKAGES: &[&str] = &[
     CORE_PACKAGE,
     "choregraph-kamacite",
     "choregraph-nickel",
+    "choregraph-release",
     "choregraph-seaglass",
     "choregraph-cli",
 ];
@@ -23,6 +24,7 @@ const REQUIRED_PACKAGES: &[&str] = &[
     CORE_PACKAGE,
     "choregraph-kamacite",
     "choregraph-nickel",
+    "choregraph-release",
     "choregraph-seaglass",
     "choregraph-cli",
     FOUNDATION_CHECK_PACKAGE,
@@ -47,6 +49,7 @@ const CLI_DEPENDENCIES: &[&str] = &[
     CORE_PACKAGE,
     "choregraph-kamacite",
     "choregraph-nickel",
+    "choregraph-release",
     "choregraph-seaglass",
 ];
 
@@ -81,7 +84,9 @@ pub(crate) fn issue(facts: IssueFacts<'_>) -> crate::types::ValidationIssue {
 )]
 fn allowed_internal_dependencies(package: &str) -> Option<&'static [&'static str]> {
     match package {
-        CORE_PACKAGE | FOUNDATION_CHECK_PACKAGE => Some(NO_INTERNAL_DEPENDENCIES),
+        CORE_PACKAGE | "choregraph-release" | FOUNDATION_CHECK_PACKAGE => {
+            Some(NO_INTERNAL_DEPENDENCIES)
+        }
         "choregraph-kamacite" | "choregraph-nickel" => Some(CORE_ONLY),
         "choregraph-seaglass" => Some(SEAGLASS_DEPENDENCIES),
         "choregraph-cli" => Some(CLI_DEPENDENCIES),

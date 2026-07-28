@@ -4,6 +4,7 @@ members = [
   "crates/choregraph-core",
   "crates/choregraph-kamacite",
   "crates/choregraph-nickel",
+  "crates/choregraph-release",
   "crates/choregraph-seaglass",
   "tools/choregraph-foundation-check",
 ]
@@ -35,6 +36,7 @@ cargo_metadata = "=0.23.1"
 choregraph-core = { path = "crates/choregraph-core", version = "=0.1.0" }
 choregraph-kamacite = { path = "crates/choregraph-kamacite", version = "=0.1.0" }
 choregraph-nickel = { path = "crates/choregraph-nickel", version = "=0.1.0" }
+choregraph-release = { path = "crates/choregraph-release", version = "=0.1.0" }
 choregraph-seaglass = { path = "crates/choregraph-seaglass", version = "=0.1.0" }
 preserves = { version = "=5.0.0-rc.7", features = ["serde"] }
 serde = { version = "=1.0.228", features = ["derive"] }

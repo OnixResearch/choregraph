@@ -10,7 +10,9 @@ choregraph-core
   <- choregraph-nickel
   <- choregraph-seaglass
 
-choregraph-core + all adapters
+choregraph-release
+
+choregraph-core + all adapters + choregraph-release
   <- choregraph-cli
 ```
 
@@ -41,6 +43,8 @@ The foundation checker rejects forbidden dependencies, source tokens, path depen
 `choregraph-seaglass` is a conversion-only compatibility boundary. It delegates admission, graph queries, analytics, lifecycle, readiness, resume, aggregate steps, and cycle probes to `choregraph-core`.
 
 The exact execution-graph implementation is compiled only as a conformance-test oracle. It is not a production dependency.
+
+`choregraph-release` owns pure release roles, normalized manifests, linkage verification, Valence projections, and local publication-candidate validation. It has no file, process, network, clock, signing, push, or publication authority.
 
 `choregraph-cli` owns process arguments and terminal output. Later shell behavior must remain separate from the pure core.
 

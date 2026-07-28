@@ -31,6 +31,7 @@ let reviewed_execution_graph_oracle = {
     package "choregraph-core" [],
     package "choregraph-kamacite" [workspace "choregraph-core"],
     package "choregraph-nickel" [workspace "choregraph-core"],
+    package "choregraph-release" [],
     package "choregraph-seaglass" [
       workspace "choregraph-core",
       workspace "choregraph-nickel",

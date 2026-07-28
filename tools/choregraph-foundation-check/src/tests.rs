@@ -55,6 +55,7 @@ fn allowed_model() -> crate::types::WorkspaceModel {
                 "choregraph-nickel",
                 vec![workspace_dependency("choregraph-core")],
             ),
+            package("choregraph-release", vec![]),
             package(
                 "choregraph-seaglass",
                 vec![

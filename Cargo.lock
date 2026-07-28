@@ -232,6 +232,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "choregraph-release"
+version = "0.1.0"
+dependencies = [
+ "blake3",
+]
+
+[[package]]
 name = "choregraph-seaglass"
 version = "0.1.0"
 dependencies = [
