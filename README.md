@@ -81,6 +81,10 @@ See [`docs/restricted-nickel-lowering.md`](docs/restricted-nickel-lowering.md) f
 
 See [`docs/octet-deny-all.md`](docs/octet-deny-all.md) for the pinned lint policy, strict commands, exception rules, and non-claims.
 
+See [`docs/lattice-cutover-readiness.md`](docs/lattice-cutover-readiness.md) for ordered source, duplicate-removal, and rollback gates.
+
+See [`docs/lattice-authority-boundary.md`](docs/lattice-authority-boundary.md) for the intent handoff and retained Lattice authority.
+
 ## Validation
 
 ```text
