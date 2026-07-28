@@ -238,6 +238,7 @@ name = "choregraph-seaglass"
 version = "0.1.0"
 dependencies = [
  "choregraph-core",
+ "choregraph-nickel",
  "execution-graph-core",
 ]
 

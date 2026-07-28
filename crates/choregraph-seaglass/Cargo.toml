@@ -14,4 +14,5 @@ workspace = true
 choregraph-core.workspace = true
 
 [dev-dependencies]
+choregraph-nickel.workspace = true
 legacy-execution-graph = { package = "execution-graph-core", git = "https://git.onix.computer/z2oYsb9jGTyp68BKYhzpivY1eK58a.git", rev = "03736f1ec46c377ff86b451260ad68aa70ff3b0b" }
