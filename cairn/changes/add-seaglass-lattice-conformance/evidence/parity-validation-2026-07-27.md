@@ -4,7 +4,7 @@
 
 The conversion-only Seaglass adapter passed the selected execution-graph parity matrix.
 
-Production `choregraph-seaglass` depends only on `choregraph-core`. The exact legacy implementation is a test-only Git dependency at revision `03736f1ec46c377ff86b451260ad68aa70ff3b0b`.
+Production `choregraph-seaglass` depends only on `choregraph-core`. The exact legacy implementation is a reproducibly selected test-only vendor snapshot from revision `03736f1ec46c377ff86b451260ad68aa70ff3b0b`.
 
 ## Approach registry
 
@@ -12,7 +12,7 @@ Three approach families were reviewed:
 
 1. A legacy-shaped facade converts graph, state, action, and query values into Choregraph production values. This is the selected production mechanism.
 2. A core-type-only bridge would avoid DTO conversion but would not preserve the selected consumer vocabulary. It was rejected for this migration.
-3. A test-only comparator compiles the exact reviewed execution-graph source and compares results. It is retained only as validation support.
+3. A test-only comparator compiles the exact reviewed execution-graph source and compares results. The selected source is stored at `vendor/execution-graph-core-selected` and can be reproduced with `tools/sync-execution-graph-oracle.rs`.
 
 A wrapper with its own graph traversal, readiness logic, lifecycle table, or transition relation was excluded as false completion.
 

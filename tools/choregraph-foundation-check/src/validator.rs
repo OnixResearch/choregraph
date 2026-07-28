@@ -4,8 +4,12 @@ const REQUIRED_LICENSE: &str = "AGPL-3.0-or-later";
 const REQUIRED_RUST_VERSION: &str = "1.97.1";
 const PACKAGE_METADATA_ISSUE_LIMIT: usize = 3;
 const ADJACENT_ISSUE_COUNT: usize = 2;
+const BOUNDED_EXEC_PACKAGE: &str = "bounded-exec";
+const BOUNDED_EXEC_VENDOR_PATH: &str = "vendor/bounded-exec-selected/crates/bounded-exec";
 const CAP_ROOT_PACKAGE: &str = "cap-root-core";
 const CAP_ROOT_VENDOR_PATH: &str = "vendor/cap-root-core-selected";
+const EXECUTION_GRAPH_PACKAGE: &str = "execution-graph-core";
+const EXECUTION_GRAPH_VENDOR_PATH: &str = "vendor/execution-graph-core-selected";
 
 const PRODUCT_PACKAGES: &[&str] = &[
     CORE_PACKAGE,
@@ -149,10 +153,17 @@ fn is_reviewed_path_dependency(
     package: &crate::types::PackageModel,
     dependency: &crate::types::DependencyModel,
 ) -> bool {
-    package.name == "choregraph-cli"
+    let is_bounded_exec = package.name == "choregraph-cli"
+        && dependency.name == BOUNDED_EXEC_PACKAGE
+        && dependency.path == BOUNDED_EXEC_VENDOR_PATH;
+    let is_cap_root = package.name == "choregraph-cli"
         && dependency.name == CAP_ROOT_PACKAGE
-        && dependency.source == crate::types::DependencySource::LocalPath
-        && dependency.path == CAP_ROOT_VENDOR_PATH
+        && dependency.path == CAP_ROOT_VENDOR_PATH;
+    let is_execution_graph_oracle = package.name == "choregraph-seaglass"
+        && dependency.name == EXECUTION_GRAPH_PACKAGE
+        && dependency.path == EXECUTION_GRAPH_VENDOR_PATH;
+    dependency.source == crate::types::DependencySource::LocalPath
+        && (is_bounded_exec || is_cap_root || is_execution_graph_oracle)
 }
 
 fn validate_dependency(

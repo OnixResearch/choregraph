@@ -28,7 +28,7 @@
         "working_tree_used": false
       },
       {
-        "acquisition_status": "exact-public-radicle-adapter-revision",
+        "acquisition_status": "selected-vendor-snapshot-from-exact-radicle-revision",
         "content_blake3": "52221df380ac3b4ac8057a4d3286c195009952d6fc27942b0ef8570cabe850fa",
         "hash_protocol": "blake3-sorted-path-file-digest-manifest-v1",
         "hash_scope": "committed files under the listed source scopes",
@@ -77,7 +77,7 @@
         "working_tree_used": false
       },
       {
-        "acquisition_status": "exact-radicle-git-dev-dependency",
+        "acquisition_status": "selected-vendor-snapshot-from-exact-radicle-revision",
         "content_blake3": "91450b94f6256c71057507b6ae97f63e505dc57377198be38087530bedefccb4",
         "hash_protocol": "blake3-file-bytes-v1",
         "hash_scope": "exact Rust source compiled only by conformance tests",

@@ -1,0 +1,18 @@
+[package]
+name = "execution-graph-core"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+license = "AGPL-3.0-or-later"
+description = "Deterministic no-std execution DAG admission, ordering, readiness, lifecycle, resume, and analytics."
+repository = "https://github.com/OnixResearch/execution-graph"
+publish = false
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+manual_unwrap_or = "allow"
+
+[dependencies]
+serde = { version = "1.0.228", default-features = false, features = ["alloc", "derive"] }

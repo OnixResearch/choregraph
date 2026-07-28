@@ -42,7 +42,9 @@
             || pkgs.lib.hasInfix "/evidence/generated/" (toString path)
             || pkgs.lib.hasInfix "/fixtures/kamacite/" (toString path)
             || pkgs.lib.hasInfix "/fixtures/nickel/" (toString path)
+            || pkgs.lib.hasInfix "/vendor/bounded-exec-selected/" (toString path)
             || pkgs.lib.hasInfix "/vendor/cap-root-core-selected/" (toString path)
+            || pkgs.lib.hasInfix "/vendor/execution-graph-core-selected/" (toString path)
             || pkgs.lib.hasSuffix "/rust-toolchain.toml" (toString path);
         };
         workspaceVersion = "0.1.0";
@@ -715,6 +717,48 @@
                 expected_hash="$(cat evidence/generated/source-baseline.blake3)"
                 observed_hash="$(b3sum evidence/generated/source-baseline.json)"
                 test "''${observed_hash%% *}" = "$expected_hash"
+
+                nickel export --format json vendor/bounded-exec-selected/SOURCE.ncl \
+                  > "$TMPDIR/bounded-exec-source.json"
+                expected_bounded_root_hash="$(jq --raw-output '.source.root_manifest_blake3' "$TMPDIR/bounded-exec-source.json")"
+                observed_bounded_root_hash="$(b3sum vendor/bounded-exec-selected/Cargo.toml)"
+                test "''${observed_bounded_root_hash%% *}" = "$expected_bounded_root_hash"
+                expected_bounded_core_manifest_hash="$(jq --raw-output '.source.core_manifest_blake3' "$TMPDIR/bounded-exec-source.json")"
+                observed_bounded_core_manifest_hash="$(b3sum vendor/bounded-exec-selected/crates/bounded-exec-core/Cargo.toml)"
+                test "''${observed_bounded_core_manifest_hash%% *}" = "$expected_bounded_core_manifest_hash"
+                expected_bounded_core_source_hash="$(jq --raw-output '.source.core_source_blake3' "$TMPDIR/bounded-exec-source.json")"
+                observed_bounded_core_source_hash="$(b3sum vendor/bounded-exec-selected/crates/bounded-exec-core/src/lib.rs)"
+                test "''${observed_bounded_core_source_hash%% *}" = "$expected_bounded_core_source_hash"
+                expected_bounded_shell_manifest_hash="$(jq --raw-output '.source.shell_manifest_blake3' "$TMPDIR/bounded-exec-source.json")"
+                observed_bounded_shell_manifest_hash="$(b3sum vendor/bounded-exec-selected/crates/bounded-exec/Cargo.toml)"
+                test "''${observed_bounded_shell_manifest_hash%% *}" = "$expected_bounded_shell_manifest_hash"
+                expected_bounded_shell_source_hash="$(jq --raw-output '.source.shell_source_blake3' "$TMPDIR/bounded-exec-source.json")"
+                observed_bounded_shell_source_hash="$(b3sum vendor/bounded-exec-selected/crates/bounded-exec/src/lib.rs)"
+                test "''${observed_bounded_shell_source_hash%% *}" = "$expected_bounded_shell_source_hash"
+                expected_bounded_license_hash="$(jq --raw-output '.source.license_blake3' "$TMPDIR/bounded-exec-source.json")"
+                observed_bounded_license_hash="$(b3sum vendor/bounded-exec-selected/LICENSE)"
+                test "''${observed_bounded_license_hash%% *}" = "$expected_bounded_license_hash"
+                rustc tools/sync-bounded-exec.rs -o "$TMPDIR/sync-bounded-exec"
+                "$TMPDIR/sync-bounded-exec" --self-test
+                grep --fixed-strings 'bounded-exec = { path = "vendor/bounded-exec-selected/crates/bounded-exec", version = "=0.1.0" }' \
+                  Cargo.toml > /dev/null
+
+                nickel export --format json vendor/execution-graph-core-selected/SOURCE.ncl \
+                  > "$TMPDIR/execution-graph-source.json"
+                expected_manifest_hash="$(jq --raw-output '.source.manifest_blake3' "$TMPDIR/execution-graph-source.json")"
+                observed_manifest_hash="$(b3sum vendor/execution-graph-core-selected/Cargo.toml)"
+                test "''${observed_manifest_hash%% *}" = "$expected_manifest_hash"
+                expected_oracle_hash="$(jq --raw-output '.source.source_blake3' "$TMPDIR/execution-graph-source.json")"
+                observed_oracle_hash="$(b3sum vendor/execution-graph-core-selected/src/lib.rs)"
+                test "''${observed_oracle_hash%% *}" = "$expected_oracle_hash"
+                expected_oracle_license_hash="$(jq --raw-output '.source.license_blake3' "$TMPDIR/execution-graph-source.json")"
+                observed_oracle_license_hash="$(b3sum vendor/execution-graph-core-selected/LICENSE)"
+                test "''${observed_oracle_license_hash%% *}" = "$expected_oracle_license_hash"
+                rustc tools/sync-execution-graph-oracle.rs -o "$TMPDIR/sync-execution-graph-oracle"
+                "$TMPDIR/sync-execution-graph-oracle" --self-test
+                grep --fixed-strings 'legacy-execution-graph = { package = "execution-graph-core", path = "../../vendor/execution-graph-core-selected", version = "=0.1.0" }' \
+                  crates/choregraph-seaglass/Cargo.toml > /dev/null
+
                 jq --exit-status '
                   (.baseline.sources | map(.id)) as $ids
                   | .baseline.schema == "choregraph.source-baseline.v1"

@@ -25,6 +25,8 @@ The selected compatibility surface is bounded to one execution-graph implementat
 
 The current source adds ten traceability comments to the Lattice vendor copy. Both files have 701 Rust code lines and the same blank-line count.
 
+Choregraph stores the exact reviewed comparator at `vendor/execution-graph-core-selected`. `tools/sync-execution-graph-oracle.rs` reproduces the manifest, Rust source, and license from revision `03736f1ec46c377ff86b451260ad68aa70ff3b0b`. This selected snapshot removes a network requirement from pure Nix validation and is not a production dependency.
+
 ### Lattice baseline
 
 - Revision: `c8d56ad83a57287064edb85f58808f53e4bf4536`

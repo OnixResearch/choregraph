@@ -19,11 +19,27 @@ fn workspace_dependency(name: &str) -> crate::types::DependencyModel {
     }
 }
 
+fn reviewed_bounded_exec_dependency() -> crate::types::DependencyModel {
+    crate::types::DependencyModel {
+        name: String::from("bounded-exec"),
+        source: crate::types::DependencySource::LocalPath,
+        path: String::from("vendor/bounded-exec-selected/crates/bounded-exec"),
+    }
+}
+
 fn reviewed_cap_root_dependency() -> crate::types::DependencyModel {
     crate::types::DependencyModel {
         name: String::from("cap-root-core"),
         source: crate::types::DependencySource::LocalPath,
         path: String::from("vendor/cap-root-core-selected"),
+    }
+}
+
+fn reviewed_execution_graph_oracle() -> crate::types::DependencyModel {
+    crate::types::DependencyModel {
+        name: String::from("execution-graph-core"),
+        source: crate::types::DependencySource::LocalPath,
+        path: String::from("vendor/execution-graph-core-selected"),
     }
 }
 
@@ -41,7 +57,10 @@ fn allowed_model() -> crate::types::WorkspaceModel {
             ),
             package(
                 "choregraph-seaglass",
-                vec![workspace_dependency("choregraph-core")],
+                vec![
+                    workspace_dependency("choregraph-core"),
+                    reviewed_execution_graph_oracle(),
+                ],
             ),
             package(
                 "choregraph-cli",
@@ -50,6 +69,7 @@ fn allowed_model() -> crate::types::WorkspaceModel {
                     workspace_dependency("choregraph-kamacite"),
                     workspace_dependency("choregraph-nickel"),
                     workspace_dependency("choregraph-seaglass"),
+                    reviewed_bounded_exec_dependency(),
                     reviewed_cap_root_dependency(),
                 ],
             ),
@@ -132,6 +152,42 @@ fn rejects_an_external_path_dependency() {
                 path: String::from("../execution-graph"),
             });
             is_changed = true;
+        }
+    }
+    assert!(is_changed);
+    assert!(contains_code(&model, "foundation.path-dependency"));
+}
+
+#[test]
+fn rejects_bounded_exec_from_an_unreviewed_path() {
+    let mut model = allowed_model();
+    let mut is_changed = false;
+    for package in &mut model.packages {
+        if package.name == "choregraph-cli" {
+            for dependency in &mut package.dependencies {
+                if dependency.name == "bounded-exec" {
+                    dependency.path = String::from("../bounded-exec/crates/bounded-exec");
+                    is_changed = true;
+                }
+            }
+        }
+    }
+    assert!(is_changed);
+    assert!(contains_code(&model, "foundation.path-dependency"));
+}
+
+#[test]
+fn rejects_execution_graph_oracle_from_an_unreviewed_path() {
+    let mut model = allowed_model();
+    let mut is_changed = false;
+    for package in &mut model.packages {
+        if package.name == "choregraph-seaglass" {
+            for dependency in &mut package.dependencies {
+                if dependency.name == "execution-graph-core" {
+                    dependency.path = String::from("../execution-graph");
+                    is_changed = true;
+                }
+            }
         }
     }
     assert!(is_changed);

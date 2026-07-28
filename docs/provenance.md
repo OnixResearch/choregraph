@@ -12,7 +12,9 @@ Each tree identity uses this method:
 
 The Seaglass upstream entry uses the BLAKE3 value of the source file. Execution-graph provenance evidence maps that file to its upstream revision.
 
-The foundation imported no implementation or proof source. The Kamacite change vendors only the selected canonical codec and its license files from the exact recorded revision.
+Production code imports no execution-graph implementation. Conformance tests use only the selected manifest, Rust source, and license at revision `03736f1ec46c377ff86b451260ad68aa70ff3b0b`. `tools/sync-execution-graph-oracle.rs` reproduces that test-only snapshot at `vendor/execution-graph-core-selected`.
+
+The Kamacite change vendors only the selected canonical codec and its license files from the exact recorded revision.
 
 The public `preserves` dependency is pinned to the selected Kamacite profile version. `tools/sync-kamacite-codec.rs` reproduces the import from the recorded Git object.
 
@@ -26,4 +28,4 @@ A source identity does not prove correctness. A Trellis proof reference does not
 
 The capability shell uses `cap-root-core` from Radicle project `rad:z3cWBCK7VPbEmbL5MAvKJWKjCE745` at exact revision `8991e2572578c16e590c2f1c0915db6c46c5d9cb`. The reproducible importer copies the selected Rust source and AGPL license into `vendor/cap-root-core-selected`.
 
-Bounded evaluator execution uses Bounded Exec revision `29dac88ecded94457572db3fdfaaaab95fa91525` through its public Radicle HTTPS adapter. This records process mechanics, not sandbox or evaluator-correctness authority.
+Bounded evaluator execution uses selected Bounded Exec revision `29dac88ecded94457572db3fdfaaaab95fa91525` at `vendor/bounded-exec-selected`. `tools/sync-bounded-exec.rs` reproduces both crate manifests, both Rust sources, the workspace manifest, and the license. This records process mechanics, not sandbox or evaluator-correctness authority.

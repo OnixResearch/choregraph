@@ -11,22 +11,36 @@ let workspace = fun package_name => {
   source = "workspace",
   path = "",
 } in
+let reviewed_bounded_exec = {
+  name = "bounded-exec",
+  source = "local-path",
+  path = "vendor/bounded-exec-selected/crates/bounded-exec",
+} in
 let reviewed_cap_root = {
   name = "cap-root-core",
   source = "local-path",
   path = "vendor/cap-root-core-selected",
+} in
+let reviewed_execution_graph_oracle = {
+  name = "execution-graph-core",
+  source = "local-path",
+  path = "vendor/execution-graph-core-selected",
 } in
 {
   packages = [
     package "choregraph-core" [],
     package "choregraph-kamacite" [workspace "choregraph-core"],
     package "choregraph-nickel" [workspace "choregraph-core"],
-    package "choregraph-seaglass" [workspace "choregraph-core"],
+    package "choregraph-seaglass" [
+      workspace "choregraph-core",
+      reviewed_execution_graph_oracle,
+    ],
     package "choregraph-cli" [
       workspace "choregraph-core",
       workspace "choregraph-kamacite",
       workspace "choregraph-nickel",
       workspace "choregraph-seaglass",
+      reviewed_bounded_exec,
       reviewed_cap_root,
     ],
     package "choregraph-foundation-check" [],
