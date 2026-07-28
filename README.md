@@ -1,44 +1,74 @@
 # Choregraph
 
-Choregraph is a planned compiler and verified Rust kernel for bounded execution graphs.
+Choregraph is a compiler and verified Rust kernel for bounded execution graphs.
 
-The project will lower reviewed, data-oriented Nickel graphs into canonical machine artifacts. A pure `no_std` Rust core will execute the admitted state-machine transition relation.
+It lowers reviewed data-oriented Nickel graphs into canonical machine artifacts. A pure `no_std` Rust core runs the admitted state-machine transition relation.
 
 ## Status
 
-The buildable foundation, executable machine semantics, and Kamacite interchange adapter exist. The adapter emits canonical packed Preserves artifacts, exact BLAKE3 identity chains, a closed local lifecycle profile, and bounded linkage receipts.
+The buildable foundation, machine semantics, and Kamacite adapter exist.
 
-The restricted Nickel frontend now reads operator-rooted source and imports through `cap-root` and `cap-std`. It runs the selected evaluator through pinned Bounded Exec, lowers checked output, and publishes canonical machine artifacts without replacement.
+The Kamacite adapter emits these values:
 
-Production-linked Verus rails now prove the named single-step and finite-trace properties of the indexed kernel. Replay folds the production `step` relation, reports the first denial, and returns no dispatchable intents. A pinned Octet consumer gate checks every workspace target with all Octet lints at error severity.
+- canonical packed Preserves artifacts
+- exact BLAKE3 identity chains
+- a closed local lifecycle profile
+- bounded linkage receipts
 
-The conversion-only Seaglass adapter passes the selected behavior matrix. The exact reviewed Lattice runner also passes its 21 tests in a disposable source archive with `choregraph-seaglass` substituted for the legacy package.
+The restricted Nickel frontend reads source and imports beneath an operator-selected root. It uses `cap-root` and `cap-std` for path and file access.
 
-The compiler-compatibility source is published as `rad:zL2ncTUeASVYwcoGkEXv9JKgGbAF` at revision `81b260da2256147ec82cb5dd44c0a0c1dcb7500d`. Exact-pin consumers can acquire it through Radicle or the read-only HTTPS adapter.
+The frontend runs the selected evaluator through pinned Bounded Exec. Then it lowers checked output and publishes canonical machine artifacts without replacement.
+
+Production-linked Verus rails prove named single-step and finite-trace properties of the indexed kernel. Replay uses the production `step` relation.
+
+If replay finds a denial, it reports the first denial and returns no dispatchable intents.
+
+A pinned Octet gate checks every workspace target. The gate treats every Octet lint as an error.
+
+The conversion-only Seaglass adapter passes the selected behavior matrix. The reviewed Lattice runner passes all 21 tests with `choregraph-seaglass` substituted for the legacy package.
+
+The compiler-compatibility source has this identity:
+
+- RID: `rad:zL2ncTUeASVYwcoGkEXv9JKgGbAF`
+- Revision: `81b260da2256147ec82cb5dd44c0a0c1dcb7500d`
+
+Exact-pin consumers can use Radicle or the read-only HTTPS adapter.
 
 ## Owned boundary
 
-Choregraph will own:
+Choregraph owns these functions:
 
-- bounded canonical execution-graph and machine IR;
-- deterministic graph admission and transition semantics;
-- pure state transitions and effect intents;
-- Verus proofs over production transition code;
-- Kamacite artifact and receipt adapters;
-- restricted Nickel source evaluation and canonical lowering;
-- Seaglass and Lattice compatibility adapters.
+- bounded canonical execution-graph and machine IR
+- deterministic graph admission and transition semantics
+- pure state transitions and effect intents
+- Verus proofs over production transition code
+- Kamacite artifact and receipt adapters
+- restricted Nickel evaluation and canonical lowering
+- Seaglass and Lattice compatibility adapters
 
-The production transition relation will have one implementation. Compatibility crates must delegate to that implementation.
+The production transition relation has one implementation. Compatibility crates must delegate to that implementation.
 
 ## Excluded authority
 
-Choregraph will not execute effects, verify UCAN tokens, resolve keys, read clocks, open ambient files, schedule resources, persist runs, or claim external effect success.
+Choregraph does not perform these functions:
 
-Lattice retains runtime and product authority. Basalt evaluates bounded authorization facts. `cap-root` and `cap-std` confine local file access. Kamacite binds canonical artifacts and receipts. Valence and Cairn link evidence without creating behavioral proofs.
+- execute effects
+- check UCAN tokens or resolve keys
+- read clocks or open ambient files
+- schedule resources or persist runs
+- claim success for an external effect
+
+Lattice retains runtime and product authority. Basalt evaluates bounded authorization facts.
+
+`cap-root` and `cap-std` confine local file access. Kamacite binds canonical artifacts and receipts.
+
+Valence and Cairn link evidence. They do not create behavioral proofs.
 
 ## Proof boundary
 
-The target claim begins at admitted canonical machine IR. Source and evaluator receipts bind Nickel inputs to observed outputs, but they do not prove arbitrary Nickel evaluation semantics.
+The proof claim starts at admitted canonical machine IR. Source and evaluator receipts bind Nickel inputs to observed outputs.
+
+Those receipts do not prove arbitrary Nickel evaluation semantics.
 
 The initial theorem is:
 
@@ -54,7 +84,7 @@ A denied transition must preserve state and emit no effects.
 
 ## Implementation lifecycle
 
-See [`docs/implementation-order.md`](docs/implementation-order.md) for the dependency-ordered Choregraph, execution-graph, and Lattice Cairn changes.
+Read [`docs/implementation-order.md`](docs/implementation-order.md) for the dependency order across Choregraph, execution-graph, and Lattice changes.
 
 ## Workspace
 
@@ -70,27 +100,22 @@ fixtures/foundation/
 evidence/
 ```
 
-See [`docs/architecture.md`](docs/architecture.md) for the one-way dependency boundary.
+## Documentation
 
-See [`docs/machine-semantics.md`](docs/machine-semantics.md) for the executable transition model and current non-claims.
+- [`docs/architecture.md`](docs/architecture.md): one-way dependency boundaries.
+- [`docs/machine-semantics.md`](docs/machine-semantics.md): executable transitions and current non-claims.
+- [`docs/single-step-verification.md`](docs/single-step-verification.md): production linkage and the single-step proof boundary.
+- [`docs/trace-replay-verification.md`](docs/trace-replay-verification.md): bounded replay, finite-trace theorems, and failure behavior.
+- [`docs/kamacite-profile.md`](docs/kamacite-profile.md): codecs, schemas, identities, and receipts.
+- [`docs/restricted-nickel-lowering.md`](docs/restricted-nickel-lowering.md): source admission, evaluation, lowering, identities, and non-claims.
+- [`docs/octet-deny-all.md`](docs/octet-deny-all.md): lint policy, strict commands, and exceptions.
+- [`docs/lattice-cutover-readiness.md`](docs/lattice-cutover-readiness.md): source order, duplicate removal, and rollback gates.
+- [`docs/lattice-authority-boundary.md`](docs/lattice-authority-boundary.md): intent handoff and retained Lattice authority.
+- [`docs/release-evidence.md`](docs/release-evidence.md): bundle roles, Valence projection, and publication checks.
 
-See [`docs/single-step-verification.md`](docs/single-step-verification.md) for the single-step production linkage and proof boundary.
+## Checks
 
-See [`docs/trace-replay-verification.md`](docs/trace-replay-verification.md) for bounded replay, finite-trace theorems, exact failure behavior, and non-claims.
-
-See [`docs/kamacite-profile.md`](docs/kamacite-profile.md) for the selected codec, schemas, identity rules, and receipt boundary.
-
-See [`docs/restricted-nickel-lowering.md`](docs/restricted-nickel-lowering.md) for the source gate, evaluated-data contract, capability shell, pure lowerer, identity chain, and non-claims.
-
-See [`docs/octet-deny-all.md`](docs/octet-deny-all.md) for the pinned lint policy, strict commands, exception rules, and non-claims.
-
-See [`docs/lattice-cutover-readiness.md`](docs/lattice-cutover-readiness.md) for ordered source, duplicate-removal, and rollback gates.
-
-See [`docs/lattice-authority-boundary.md`](docs/lattice-authority-boundary.md) for the intent handoff and retained Lattice authority.
-
-See [`docs/release-evidence.md`](docs/release-evidence.md) for deterministic bundle roles, verification, Valence projection, publication-candidate checks, and non-claims.
-
-## Validation
+Run all commands from the repository root:
 
 ```text
 nix develop -c cargo test --workspace --all-targets
@@ -102,21 +127,23 @@ nix build .#checks.x86_64-linux.octet-deny-all --no-link -L
 nix flake check -L
 ```
 
-See [`docs/foundation-validation.md`](docs/foundation-validation.md) for the complete foundation rail.
+Read [`docs/foundation-validation.md`](docs/foundation-validation.md) for the complete foundation rail.
 
 ## License
 
-Choregraph preserves the source implementation license: `AGPL-3.0-or-later`. No relicensing is implied.
+Choregraph preserves the source implementation license, `AGPL-3.0-or-later`. This repository does not imply relicensing.
 
 ## References
 
-- [Choregraph publication](https://git.onix.computer/zL2ncTUeASVYwcoGkEXv9JKgGbAF.git) — exact read-only adapter for the published candidate.
-- [execution-graph](https://git.onix.computer/z2oYsb9jGTyp68BKYhzpivY1eK58a.git) — existing deterministic DAG implementation and compatibility baseline.
-- [Trellis](https://github.com/OnixResearch/trellis) — verified DAG, lifecycle, scheduler, replay, and choreography primitives.
+- [Choregraph publication](https://git.onix.computer/zL2ncTUeASVYwcoGkEXv9JKgGbAF.git) — read-only adapter for the published candidate.
+- [execution-graph](https://git.onix.computer/z2oYsb9jGTyp68BKYhzpivY1eK58a.git) — deterministic DAG implementation and compatibility baseline.
+- [Trellis](https://github.com/OnixResearch/trellis) — verified graph, lifecycle, scheduler, replay, and choreography primitives.
 - [Kamacite](https://github.com/OnixResearch/kamacite) — canonical Preserves artifacts, source envelopes, FSM descriptors, and receipts.
 - [Lattice](https://github.com/OnixResearch/lattice) — first consumer and Seaglass compatibility target.
 - [Basalt](https://github.com/OnixResearch/basalt) — bounded Nickel and UCAN authorization boundary.
-- [Bounded Exec](https://git.onix.computer/z2CpqLFpdP36fZXYUK5ZNWxMibpCo.git) — bounded evaluator process execution without sandbox or evaluator-correctness claims.
-- [cap-root](rad://z3cWBCK7VPbEmbL5MAvKJWKjCE745) — pure lexical path admission before capability-relative I/O.
-- [`cap-std`](https://github.com/bytecodealliance/cap-std) — capability-oriented filesystem I/O used by consumer shells.
-- [Swamp](https://github.com/swamp-club/swamp) — AGPL product reference for durable workflow suspension that persists a wait and resumes from recorded state. Choregraph adapts only the clean-room pure lifecycle mechanism and does not adopt Swamp runtime code, product approval authority, YAML/CEL authoring, or dynamic TypeScript loading.
+- [Bounded Exec](https://git.onix.computer/z2CpqLFpdP36fZXYUK5ZNWxMibpCo.git) — bounded evaluator execution without sandbox or evaluator-correctness claims.
+- [cap-root](rad://z3cWBCK7VPbEmbL5MAvKJWKjCE745) — lexical path admission before capability-relative I/O.
+- [`cap-std`](https://github.com/bytecodealliance/cap-std) — capability-oriented filesystem I/O for consumer shells.
+- [Swamp](https://github.com/swamp-club/swamp) — product reference for durable workflow suspension.
+
+Choregraph adapts only Swamp's clean-room lifecycle mechanism. It does not adopt Swamp runtime code, approval authority, YAML/CEL authoring, or TypeScript loading.
