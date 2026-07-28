@@ -27,7 +27,7 @@ nix build .#checks.x86_64-linux.octet-deny-all --no-link -L
 
 The policy gate compares that list with the pinned Octet `hooks/octet-deny-all.sh`. Each name receives `-D` through `DYLINT_RUSTFLAGS`.
 
-The consumer gate runs `--workspace --all-targets --ignore-rust-version`. `dylint.toml` cannot contain disabled lints or warning-level overrides.
+The consumer gate runs `--workspace --all-targets`. Cargo checks the declared Rust 1.96.0 compiler floor. `dylint.toml` cannot contain disabled lints or warning-level overrides.
 
 Two bounded thresholds remain active:
 

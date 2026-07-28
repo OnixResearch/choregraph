@@ -181,7 +181,7 @@
                   exit 1
                 fi
                 grep --fixed-strings 'default_scope = ["--workspace"]' Cargo.toml > /dev/null
-                grep --fixed-strings 'cargo_check_args = ["--all-targets", "--ignore-rust-version"]' Cargo.toml > /dev/null
+                grep --fixed-strings 'cargo_check_args = ["--all-targets"]' Cargo.toml > /dev/null
 
                 mkdir -p "$out"
                 cp "$TMPDIR/octet-deny-all.json" "$out/policy.json"

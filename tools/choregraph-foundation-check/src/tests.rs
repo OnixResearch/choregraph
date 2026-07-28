@@ -5,7 +5,7 @@ fn package(
     crate::types::PackageModel {
         name: String::from(name),
         license: String::from("AGPL-3.0-or-later"),
-        rust_version: String::from("1.97.1"),
+        rust_version: String::from("1.96.0"),
         publish_disabled: true,
         dependencies,
     }
@@ -14,7 +14,26 @@ fn package(
 fn workspace_dependency(name: &str) -> crate::types::DependencyModel {
     crate::types::DependencyModel {
         name: String::from(name),
+        requirement: String::from("=0.1.0"),
         source: crate::types::DependencySource::Workspace,
+        path: String::new(),
+    }
+}
+
+fn blake3_dependency(requirement: &str) -> crate::types::DependencyModel {
+    crate::types::DependencyModel {
+        name: String::from("blake3"),
+        requirement: String::from(requirement),
+        source: crate::types::DependencySource::Registry,
+        path: String::new(),
+    }
+}
+
+fn serde_json_dependency(requirement: &str) -> crate::types::DependencyModel {
+    crate::types::DependencyModel {
+        name: String::from("serde_json"),
+        requirement: String::from(requirement),
+        source: crate::types::DependencySource::Registry,
         path: String::new(),
     }
 }
@@ -22,6 +41,7 @@ fn workspace_dependency(name: &str) -> crate::types::DependencyModel {
 fn reviewed_bounded_exec_dependency() -> crate::types::DependencyModel {
     crate::types::DependencyModel {
         name: String::from("bounded-exec"),
+        requirement: String::from("=0.1.0"),
         source: crate::types::DependencySource::LocalPath,
         path: String::from("vendor/bounded-exec-selected/crates/bounded-exec"),
     }
@@ -30,6 +50,7 @@ fn reviewed_bounded_exec_dependency() -> crate::types::DependencyModel {
 fn reviewed_cap_root_dependency() -> crate::types::DependencyModel {
     crate::types::DependencyModel {
         name: String::from("cap-root-core"),
+        requirement: String::from("=0.1.0"),
         source: crate::types::DependencySource::LocalPath,
         path: String::from("vendor/cap-root-core-selected"),
     }
@@ -38,6 +59,7 @@ fn reviewed_cap_root_dependency() -> crate::types::DependencyModel {
 fn reviewed_execution_graph_oracle() -> crate::types::DependencyModel {
     crate::types::DependencyModel {
         name: String::from("execution-graph-core"),
+        requirement: String::from("=0.1.0"),
         source: crate::types::DependencySource::LocalPath,
         path: String::from("vendor/execution-graph-core-selected"),
     }
@@ -91,9 +113,81 @@ fn contains_code(model: &crate::types::WorkspaceModel, code: &str) -> bool {
         .any(|issue| issue.code == code)
 }
 
+fn add_dependency(
+    model: &mut crate::types::WorkspaceModel,
+    package_name: &str,
+    dependency: crate::types::DependencyModel,
+) -> bool {
+    for package in &mut model.packages {
+        if package.name == package_name {
+            package.dependencies.push(dependency);
+            return true;
+        }
+    }
+    false
+}
+
 #[test]
 fn accepts_the_reviewed_workspace_boundary() {
     assert!(crate::validator::validate_workspace(&allowed_model()).is_empty());
+}
+
+#[test]
+fn accepts_compatible_public_dependency_requirements() {
+    let mut model = allowed_model();
+    assert!(add_dependency(
+        &mut model,
+        "choregraph-nickel",
+        blake3_dependency("^1.8.2"),
+    ));
+    assert!(add_dependency(
+        &mut model,
+        "choregraph-nickel",
+        serde_json_dependency("^1.0.149"),
+    ));
+    assert!(crate::validator::validate_workspace(&model).is_empty());
+}
+
+#[test]
+fn rejects_exact_blake3_public_dependency_requirement() {
+    let mut model = allowed_model();
+    assert!(add_dependency(
+        &mut model,
+        "choregraph-nickel",
+        blake3_dependency("=1.8.2"),
+    ));
+    assert!(contains_code(
+        &model,
+        "foundation.public-dependency-requirement"
+    ));
+}
+
+#[test]
+fn rejects_exact_serde_json_public_dependency_requirement() {
+    let mut model = allowed_model();
+    assert!(add_dependency(
+        &mut model,
+        "choregraph-nickel",
+        serde_json_dependency("=1.0.149"),
+    ));
+    assert!(contains_code(
+        &model,
+        "foundation.public-dependency-requirement"
+    ));
+}
+
+#[test]
+fn rejects_compiler_floor_drift() {
+    let mut model = allowed_model();
+    let mut is_changed = false;
+    for package in &mut model.packages {
+        if package.name == "choregraph-core" {
+            package.rust_version = String::from("1.97.1");
+            is_changed = true;
+        }
+    }
+    assert!(is_changed);
+    assert!(contains_code(&model, "foundation.rust-version"));
 }
 
 #[test]
@@ -104,6 +198,7 @@ fn rejects_a_forbidden_core_dependency() {
         if package.name == "choregraph-core" {
             package.dependencies.push(crate::types::DependencyModel {
                 name: String::from("cap-std"),
+                requirement: String::from("^4.0.2"),
                 source: crate::types::DependencySource::Registry,
                 path: String::new(),
             });
@@ -151,6 +246,7 @@ fn rejects_an_external_path_dependency() {
         if package.name == "choregraph-seaglass" {
             package.dependencies.push(crate::types::DependencyModel {
                 name: String::from("execution-graph-core"),
+                requirement: String::from("=0.1.0"),
                 source: crate::types::DependencySource::ExternalPath,
                 path: String::from("../execution-graph"),
             });

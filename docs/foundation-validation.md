@@ -15,6 +15,10 @@ nix flake check -L
 
 Positive Nickel fixtures describe the accepted workspace direction. Negative fixtures cover I/O, evaluator, runtime, receipt, policy, path, source, and reverse-edge failures.
 
+The workspace declares Rust 1.96.0 as its tested compiler floor. The reviewed release toolchain remains Rust 1.97.1. The Octet gate checks the compiler floor without `--ignore-rust-version`.
+
+The foundation validator rejects exact BLAKE3 and Serde JSON patch requirements in consumer library packages. `Cargo.lock` still selects exact reviewed versions for standalone builds.
+
 The source baseline check compares a fresh Nickel export with the checked-in JSON. It also validates the checked-in BLAKE3 value.
 
 Passing these commands proves only the foundation boundary. It does not prove graph semantics, lowering correctness, proof soundness, runtime behavior, or release eligibility.

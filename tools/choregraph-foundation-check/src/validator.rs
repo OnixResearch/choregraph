@@ -1,7 +1,7 @@
 pub(crate) const CORE_PACKAGE: &str = "choregraph-core";
 const FOUNDATION_CHECK_PACKAGE: &str = "choregraph-foundation-check";
 const REQUIRED_LICENSE: &str = "AGPL-3.0-or-later";
-const REQUIRED_RUST_VERSION: &str = "1.97.1";
+const REQUIRED_RUST_VERSION: &str = "1.96.0";
 const PACKAGE_METADATA_ISSUE_LIMIT: usize = 3;
 const ADJACENT_ISSUE_COUNT: usize = 2;
 const BOUNDED_EXEC_PACKAGE: &str = "bounded-exec";
@@ -19,6 +19,17 @@ const PRODUCT_PACKAGES: &[&str] = &[
     "choregraph-seaglass",
     "choregraph-cli",
 ];
+
+const CONSUMER_LIBRARY_PACKAGES: &[&str] = &[
+    CORE_PACKAGE,
+    "choregraph-kamacite",
+    "choregraph-nickel",
+    "choregraph-release",
+    "choregraph-seaglass",
+];
+
+const BLAKE3_COMPATIBLE_REQUIREMENT: &str = "^1.8.2";
+const SERDE_JSON_COMPATIBLE_REQUIREMENT: &str = "^1.0.149";
 
 const REQUIRED_PACKAGES: &[&str] = &[
     CORE_PACKAGE,
@@ -104,6 +115,39 @@ fn has_dependency(package: &crate::types::PackageModel, dependency_name: &str) -
         }
     }
     false
+}
+
+#[allow(
+    unknown_lints,
+    missing_const_fn,
+    reason = "stable Rust cannot match string patterns in const functions"
+)]
+fn required_public_dependency_requirement(dependency_name: &str) -> Option<&'static str> {
+    match dependency_name {
+        "blake3" => Some(BLAKE3_COMPATIBLE_REQUIREMENT),
+        "serde_json" => Some(SERDE_JSON_COMPATIBLE_REQUIREMENT),
+        _ => None,
+    }
+}
+
+#[allow(
+    unknown_lints,
+    missing_const_fn,
+    reason = "stable Rust cannot compare owned dependency metadata in const functions"
+)]
+fn has_invalid_public_dependency_requirement(
+    package: &crate::types::PackageModel,
+    dependency: &crate::types::DependencyModel,
+) -> bool {
+    if !CONSUMER_LIBRARY_PACKAGES.contains(&package.name.as_str())
+        || dependency.source != crate::types::DependencySource::Registry
+    {
+        return false;
+    }
+    let Some(required) = required_public_dependency_requirement(&dependency.name) else {
+        return false;
+    };
+    dependency.requirement != required
 }
 
 fn validate_required_packages(
@@ -210,6 +254,16 @@ fn validate_dependency(
             code: "foundation.dependency-direction",
             subject: &package.name,
             detail: format!("dependency on {} is not allowed", dependency.name),
+        }));
+    }
+    if has_invalid_public_dependency_requirement(package, dependency) {
+        issues.push(issue(IssueFacts {
+            code: "foundation.public-dependency-requirement",
+            subject: &package.name,
+            detail: format!(
+                "public dependency {} uses unreviewed requirement {}",
+                dependency.name, dependency.requirement
+            ),
         }));
     }
     debug_assert!(issues.len() <= PACKAGE_METADATA_ISSUE_LIMIT);

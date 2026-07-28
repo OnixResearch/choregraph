@@ -5,7 +5,7 @@ fun model_dependencies source_text =>
       {
         name = "choregraph-core",
         license = "AGPL-3.0-or-later",
-        rust_version = "1.97.1",
+        rust_version = "1.96.0",
         publish_disabled = true,
         dependencies = model_dependencies,
       },

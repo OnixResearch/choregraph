@@ -2,27 +2,31 @@ let WorkspaceModel = import "../model-contract.ncl" in
 let package = fun package_name package_dependencies => {
   name = package_name,
   license = "AGPL-3.0-or-later",
-  rust_version = "1.97.1",
+  rust_version = "1.96.0",
   publish_disabled = true,
   dependencies = package_dependencies,
 } in
 let workspace = fun package_name => {
   name = package_name,
+  requirement = "=0.1.0",
   source = "workspace",
   path = "",
 } in
 let reviewed_bounded_exec = {
   name = "bounded-exec",
+  requirement = "=0.1.0",
   source = "local-path",
   path = "vendor/bounded-exec-selected/crates/bounded-exec",
 } in
 let reviewed_cap_root = {
   name = "cap-root-core",
+  requirement = "=0.1.0",
   source = "local-path",
   path = "vendor/cap-root-core-selected",
 } in
 let reviewed_execution_graph_oracle = {
   name = "execution-graph-core",
+  requirement = "=0.1.0",
   source = "local-path",
   path = "vendor/execution-graph-core-selected",
 } in

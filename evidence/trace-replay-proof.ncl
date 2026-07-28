@@ -126,7 +126,7 @@ let ProofManifest = {
     sources = [
       {
         path = "Cargo.lock",
-        blake3 = "8ef702d67715d3e9431967cf91b36225e482e647f19e85c8d3fd6d476583f2d1",
+        blake3 = "2a08fd00a3fb21198bd2dfc45c554ccb0c142b44b95d05f7eaf1b9036406ad6f",
         role = "resolved Rust dependency identity",
       },
       {
@@ -191,7 +191,7 @@ let ProofManifest = {
       },
       {
         path = "flake.nix",
-        blake3 = "a0d8822131a5a9e965faa2ccb07187e6591a59ced0628f5a71a2c594c3ae9156",
+        blake3 = "d2bb2869b80ccfa6e9d44a9093703e791b026b4f3a2e85b0f7bd0ec42b216b49",
         role = "maintained positive, negative, trust, and evidence gate",
       },
       {

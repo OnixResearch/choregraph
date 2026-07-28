@@ -9,6 +9,7 @@ let DependencySource = std.contract.from_predicate (fun value =>
 ) in
 let Dependency = {
   name | NonEmpty,
+  requirement | NonEmpty,
   source | DependencySource,
   path | String,
 } in

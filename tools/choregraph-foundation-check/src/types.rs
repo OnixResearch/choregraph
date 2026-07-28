@@ -19,6 +19,7 @@ pub struct PackageModel {
 #[derive(Clone, Debug, serde::Deserialize, Eq, PartialEq)]
 pub struct DependencyModel {
     pub name: String,
+    pub requirement: String,
     pub source: DependencySource,
     pub path: String,
 }

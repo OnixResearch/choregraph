@@ -65,6 +65,7 @@ fn normalize_package(
             .unwrap_or_default();
         dependencies.push(choregraph_foundation_check::types::DependencyModel {
             name,
+            requirement: dependency.req.to_string(),
             source,
             path,
         });
