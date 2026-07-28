@@ -158,7 +158,8 @@ pub enum ArtifactStatus {
 }
 
 impl ArtifactStatus {
-    const fn label(self) -> &'static str {
+    #[must_use]
+    pub const fn label(self) -> &'static str {
         match self {
             Self::Observed => "observed",
             Self::Canonical => "canonical",
@@ -340,8 +341,12 @@ pub const fn expected_schema(role: ReleaseRole) -> &'static str {
     }
 }
 
+fn valid_path_byte(byte: u8) -> bool {
+    byte.is_ascii_alphanumeric() || matches!(byte, b'/' | b'.' | b'_' | b'-')
+}
+
 fn valid_relative_path(path: &str) -> bool {
-    if path.is_empty() || path.starts_with('/') || path.contains(['\\', '\0', ':']) {
+    if path.is_empty() || path.starts_with('/') || !path.bytes().all(valid_path_byte) {
         return false;
     }
     path.split('/')

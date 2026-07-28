@@ -108,6 +108,10 @@ fn open_root(path: &Path) -> Result<OpenRoot, FrontendFailure> {
     })
 }
 
+pub(crate) fn open_capability_dir(path: &Path) -> Result<Dir, FrontendFailure> {
+    Ok(open_root(path)?.dir)
+}
+
 fn open_roots(request: &CompileNickelRequest) -> Result<OpenRoots, FrontendFailure> {
     let source = open_root(&request.source_root)?;
     let contract = open_root(&request.contract_root)?;
@@ -164,7 +168,7 @@ fn open_parent(
     Ok((parent, file_name))
 }
 
-fn read_relative(
+pub(crate) fn read_relative(
     root: &Dir,
     relative_path: &Path,
     max_bytes: usize,
@@ -319,7 +323,7 @@ fn remove_if_present(parent: &Dir, path: &OsStr) {
     let _ignored = parent.remove_file(path);
 }
 
-fn publish_atomic(
+pub(crate) fn publish_atomic(
     output_root: &Dir,
     relative_path: &Path,
     bytes: &[u8],

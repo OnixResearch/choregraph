@@ -36,6 +36,12 @@ The pure verifier rebuilds the expected bundle from current observations. It com
 
 Validation fails for missing, duplicate, malformed, stale, skipped, unsupported, mismatched, or overclaimed evidence.
 
+`choregraph-cli write-release-bundle` reads 30 fixed relative paths through capability roots. It enforces input bounds and publishes one local manifest without replacement.
+
+`choregraph-cli verify-release-bundle` reopens the artifact and manifest roots. It rebuilds the expected bundle and requires exact manifest-byte equality. It does not trust a recorded identity without current artifact bytes.
+
+The checked-in manifest is `evidence/release/generated/choregraph.release.bundle`. The adjacent BLAKE3 file identifies the manifest bytes, not the internal bundle framing.
+
 ## Valence projection
 
 The Valence-friendly projection separates these roles:
@@ -62,6 +68,15 @@ The pure candidate model requires:
 - the exact release-bundle identity.
 
 Candidate construction performs no publication, signing, push, remote update, rollback, or source acquisition.
+
+## Local commands
+
+```text
+choregraph write-release-bundle <artifact-root> <output-root> <output-path>
+choregraph verify-release-bundle <artifact-root> <manifest-root> <manifest-path>
+```
+
+All roots are absolute operator inputs. All artifact and output names under those roots are fixed or capability-admitted relative paths.
 
 ## Architecture selection
 

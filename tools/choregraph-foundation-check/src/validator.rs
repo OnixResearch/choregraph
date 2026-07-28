@@ -60,6 +60,7 @@ const REQUIRED_INTERNAL_EDGES: &[(&str, &str)] = &[
     ("choregraph-cli", CORE_PACKAGE),
     ("choregraph-cli", "choregraph-kamacite"),
     ("choregraph-cli", "choregraph-nickel"),
+    ("choregraph-cli", "choregraph-release"),
     ("choregraph-cli", "choregraph-seaglass"),
 ];
 

@@ -1,8 +1,13 @@
 mod capability;
 mod corpus;
+mod release;
 
 pub use capability::{CompilationReport, CompileNickelRequest, OperatorRootSpec, compile_nickel};
 pub use corpus::{KamaciteCorpusEntry, build_kamacite_corpus};
+pub use release::{
+    ReleaseBundleReport, ReleaseShellFailure, ReleaseShellIssueCode, VerifyReleaseBundleRequest,
+    WriteReleaseBundleRequest, verify_release_bundle_file, write_release_bundle,
+};
 
 /// A command accepted by the imperative shell.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -10,6 +15,8 @@ pub enum Command {
     Boundary,
     CompileNickel { request: Box<CompileNickelRequest> },
     WriteKamaciteCorpus { output_directory: String },
+    WriteReleaseBundle { request: WriteReleaseBundleRequest },
+    VerifyReleaseBundle { request: VerifyReleaseBundleRequest },
 }
 
 fn parse_operator_root(value: &str) -> Result<OperatorRootSpec, &'static str> {
@@ -25,8 +32,44 @@ fn parse_operator_root(value: &str) -> Result<OperatorRootSpec, &'static str> {
     })
 }
 
-/// Parses a command without reading process state.
-pub fn parse_command(arguments: &[String]) -> Result<Command, &'static str> {
+#[allow(
+    unknown_lints,
+    missing_const_fn,
+    reason = "release command parsing constructs owned paths, which are not available in const evaluation"
+)]
+fn parse_release_command(arguments: &[String]) -> Option<Result<Command, &'static str>> {
+    match arguments {
+        [command, artifact_root, output_root, output_path] if command == "write-release-bundle" => {
+            if artifact_root.is_empty() || output_root.is_empty() || output_path.is_empty() {
+                return Some(Err("release roots and output path must be non-empty"));
+            }
+            Some(Ok(Command::WriteReleaseBundle {
+                request: WriteReleaseBundleRequest {
+                    artifact_root: std::path::PathBuf::from(artifact_root),
+                    output_root: std::path::PathBuf::from(output_root),
+                    output_path: std::path::PathBuf::from(output_path),
+                },
+            }))
+        }
+        [command, artifact_root, manifest_root, manifest_path]
+            if command == "verify-release-bundle" =>
+        {
+            if artifact_root.is_empty() || manifest_root.is_empty() || manifest_path.is_empty() {
+                return Some(Err("release roots and manifest path must be non-empty"));
+            }
+            Some(Ok(Command::VerifyReleaseBundle {
+                request: VerifyReleaseBundleRequest {
+                    artifact_root: std::path::PathBuf::from(artifact_root),
+                    manifest_root: std::path::PathBuf::from(manifest_root),
+                    manifest_path: std::path::PathBuf::from(manifest_path),
+                },
+            }))
+        }
+        _ => None,
+    }
+}
+
+fn parse_non_release_command(arguments: &[String]) -> Result<Command, &'static str> {
     match arguments {
         [] => Ok(Command::Boundary),
         [argument] if argument == "boundary" => Ok(Command::Boundary),
@@ -68,8 +111,16 @@ pub fn parse_command(arguments: &[String]) -> Result<Command, &'static str> {
             })
         }
         _ => Err(
-            "usage: choregraph [boundary | compile-nickel <evaluator> <source-root> <source-path> <contract-root> <scratch-root> <output-root> <output-path> [<import-id>=<import-root> ...] | write-kamacite-corpus <output-directory>]",
+            "usage: choregraph [boundary | compile-nickel <evaluator> <source-root> <source-path> <contract-root> <scratch-root> <output-root> <output-path> [<import-id>=<import-root> ...] | write-kamacite-corpus <output-directory> | write-release-bundle <artifact-root> <output-root> <output-path> | verify-release-bundle <artifact-root> <manifest-root> <manifest-path>]",
         ),
+    }
+}
+
+/// Parses a command without reading process state.
+pub fn parse_command(arguments: &[String]) -> Result<Command, &'static str> {
+    match parse_release_command(arguments) {
+        Some(release_command) => release_command,
+        None => parse_non_release_command(arguments),
     }
 }
 
@@ -104,6 +155,20 @@ pub fn render_foundation_report() -> String {
 }
 
 #[must_use]
+pub fn render_release_bundle_report(report: &ReleaseBundleReport) -> String {
+    format!(
+        "status=bundled\nbundle-blake3={}\nartifacts={}\nartifact-bytes={}\nmanifest-bytes={}\n",
+        report.bundle_blake3, report.artifact_count, report.artifact_bytes, report.manifest_bytes,
+    )
+}
+
+pub fn render_release_verification_report(report: &ReleaseBundleReport) -> String {
+    format!(
+        "status=verified\nbundle-blake3={}\nartifacts={}\nartifact-bytes={}\nmanifest-bytes={}\n",
+        report.bundle_blake3, report.artifact_count, report.artifact_bytes, report.manifest_bytes,
+    )
+}
+
 pub fn render_compilation_report(report: &CompilationReport) -> String {
     format!(
         "status=compiled\nsource-format={:?}\nimports={}\nimport-bytes={}\nmachine-blake3={}\nartifact-bytes={}\n",
@@ -131,6 +196,36 @@ mod tests {
             ]),
             Ok(super::Command::WriteKamaciteCorpus {
                 output_directory: String::from("fixtures/kamacite"),
+            })
+        );
+        assert_eq!(
+            super::parse_command(&[
+                String::from("write-release-bundle"),
+                String::from("/source"),
+                String::from("/output"),
+                String::from("release.bundle"),
+            ]),
+            Ok(super::Command::WriteReleaseBundle {
+                request: super::WriteReleaseBundleRequest {
+                    artifact_root: std::path::PathBuf::from("/source"),
+                    output_root: std::path::PathBuf::from("/output"),
+                    output_path: std::path::PathBuf::from("release.bundle"),
+                },
+            })
+        );
+        assert_eq!(
+            super::parse_command(&[
+                String::from("verify-release-bundle"),
+                String::from("/source"),
+                String::from("/output"),
+                String::from("release.bundle"),
+            ]),
+            Ok(super::Command::VerifyReleaseBundle {
+                request: super::VerifyReleaseBundleRequest {
+                    artifact_root: std::path::PathBuf::from("/source"),
+                    manifest_root: std::path::PathBuf::from("/output"),
+                    manifest_path: std::path::PathBuf::from("release.bundle"),
+                },
             })
         );
     }

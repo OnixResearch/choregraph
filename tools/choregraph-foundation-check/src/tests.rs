@@ -70,6 +70,7 @@ fn allowed_model() -> crate::types::WorkspaceModel {
                     workspace_dependency("choregraph-core"),
                     workspace_dependency("choregraph-kamacite"),
                     workspace_dependency("choregraph-nickel"),
+                    workspace_dependency("choregraph-release"),
                     workspace_dependency("choregraph-seaglass"),
                     reviewed_bounded_exec_dependency(),
                     reviewed_cap_root_dependency(),

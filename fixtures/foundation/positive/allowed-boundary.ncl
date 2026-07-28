@@ -41,6 +41,7 @@ let reviewed_execution_graph_oracle = {
       workspace "choregraph-core",
       workspace "choregraph-kamacite",
       workspace "choregraph-nickel",
+      workspace "choregraph-release",
       workspace "choregraph-seaglass",
       reviewed_bounded_exec,
       reviewed_cap_root,
