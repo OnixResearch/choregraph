@@ -4,6 +4,7 @@
     allocation_in_loop,
     assertion_density,
     compound_condition,
+    fragile_exhaustive_enum_match,
     missing_const_fn,
     non_trait_imports,
     numeric_units,
@@ -242,7 +243,7 @@ pub fn well_formed(machine: &AdmittedMachine) -> bool {
     if operation_count > machine.limits.max_operations {
         return false;
     }
-    let effects_are_valid = match machine.schema {
+    let is_effect_set_valid = match machine.schema {
         MachineSchema::V1 => {
             machine.concrete_effects.is_empty()
                 && machine.concrete_effect_key_indices.is_empty()
@@ -260,7 +261,7 @@ pub fn well_formed(machine: &AdmittedMachine) -> bool {
         && indexes_match(machine)
         && indexed_views_match(machine)
         && topology_matches(machine)
-        && effects_are_valid
+        && is_effect_set_valid
 }
 
 /// Returns deterministic state-invariant failures.

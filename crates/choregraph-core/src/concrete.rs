@@ -4,6 +4,8 @@
     allocation_in_loop,
     ambiguous_params,
     assertion_density,
+    borrowed_argument_types,
+    fragile_exhaustive_enum_match,
     function_length,
     missing_const_fn,
     non_trait_imports,
@@ -389,38 +391,38 @@ fn parse_binding(
     }
 }
 
-fn binding_size(binding: &ReferenceBinding) -> Option<usize> {
+fn binding_size(binding: &ReferenceBinding) -> usize {
     match binding {
         ReferenceBinding::Exact(reference) => reference
             .profile
             .as_str()
             .len()
-            .checked_add(reference.identity.as_str().len()),
+            .saturating_add(reference.identity.as_str().len()),
         ReferenceBinding::Slot {
             slot_id,
             source_ref,
         } => slot_id
             .as_str()
             .len()
-            .checked_add(source_ref.as_str().len()),
+            .saturating_add(source_ref.as_str().len()),
     }
 }
 
-fn declaration_size(declaration: &ConcreteEffectDeclaration) -> Option<usize> {
+fn declaration_size(declaration: &ConcreteEffectDeclaration) -> usize {
     let fields = [
         declaration.declaration_key.as_str().len(),
         declaration.node_id.as_str().len(),
         declaration.operation.as_str().len(),
         declaration.resource.as_str().len(),
         declaration.ability.as_str().len(),
-        binding_size(&declaration.request_binding)?,
-        binding_size(&declaration.payload_binding)?,
+        binding_size(&declaration.request_binding),
+        binding_size(&declaration.payload_binding),
     ];
     let mut size = 0usize;
     for field in fields {
-        size = size.checked_add(field)?;
+        size = size.saturating_add(field);
     }
-    Some(size)
+    size
 }
 
 fn parse_declaration(
@@ -512,7 +514,7 @@ fn admit_concrete_effects(
             ));
             continue;
         }
-        let observed = declaration_size(&declaration).unwrap_or(usize::MAX);
+        let observed = declaration_size(&declaration);
         if observed > limits.max_intent_bytes {
             diagnostics.push(limit_diagnostic(
                 AdmissionDiagnosticCode::IntentTooLarge,
@@ -646,15 +648,24 @@ pub(crate) fn concrete_effects_match(machine: &AdmittedMachine) -> bool {
         let Some(node) = machine.nodes.get(&declaration.node_id) else {
             return false;
         };
-        if !node.operations.contains(&declaration.operation)
-            || lifecycle_target(declaration.transition.from, declaration.transition.action).is_err()
-            || !binding_is_well_formed(&declaration.request_binding, machine.limits)
-            || !binding_is_well_formed(&declaration.payload_binding, machine.limits)
-            || declaration_size(declaration)
-                .is_none_or(|size| size > machine.limits.max_intent_bytes)
-            || key_indices
-                .insert(declaration.declaration_key.clone(), index)
-                .is_some()
+        if !node.operations.contains(&declaration.operation) {
+            return false;
+        }
+        if lifecycle_target(declaration.transition.from, declaration.transition.action).is_err() {
+            return false;
+        }
+        if !binding_is_well_formed(&declaration.request_binding, machine.limits) {
+            return false;
+        }
+        if !binding_is_well_formed(&declaration.payload_binding, machine.limits) {
+            return false;
+        }
+        if declaration_size(declaration) > machine.limits.max_intent_bytes {
+            return false;
+        }
+        if key_indices
+            .insert(declaration.declaration_key.clone(), index)
+            .is_some()
         {
             return false;
         }
@@ -699,7 +710,7 @@ fn resolve_binding(
     let reference = parse_event_reference(&input.reference, limits)?;
     match declaration {
         ReferenceBinding::Exact(expected) => {
-            let accepted = crate::verified::concrete_binding_accepts(
+            let is_accepted = crate::verified::concrete_binding_accepts(
                 crate::verified::BINDING_EXACT,
                 false,
                 false,
@@ -707,7 +718,7 @@ fn resolve_binding(
                 input.slot_id.is_none(),
                 input.source_ref.is_none(),
             );
-            if !accepted {
+            if !is_accepted {
                 return Err(crate::DenialReason::ConcreteBindingMismatch);
             }
             Ok(ResolvedBinding {
@@ -736,7 +747,7 @@ fn resolve_binding(
                     SourceRef::parse(value, limits.max_identifier_bytes)
                         .map_err(|_| crate::DenialReason::MalformedEffectRequest)
                 })?;
-            let accepted = crate::verified::concrete_binding_accepts(
+            let is_accepted = crate::verified::concrete_binding_accepts(
                 crate::verified::BINDING_SLOT,
                 selected_slot == *slot_id,
                 selected_source == *source_ref,
@@ -744,7 +755,7 @@ fn resolve_binding(
                 false,
                 false,
             );
-            if !accepted {
+            if !is_accepted {
                 return Err(crate::DenialReason::ConcreteBindingMismatch);
             }
             Ok(ResolvedBinding {
@@ -756,7 +767,7 @@ fn resolve_binding(
     }
 }
 
-fn intent_size(intent: &ConcreteEffectIntent) -> Option<usize> {
+fn intent_size(intent: &ConcreteEffectIntent) -> usize {
     let optional_size = |value: &Option<BoundedId<crate::id::SlotDomain>>| {
         value
             .as_ref()
@@ -784,9 +795,9 @@ fn intent_size(intent: &ConcreteEffectIntent) -> Option<usize> {
     ];
     let mut size = 0usize;
     for field in fields {
-        size = size.checked_add(field)?;
+        size = size.saturating_add(field);
     }
-    Some(size)
+    size
 }
 
 fn binding_input_size(input: &ConcreteBindingInput) -> Option<usize> {
@@ -868,7 +879,7 @@ pub(crate) fn resolve_concrete_intents(
             payload_source_ref: payload_binding.source_ref,
             payload_reference: payload_binding.reference,
         };
-        let observed = intent_size(&intent).unwrap_or(usize::MAX);
+        let observed = intent_size(&intent);
         if observed > machine.limits.max_intent_bytes {
             return Err(crate::DenialReason::ConcreteIntentTooLarge {
                 observed,

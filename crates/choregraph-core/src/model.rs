@@ -1,6 +1,7 @@
 // The canonical public IR remains in one reviewable file with explicit value imports.
 #![allow(
     unknown_lints,
+    fragile_exhaustive_enum_match,
     non_trait_imports,
     reason = "the canonical public IR remains in one reviewable file with explicit value imports"
 )]
