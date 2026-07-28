@@ -186,7 +186,7 @@ let ProofManifest = {
       },
       {
         path = "evidence/source-baseline.ncl",
-        blake3 = "fcc27fcef0c011965b2bda4caaffb526dbb6d6af79935d51fa531d285753b7ea",
+        blake3 = "0ec9a6510670e4267fec726ed50cb85f70600e48b3b54c527630a130b93a7ec6",
         role = "reviewed selected-source baseline",
       },
       {
