@@ -406,12 +406,19 @@ pub fn validate_concrete_machine_artifact(
         CONCRETE_MACHINE_SCHEMA_VERSION,
         CONCRETE_MACHINE_ROOT_LABEL,
     )?;
-    if descriptor.schema_version != SUPPORTED_SCHEMA_VERSION
-        || descriptor.machine_schema != MACHINE_SCHEMA_V2
-        || descriptor.lifecycle_profile_id != LINEAR_LIFECYCLE_V1
-        || descriptor.non_claims != machine_non_claims()
-        || descriptor.non_claims.len() != MACHINE_NON_CLAIM_COUNT
-    {
+    if descriptor.schema_version != SUPPORTED_SCHEMA_VERSION {
+        return Err(ConcreteArtifactError::UnsupportedSchema);
+    }
+    if descriptor.machine_schema != MACHINE_SCHEMA_V2 {
+        return Err(ConcreteArtifactError::UnsupportedSchema);
+    }
+    if descriptor.lifecycle_profile_id != LINEAR_LIFECYCLE_V1 {
+        return Err(ConcreteArtifactError::UnsupportedSchema);
+    }
+    if descriptor.non_claims != machine_non_claims() {
+        return Err(ConcreteArtifactError::UnsupportedSchema);
+    }
+    if descriptor.non_claims.len() != MACHINE_NON_CLAIM_COUNT {
         return Err(ConcreteArtifactError::UnsupportedSchema);
     }
     let limits = admission_limits(&descriptor.limits)?;

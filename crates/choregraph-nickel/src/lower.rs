@@ -120,19 +120,21 @@ fn valid_events(mut events: Vec<String>) -> bool {
     events.len() == LIFECYCLE_EVENT_COUNT && events.iter().map(String::as_str).eq(LIFECYCLE_EVENTS)
 }
 
-fn validate_source_profile(
-    schema: &str,
-    expected_schema: &str,
-    lifecycle_profile: &str,
+struct SourceProfile<'a> {
+    observed_schema: &'a str,
+    expected_schema: &'a str,
+    lifecycle_profile: &'a str,
     events: Vec<String>,
-) -> Result<(), FrontendFailure> {
-    if schema != expected_schema {
+}
+
+fn validate_source_profile(profile: SourceProfile<'_>) -> Result<(), FrontendFailure> {
+    if profile.observed_schema != profile.expected_schema {
         return Err(fail(FrontendIssueCode::UnsupportedSchema));
     }
-    if lifecycle_profile != LINEAR_LIFECYCLE_V1 {
+    if profile.lifecycle_profile != LINEAR_LIFECYCLE_V1 {
         return Err(fail(FrontendIssueCode::UnsupportedLifecycle));
     }
-    if !valid_events(events) {
+    if !valid_events(profile.events) {
         return Err(fail(FrontendIssueCode::UnsupportedEvents));
     }
     Ok(())
@@ -368,12 +370,12 @@ pub fn lower_evaluated_json(
             edges,
             effects,
         } => {
-            validate_source_profile(
-                &schema,
-                CHOREGRAPH_EVALUATED_SCHEMA,
-                &lifecycle_profile,
+            validate_source_profile(SourceProfile {
+                observed_schema: &schema,
+                expected_schema: CHOREGRAPH_EVALUATED_SCHEMA,
+                lifecycle_profile: &lifecycle_profile,
                 events,
-            )?;
+            })?;
             let admission_limits = admission_limits(limits, frontend_limits.machine_ceiling)?;
             let mut spec = MachineSpec::new(
                 nodes
@@ -405,12 +407,12 @@ pub fn lower_evaluated_json(
             edges,
             configs,
         } => {
-            validate_source_profile(
-                &schema,
-                LATTICE_EVALUATED_SCHEMA,
-                &lifecycle_profile,
+            validate_source_profile(SourceProfile {
+                observed_schema: &schema,
+                expected_schema: LATTICE_EVALUATED_SCHEMA,
+                lifecycle_profile: &lifecycle_profile,
                 events,
-            )?;
+            })?;
             let admission_limits = admission_limits(limits, frontend_limits.machine_ceiling)?;
             let (nodes, edges) = lower_lattice(nodes, edges, configs)?;
             (
@@ -430,12 +432,12 @@ pub fn lower_evaluated_json(
             configs,
             effects,
         } => {
-            validate_source_profile(
-                &schema,
-                LATTICE_V2_EVALUATED_SCHEMA,
-                &lifecycle_profile,
+            validate_source_profile(SourceProfile {
+                observed_schema: &schema,
+                expected_schema: LATTICE_V2_EVALUATED_SCHEMA,
+                lifecycle_profile: &lifecycle_profile,
                 events,
-            )?;
+            })?;
             let admission_limits = admission_limits(limits, frontend_limits.machine_ceiling)?;
             let spec = lower_lattice_v2(nodes, edges, configs, effects)?;
             (

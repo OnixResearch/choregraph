@@ -158,7 +158,7 @@ fn v2_machine_intent_and_receipt_round_trip_canonically() {
 }
 
 #[test]
-fn machine_identity_is_stable_while_concrete_content_identity_changes() {
+fn machine_identity_stays_stable_when_content_changes() {
     let machine = machine();
     let machine_artifact = must(build_concrete_machine_artifact(&machine));
     let first = must(build_concrete_intent_artifact(

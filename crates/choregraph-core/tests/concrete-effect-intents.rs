@@ -4,10 +4,14 @@
 // r[verify choregraph.effect_v2.replay]
 #![allow(
     unknown_lints,
+    ambiguous_params,
     assertion_density,
+    explicit_defaults,
     function_length,
+    no_panic,
     non_trait_imports,
     numeric_units,
+    raw_arithmetic_overflow,
     reason = "the concrete-effect corpus keeps explicit positive and negative boundary cases"
 )]
 
