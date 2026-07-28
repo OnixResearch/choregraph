@@ -8,5 +8,5 @@
 - [x] [serial] Add Valence-friendly projections that preserve proof, canonicalization, lifecycle, and runtime role boundaries. r[choregraph.release.valence]
 - [x] [serial] Define a local immutable Radicle publication candidate with exact source, archive, license, package, evidence, acquisition, and rollback identities. r[choregraph.release.publication_candidate]
 - [x] [serial] Define execution-graph and Lattice handoff requirements for exact source and evidence identities. r[choregraph.release.downstream]
-- [ ] [serial] Run formatting, tests, property tests, expected failures, Clippy, no-std, Verus, Nickel, canonical corpus, adapter, parity, downstream, Octet, Cairn, traceability, and Nix checks. r[choregraph.release.gates]
+- [x] [serial] Run formatting, tests, property tests, expected failures, Clippy, no-std, Verus, Nickel, canonical corpus, adapter, parity, downstream, Octet, Cairn, traceability, and Nix checks. r[choregraph.release.gates]
 - [x] [serial] Verify release commands perform no publication, push, signing, or remote authority mutation without explicit operator action. r[choregraph.release.authority]
