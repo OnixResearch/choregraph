@@ -23,13 +23,17 @@
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 
+use crate::concrete::{
+    ConcreteDecision, ConcreteEvent, ConcreteReplayInput, concrete_effects_allowed,
+    concrete_event_size, resolve_concrete_intents,
+};
 use crate::id::{AbilityId, NodeId, OperationId, PayloadRef, RequestId, ResourceId};
 use crate::invariant::{effects_allowed, invariant, terminal_states_preserved};
 use crate::model::{
     Action, AdmittedMachine, ConsumedCount, Decision, DenialReason, EffectDeclaration,
     EffectIntent, EffectKey, EffectRequest, Event, EventIndex, LastValidState, LocalState,
-    LocalTransitionError, MachineState, ReplayDecision, ReplayFailure, ReplayFailureReason,
-    ReplayInput, TransitionSelector,
+    LocalTransitionError, MachineSchema, MachineState, ReplayDecision, ReplayFailure,
+    ReplayFailureReason, ReplayInput, TransitionSelector,
 };
 use crate::verified::{
     ACTION_CANCEL, ACTION_COMPLETE, ACTION_FAIL, ACTION_MARK_READY, ACTION_START,
@@ -259,12 +263,92 @@ fn public_decision_from_indexed(
     Decision::Accept { next, intents }
 }
 
-/// Applies one deterministic aggregate machine transition.
+struct PreparedStep {
+    node_id: NodeId,
+    node_index: usize,
+    from: LocalState,
+    states: Vec<u8>,
+}
+
+fn prepare_step(
+    machine: &AdmittedMachine,
+    state: &MachineState,
+    node_id: &str,
+    action: Action,
+) -> Result<PreparedStep, DenialReason> {
+    if !invariant(machine, state) {
+        return Err(DenialReason::InvalidState);
+    }
+    let node_id = NodeId::parse(node_id, machine.limits.max_identifier_bytes)
+        .map_err(|_| DenialReason::InvalidNodeId)?;
+    let node_index = machine
+        .node_indices
+        .get(&node_id)
+        .copied()
+        .ok_or(DenialReason::UnknownNode)?;
+    let from = state.state(&node_id).ok_or(DenialReason::InvalidState)?;
+    let states = indexed_states(machine, state).ok_or(DenialReason::InvalidState)?;
+    let empty_intents = Vec::new();
+    let precheck = crate::verified::indexed_step(
+        &machine.dependency_indices,
+        &states,
+        node_index,
+        action_code(action),
+        &empty_intents,
+        &empty_intents,
+    );
+    if !precheck.accepted {
+        return Err(denial_from_indexed(precheck.reason, from, action));
+    }
+    Ok(PreparedStep {
+        node_id,
+        node_index,
+        from,
+        states,
+    })
+}
+
+fn run_indexed_step(
+    machine: &AdmittedMachine,
+    prepared: &PreparedStep,
+    action: Action,
+    allowed_indices: &[usize],
+    requested_indices: &[usize],
+) -> IndexedDecision {
+    crate::verified::indexed_step(
+        &machine.dependency_indices,
+        &prepared.states,
+        prepared.node_index,
+        action_code(action),
+        allowed_indices,
+        requested_indices,
+    )
+}
+
+fn accepted_next_state(
+    machine: &AdmittedMachine,
+    state: &MachineState,
+    action: Action,
+    prepared: &PreparedStep,
+    indexed: &IndexedDecision,
+) -> Result<MachineState, DenialReason> {
+    if !indexed.accepted {
+        return Err(denial_from_indexed(indexed.reason, prepared.from, action));
+    }
+    let next = state_from_indexed(machine, &indexed.next_states)
+        .ok_or(DenialReason::InvariantWouldBreak)?;
+    if !invariant(machine, &next) || !terminal_states_preserved(state, &next) {
+        return Err(DenialReason::InvariantWouldBreak);
+    }
+    Ok(next)
+}
+
+/// Applies one deterministic aggregate v1 machine transition.
 #[must_use]
 pub fn step(machine: &AdmittedMachine, state: &MachineState, event: &Event) -> Decision {
-    if !invariant(machine, state) {
+    if machine.schema != MachineSchema::V1 {
         return Decision::Deny {
-            reason: DenialReason::InvalidState,
+            reason: DenialReason::UnsupportedMachineSchema,
         };
     }
     if event.effects.len() > machine.limits.max_intents_per_transition {
@@ -284,47 +368,16 @@ pub fn step(machine: &AdmittedMachine, state: &MachineState, event: &Event) -> D
             },
         };
     }
-    let Ok(node_id) = NodeId::parse(&event.node_id, machine.limits.max_identifier_bytes) else {
-        return Decision::Deny {
-            reason: DenialReason::InvalidNodeId,
-        };
-    };
-    let Some(node_index) = machine.node_indices.get(&node_id).copied() else {
-        return Decision::Deny {
-            reason: DenialReason::UnknownNode,
-        };
-    };
-    let Some(from) = state.state(&node_id) else {
-        return Decision::Deny {
-            reason: DenialReason::InvalidState,
-        };
-    };
-    let Some(states) = indexed_states(machine, state) else {
-        return Decision::Deny {
-            reason: DenialReason::InvalidState,
-        };
-    };
-
-    let empty_intents = Vec::new();
-    let precheck = crate::verified::indexed_step(
-        &machine.dependency_indices,
-        &states,
-        node_index,
-        action_code(event.action),
-        &empty_intents,
-        &empty_intents,
-    );
-    if !precheck.accepted {
-        return public_decision_from_indexed(machine, state, event, from, precheck);
-    }
-
-    let selector = TransitionSelector {
-        from,
-        action: event.action,
+    let prepared = match prepare_step(machine, state, &event.node_id, event.action) {
+        Ok(prepared) => prepared,
+        Err(reason) => return Decision::Deny { reason },
     };
     let key = EffectKey {
-        node_id,
-        transition: selector,
+        node_id: prepared.node_id.clone(),
+        transition: TransitionSelector {
+            from: prepared.from,
+            action: event.action,
+        },
     };
     let allowed_indices = machine
         .effect_route_indices
@@ -335,15 +388,85 @@ pub fn step(machine: &AdmittedMachine, state: &MachineState, event: &Event) -> D
         Ok(indices) => indices,
         Err(reason) => return Decision::Deny { reason },
     };
-    let indexed = crate::verified::indexed_step(
-        &machine.dependency_indices,
-        &states,
-        node_index,
-        action_code(event.action),
+    let indexed = run_indexed_step(
+        machine,
+        &prepared,
+        event.action,
         allowed_indices,
         &requested_indices,
     );
-    public_decision_from_indexed(machine, state, event, from, indexed)
+    public_decision_from_indexed(machine, state, event, prepared.from, indexed)
+}
+
+/// Applies one deterministic aggregate v2 machine transition through the same indexed kernel.
+#[must_use]
+pub fn step_concrete(
+    machine: &AdmittedMachine,
+    state: &MachineState,
+    event: &ConcreteEvent,
+) -> ConcreteDecision {
+    if machine.schema != MachineSchema::V2 {
+        return ConcreteDecision::Deny {
+            reason: DenialReason::UnsupportedMachineSchema,
+        };
+    }
+    if event.effects.len() > machine.limits.max_intents_per_transition {
+        return ConcreteDecision::Deny {
+            reason: DenialReason::TooManyEffectRequests {
+                observed: event.effects.len(),
+                maximum: machine.limits.max_intents_per_transition,
+            },
+        };
+    }
+    let observed_event_bytes = concrete_event_size(event).unwrap_or(usize::MAX);
+    if observed_event_bytes > machine.limits.max_event_bytes {
+        return ConcreteDecision::Deny {
+            reason: DenialReason::EventTooLarge {
+                observed: observed_event_bytes,
+                maximum: machine.limits.max_event_bytes,
+            },
+        };
+    }
+    let prepared = match prepare_step(machine, state, &event.node_id, event.action) {
+        Ok(prepared) => prepared,
+        Err(reason) => return ConcreteDecision::Deny { reason },
+    };
+    let key = EffectKey {
+        node_id: prepared.node_id.clone(),
+        transition: TransitionSelector {
+            from: prepared.from,
+            action: event.action,
+        },
+    };
+    let allowed_indices = machine
+        .concrete_effect_route_indices
+        .get(&key)
+        .map(Vec::as_slice)
+        .unwrap_or(&[]);
+    let (requested_indices, intents) =
+        match resolve_concrete_intents(machine, allowed_indices, event) {
+            Ok(resolved) => resolved,
+            Err(reason) => return ConcreteDecision::Deny { reason },
+        };
+    let indexed = run_indexed_step(
+        machine,
+        &prepared,
+        event.action,
+        allowed_indices,
+        &requested_indices,
+    );
+    let next = match accepted_next_state(machine, state, event.action, &prepared, &indexed) {
+        Ok(next) => next,
+        Err(reason) => return ConcreteDecision::Deny { reason },
+    };
+    if indexed.intent_indices != requested_indices
+        || !concrete_effects_allowed(machine, state, event, &intents)
+    {
+        return ConcreteDecision::Deny {
+            reason: DenialReason::EffectsNotAllowed,
+        };
+    }
+    ConcreteDecision::Accept { next, intents }
 }
 
 fn replay_failure(
@@ -413,6 +536,72 @@ pub fn replay(input: ReplayInput<'_>) -> ReplayDecision {
                 last_valid_state = next;
             }
             Decision::Deny { reason } => {
+                return replay_failure(
+                    Some(EventIndex::from_usize(event_index)),
+                    ConsumedCount::from_usize(event_index),
+                    ReplayFailureReason::TransitionDenied(reason),
+                    last_valid_state,
+                );
+            }
+        }
+    }
+
+    ReplayDecision::Complete {
+        final_state: last_valid_state,
+        consumed: ConsumedCount::from_usize(trace_events.len()),
+    }
+}
+
+/// Replays a bounded v2 trace through [`step_concrete`] and discards every concrete intent.
+#[must_use]
+pub fn replay_concrete(input: ConcreteReplayInput<'_>) -> ReplayDecision {
+    let trace_events = input.trace.events();
+    let observed_event_count = ConsumedCount::from_usize(trace_events.len()).get();
+    let initial_state = input.initial_state.clone();
+    if observed_event_count > input.limits.max_events {
+        return replay_failure(
+            None,
+            ConsumedCount::new(0),
+            ReplayFailureReason::TraceLimitExceeded {
+                observed: observed_event_count,
+                maximum: input.limits.max_events,
+            },
+            initial_state,
+        );
+    }
+    let trace_bindings = input.trace.bindings();
+    if trace_bindings.machine != input.expected_bindings.machine {
+        return replay_failure(
+            None,
+            ConsumedCount::new(0),
+            ReplayFailureReason::MachineBindingMismatch,
+            initial_state,
+        );
+    }
+    if trace_bindings.initial_state != input.expected_bindings.initial_state {
+        return replay_failure(
+            None,
+            ConsumedCount::new(0),
+            ReplayFailureReason::InitialStateBindingMismatch,
+            initial_state,
+        );
+    }
+    if !invariant(input.machine, input.initial_state) {
+        return replay_failure(
+            None,
+            ConsumedCount::new(0),
+            ReplayFailureReason::InitialStateInvalid,
+            initial_state,
+        );
+    }
+
+    let mut last_valid_state = initial_state;
+    for (event_index, event) in trace_events.iter().enumerate() {
+        match step_concrete(input.machine, &last_valid_state, event) {
+            ConcreteDecision::Accept { next, intents: _ } => {
+                last_valid_state = next;
+            }
+            ConcreteDecision::Deny { reason } => {
                 return replay_failure(
                     Some(EventIndex::from_usize(event_index)),
                     ConsumedCount::from_usize(event_index),

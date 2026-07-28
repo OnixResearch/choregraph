@@ -1,18 +1,18 @@
 ## Phase 1: Baseline and Versioned Model
 
-- [ ] [serial] Record exact v1 machine, effect, replay, Preserves, proof, Seaglass, and Lattice fixture identities before changing semantics. r[choregraph.effect_v2.schema]
-- [ ] [serial] Define bounded declaration keys, exact and slot bindings, source references, canonical reference profiles, and v2 request and intent types in the pure core. r[choregraph.effect_v2.declarations] r[choregraph.effect_v2.bindings] r[choregraph.effect_v2.references]
-- [ ] [serial] Add positive and negative type, parsing, bounds, duplicate, malformed-reference, and source-order fixtures before production integration. r[choregraph.effect_v2.fixtures] r[choregraph.effect_v2.determinism]
+- [x] [serial] Record exact v1 machine, effect, replay, Preserves, proof, Seaglass, and Lattice fixture identities before changing semantics. r[choregraph.effect_v2.schema]
+- [x] [serial] Define bounded declaration keys, exact and slot bindings, source references, canonical reference profiles, and v2 request and intent types in the pure core. r[choregraph.effect_v2.declarations] r[choregraph.effect_v2.bindings] r[choregraph.effect_v2.references]
+- [x] [serial] Add positive and negative type, parsing, bounds, duplicate, malformed-reference, and source-order fixtures before production integration. r[choregraph.effect_v2.fixtures] r[choregraph.effect_v2.determinism]
 
 ## Phase 2: One Production Transition Kernel
 
-- [ ] [serial] Normalize v1 exact declarations and v2 declarations into one admitted immutable representation without changing v1 artifact identity. r[choregraph.effect_v2.schema] r[choregraph.effect_v2.stable_machine] r[choregraph.effect_v2.occurrence_identity] r[choregraph.effect_v2.kernel]
-- [ ] [serial] Implement pure admission for declaration routes, binding modes, slot and source selection, one-use cardinality, canonical-reference shape, uniqueness, and named limits. r[choregraph.effect_v2.declarations] r[choregraph.effect_v2.bindings] r[choregraph.effect_v2.determinism]
-- [ ] [serial] Extend the production-called transition kernel to resolve declared concrete requests and emit exact deterministic intents. r[choregraph.effect_v2.step] r[choregraph.effect_v2.kernel]
-- [ ] [serial] Add fail-closed malformed, undeclared, mismatched, duplicate, and oversized request behavior with no replacement state or intent. r[choregraph.effect_v2.denial]
-- [ ] [serial] Add stable bounded v2 diagnostics and redaction fixtures that exclude raw request, payload, credential, environment, and host-path data. r[choregraph.effect_v2.diagnostics]
-- [ ] [serial] Extend replay through the same kernel while keeping all historical concrete intents out of replay output. r[choregraph.effect_v2.replay] r[choregraph.effect_v2.kernel]
-- [ ] [serial] Prove executable v1 parity and stable machine identity across different run references. r[choregraph.effect_v2.schema] r[choregraph.effect_v2.stable_machine]
+- [x] [serial] Normalize v1 exact declarations and v2 declarations into one admitted immutable representation without changing v1 artifact identity. r[choregraph.effect_v2.schema] r[choregraph.effect_v2.stable_machine] r[choregraph.effect_v2.occurrence_identity] r[choregraph.effect_v2.kernel]
+- [x] [serial] Implement pure admission for declaration routes, binding modes, slot and source selection, one-use cardinality, canonical-reference shape, uniqueness, and named limits. r[choregraph.effect_v2.declarations] r[choregraph.effect_v2.bindings] r[choregraph.effect_v2.determinism]
+- [x] [serial] Extend the production-called transition kernel to resolve declared concrete requests and emit exact deterministic intents. r[choregraph.effect_v2.step] r[choregraph.effect_v2.kernel]
+- [x] [serial] Add fail-closed malformed, undeclared, mismatched, duplicate, and oversized request behavior with no replacement state or intent. r[choregraph.effect_v2.denial]
+- [x] [serial] Add stable bounded v2 diagnostics and redaction fixtures that exclude raw request, payload, credential, environment, and host-path data. r[choregraph.effect_v2.diagnostics]
+- [x] [serial] Extend replay through the same kernel while keeping all historical concrete intents out of replay output. r[choregraph.effect_v2.replay] r[choregraph.effect_v2.kernel]
+- [x] [serial] Prove executable v1 parity and stable machine identity across different run references. r[choregraph.effect_v2.schema] r[choregraph.effect_v2.stable_machine]
 
 ## Phase 3: Frontend, Interchange, Compatibility, and Proof
 

@@ -5,6 +5,7 @@ extern crate alloc;
 mod admission;
 mod analytics;
 mod boundary;
+mod concrete;
 mod id;
 mod invariant;
 mod model;
@@ -22,9 +23,17 @@ pub use boundary::{
     Capability, FOUNDATION_CLAIM, MACHINE_CLAIM, TRANSITION_IMPLEMENTATION_POLICY,
     TransitionImplementationPolicy, excluded_capabilities, permits,
 };
+pub use concrete::{
+    CANONICAL_REFERENCE_PROFILE_V1, CanonicalReferenceProfile, ConcreteBindingInput,
+    ConcreteBoundedTrace, ConcreteDecision, ConcreteEffectDeclaration,
+    ConcreteEffectDeclarationSpec, ConcreteEffectIntent, ConcreteEffectRequest, ConcreteEvent,
+    ConcreteReference, ConcreteReferenceSpec, ConcreteReplayInput, MachineSpecV2, ReferenceBinding,
+    ReferenceBindingSpec, concrete_effects_allowed,
+};
 pub use id::{
     AbilityId, BLAKE3_DIGEST_HEX_BYTES, BLAKE3_REFERENCE_BYTES, BLAKE3_REFERENCE_PREFIX, BoundedId,
-    IdentifierError, NodeId, OperationId, PayloadRef, PayloadRefError, RequestId, ResourceId,
+    DeclarationKey, IdentifierError, NodeId, OperationId, PayloadRef, PayloadRefError, RequestId,
+    ResourceId, SlotId, SourceRef,
 };
 pub use invariant::{
     effects_allowed, invariant, terminal_states_preserved, validate_invariant, well_formed,
@@ -37,8 +46,9 @@ pub use model::{
     DEFAULT_MAX_REFERENCE_BYTES, DEFAULT_MAX_TRACE_EVENTS, Decision, DenialReason, Edge, EdgeSpec,
     EffectDeclaration, EffectDeclarationSpec, EffectIntent, EffectRequest, Event, EventIndex,
     InvariantIssue, LINEAR_LIFECYCLE_V1, LastValidState, LifecycleProfile, LimitKind, LocalState,
-    LocalTransitionError, MACHINE_SCHEMA_V1, MachineSpec, MachineState, NodeSpec, ParallelGroup,
-    ReplayBindings, ReplayDecision, ReplayFailure, ReplayFailureReason, ReplayInput, ReplayLimits,
-    ResumeDecision, TRACE_BINDING_BYTES, TraceBinding, TransitionSelector,
+    LocalTransitionError, MACHINE_SCHEMA_V1, MACHINE_SCHEMA_V2, MachineSchema, MachineSpec,
+    MachineState, NodeSpec, ParallelGroup, ReplayBindings, ReplayDecision, ReplayFailure,
+    ReplayFailureReason, ReplayInput, ReplayLimits, ResumeDecision, TRACE_BINDING_BYTES,
+    TraceBinding, TransitionSelector,
 };
-pub use transition::{lifecycle_target, replay, step};
+pub use transition::{lifecycle_target, replay, replay_concrete, step, step_concrete};

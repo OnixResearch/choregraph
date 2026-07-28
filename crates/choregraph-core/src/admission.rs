@@ -28,7 +28,7 @@ use crate::invariant::well_formed;
 use crate::model::{
     AdmissionDiagnostic, AdmissionDiagnosticCode, AdmissionLimits, AdmittedMachine, AdmittedNode,
     Edge, EffectDeclaration, EffectDeclarationSpec, EffectKey, LINEAR_LIFECYCLE_V1,
-    LifecycleProfile, LimitKind, MACHINE_SCHEMA_V1, MachineSpec,
+    LifecycleProfile, LimitKind, MACHINE_SCHEMA_V1, MachineSchema, MachineSpec,
 };
 use crate::transition::lifecycle_target;
 
@@ -628,6 +628,7 @@ impl AdmittedMachine {
 
         let machine = Self {
             limits,
+            schema: MachineSchema::V1,
             lifecycle_profile,
             node_order,
             node_indices,
@@ -642,6 +643,9 @@ impl AdmittedMachine {
             effects,
             effect_index,
             effect_route_indices,
+            concrete_effects: Vec::new(),
+            concrete_effect_key_indices: BTreeMap::new(),
+            concrete_effect_route_indices: BTreeMap::new(),
         };
         if !well_formed(&machine) {
             return Err(alloc::vec![diagnostic(

@@ -14,9 +14,13 @@ use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use crate::id::{AbilityId, NodeId, OperationId, PayloadRef, RequestId, ResourceId};
+use crate::concrete::ConcreteEffectDeclaration;
+use crate::id::{
+    AbilityId, DeclarationKey, NodeId, OperationId, PayloadRef, RequestId, ResourceId,
+};
 
 pub const MACHINE_SCHEMA_V1: &str = "choregraph.machine.v1";
+pub const MACHINE_SCHEMA_V2: &str = "choregraph.machine.v2";
 pub const LINEAR_LIFECYCLE_V1: &str = "choregraph.lifecycle.linear.v1";
 
 pub const DEFAULT_MAX_NODES: usize = 4_096;
@@ -165,6 +169,13 @@ impl MachineSpec {
     }
 }
 
+/// The selected machine schema after admission.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum MachineSchema {
+    V1,
+    V2,
+}
+
 /// The selected local lifecycle profile after admission.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum LifecycleProfile {
@@ -208,6 +219,7 @@ pub(crate) struct EffectKey {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AdmittedMachine {
     pub(crate) limits: AdmissionLimits,
+    pub(crate) schema: MachineSchema,
     pub(crate) lifecycle_profile: LifecycleProfile,
     pub(crate) nodes: BTreeMap<NodeId, AdmittedNode>,
     pub(crate) node_order: Vec<NodeId>,
@@ -222,12 +234,23 @@ pub struct AdmittedMachine {
     pub(crate) effects: Vec<EffectDeclaration>,
     pub(crate) effect_index: BTreeMap<EffectKey, Vec<EffectDeclaration>>,
     pub(crate) effect_route_indices: BTreeMap<EffectKey, Vec<usize>>,
+    pub(crate) concrete_effects: Vec<ConcreteEffectDeclaration>,
+    pub(crate) concrete_effect_key_indices: BTreeMap<DeclarationKey, usize>,
+    pub(crate) concrete_effect_route_indices: BTreeMap<EffectKey, Vec<usize>>,
 }
 
 impl AdmittedMachine {
     #[must_use]
     pub const fn schema(&self) -> &'static str {
-        MACHINE_SCHEMA_V1
+        match self.schema {
+            MachineSchema::V1 => MACHINE_SCHEMA_V1,
+            MachineSchema::V2 => MACHINE_SCHEMA_V2,
+        }
+    }
+
+    #[must_use]
+    pub const fn schema_version(&self) -> MachineSchema {
+        self.schema
     }
 
     #[must_use]
@@ -273,6 +296,11 @@ impl AdmittedMachine {
     #[must_use]
     pub fn effect_declarations(&self) -> &[EffectDeclaration] {
         &self.effects
+    }
+
+    #[must_use]
+    pub fn concrete_effect_declarations(&self) -> &[ConcreteEffectDeclaration] {
+        &self.concrete_effects
     }
 
     #[must_use]
@@ -590,6 +618,10 @@ pub enum DenialReason {
     MalformedEffectRequest,
     DuplicateEffectRequest,
     UndeclaredEffect,
+    UnknownDeclaration,
+    ConcreteBindingMismatch,
+    ConcreteIntentTooLarge { observed: usize, maximum: usize },
+    UnsupportedMachineSchema,
     InvariantWouldBreak,
     EffectsNotAllowed,
 }
@@ -632,6 +664,10 @@ pub enum AdmissionDiagnosticCode {
     EffectOperationUndeclared,
     InvalidEffectTransition,
     DuplicateEffectDeclaration,
+    DuplicateDeclarationKey,
+    DuplicateConcreteEffectDeclaration,
+    UnknownReferenceProfile,
+    MalformedBinding,
     MalformedReference,
     ReferenceTooLong,
     IntentTooLarge,

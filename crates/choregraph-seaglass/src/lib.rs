@@ -433,6 +433,10 @@ fn diagnostic_code(diagnostic: &choregraph_core::AdmissionDiagnostic) -> GraphDi
         | choregraph_core::AdmissionDiagnosticCode::EffectOperationUndeclared
         | choregraph_core::AdmissionDiagnosticCode::InvalidEffectTransition
         | choregraph_core::AdmissionDiagnosticCode::DuplicateEffectDeclaration
+        | choregraph_core::AdmissionDiagnosticCode::DuplicateDeclarationKey
+        | choregraph_core::AdmissionDiagnosticCode::DuplicateConcreteEffectDeclaration
+        | choregraph_core::AdmissionDiagnosticCode::UnknownReferenceProfile
+        | choregraph_core::AdmissionDiagnosticCode::MalformedBinding
         | choregraph_core::AdmissionDiagnosticCode::MalformedReference
         | choregraph_core::AdmissionDiagnosticCode::ReferenceTooLong
         | choregraph_core::AdmissionDiagnosticCode::IntentTooLarge

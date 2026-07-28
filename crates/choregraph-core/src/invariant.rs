@@ -19,7 +19,7 @@ use alloc::vec::Vec;
 
 use crate::model::{
     AdmittedMachine, Edge, EffectDeclaration, EffectIntent, EffectKey, Event, InvariantIssue,
-    LifecycleProfile, LocalState, MachineState, TransitionSelector,
+    LifecycleProfile, LocalState, MachineSchema, MachineState, TransitionSelector,
 };
 use crate::transition::lifecycle_target;
 
@@ -213,9 +213,13 @@ pub fn well_formed(machine: &AdmittedMachine) -> bool {
     if machine.lifecycle_profile != LifecycleProfile::LinearV1 {
         return false;
     }
+    let effect_count = machine
+        .effects
+        .len()
+        .saturating_add(machine.concrete_effects.len());
     if machine.nodes.len() > machine.limits.max_nodes
         || machine.edges.len() > machine.limits.max_edges
-        || machine.effects.len() > machine.limits.max_effect_declarations
+        || effect_count > machine.limits.max_effect_declarations
     {
         return false;
     }
@@ -238,11 +242,25 @@ pub fn well_formed(machine: &AdmittedMachine) -> bool {
     if operation_count > machine.limits.max_operations {
         return false;
     }
+    let effects_are_valid = match machine.schema {
+        MachineSchema::V1 => {
+            machine.concrete_effects.is_empty()
+                && machine.concrete_effect_key_indices.is_empty()
+                && machine.concrete_effect_route_indices.is_empty()
+                && effects_match(machine)
+        }
+        MachineSchema::V2 => {
+            machine.effects.is_empty()
+                && machine.effect_index.is_empty()
+                && machine.effect_route_indices.is_empty()
+                && crate::concrete::concrete_effects_match(machine)
+        }
+    };
     normalized_edges(machine)
         && indexes_match(machine)
         && indexed_views_match(machine)
         && topology_matches(machine)
-        && effects_match(machine)
+        && effects_are_valid
 }
 
 /// Returns deterministic state-invariant failures.
