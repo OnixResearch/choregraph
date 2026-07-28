@@ -14,7 +14,7 @@ Production-linked Verus rails now prove the named single-step and finite-trace p
 
 The conversion-only Seaglass adapter passes the selected behavior matrix. The exact reviewed Lattice runner also passes its 21 tests in a disposable source archive with `choregraph-seaglass` substituted for the legacy package.
 
-The deterministic release bundle is published as `rad:zL2ncTUeASVYwcoGkEXv9JKgGbAF` at the exact candidate revision. Consumer cutover remains blocked until each consumer passes its own gates.
+The deterministic release bundle is published as `rad:zL2ncTUeASVYwcoGkEXv9JKgGbAF` at the exact candidate revision. The compiler-compatibility source revision is a separate local candidate. It is not published or available to exact-pin consumers.
 
 ## Owned boundary
 

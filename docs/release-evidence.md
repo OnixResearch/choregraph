@@ -69,11 +69,15 @@ The pure candidate model requires:
 
 Candidate construction performs no publication, signing, push, remote update, rollback, or source acquisition.
 
-The local candidate is `evidence/release/publication-candidate.ncl`. It binds source revision `fc47c5f4ecbb7b4341af690fa42199f25d57f54c`, its deterministic source archive, release bundle `a2ac1336679542fa9573b356daddc18266fdda8147ddbe28f85aa37d135030d9`, and rollback revision `2772442d14bfc90579027e4fbff545d7f829c76c`.
+The published candidate record is `evidence/release/publication-candidate.ncl`. It binds source revision `fc47c5f4ecbb7b4341af690fa42199f25d57f54c`, its deterministic source archive, release bundle `a2ac1336679542fa9573b356daddc18266fdda8147ddbe28f85aa37d135030d9`, and rollback revision `2772442d14bfc90579027e4fbff545d7f829c76c`.
 
-The candidate is published as `rad:zL2ncTUeASVYwcoGkEXv9JKgGbAF`. The exact read-only adapter is `https://git.onix.computer/zL2ncTUeASVYwcoGkEXv9JKgGbAF.git`.
+That candidate is published as `rad:zL2ncTUeASVYwcoGkEXv9JKgGbAF`. The exact read-only adapter is `https://git.onix.computer/zL2ncTUeASVYwcoGkEXv9JKgGbAF.git`.
 
-`evidence/release/publication-receipt.ncl` binds the unchanged candidate to operator authority, parent-feature signed refs, three observed replicas, and exact HTTPS acquisition. Replication does not prove indefinite availability or consumer acceptance.
+`evidence/release/publication-receipt.ncl` binds the unchanged published candidate to operator authority, parent-feature signed refs, three observed replicas, and exact HTTPS acquisition. Replication does not prove indefinite availability or consumer acceptance.
+
+The compiler-compatibility candidate is `evidence/release/compatibility-publication-candidate.ncl`. It binds source revision `81b260da2256147ec82cb5dd44c0a0c1dcb7500d`, source archive `41adfbdae4bc5b688ef92ab11cd39ed9c8f572bf6214f522d9b4a1290e5f84d5`, and release bundle `6912c485313908411040fa533bd75a1cfd2611d7589605268ae111b3ba1472bc`. Its rollback revision is the published source revision.
+
+The compatibility candidate has no publication authority or receipt. It is not pushed, published, signed, replicated, or available through the read-only adapter.
 
 ## Local commands
 

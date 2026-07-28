@@ -12,5 +12,5 @@
 
 ## Phase 3: Evidence and lifecycle
 
-- [ ] [serial] Regenerate identity-sensitive release evidence for the accepted source revision. r[choregraph.foundation.consumer_compatibility]
-- [ ] [serial] Validate Cairn gates, sync accepted requirements, and archive the completed change. r[choregraph.foundation.consumer_compatibility]
+- [x] [serial] Regenerate identity-sensitive release evidence for the accepted source revision. r[choregraph.foundation.consumer_compatibility]
+- [x] [serial] Validate Cairn gates, sync accepted requirements, and archive the completed change. r[choregraph.foundation.consumer_compatibility]

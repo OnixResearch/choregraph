@@ -109,6 +109,21 @@ Nix reported `all checks passed!`. The single-job limit avoids concurrent Verus 
 
 Cairn validation and the proposal, design, and task gates passed.
 
+## Local publication candidate
+
+The immutable compatibility source commit is `81b260da2256147ec82cb5dd44c0a0c1dcb7500d`.
+
+A deterministic `git archive` produced:
+
+- source archive BLAKE3: `41adfbdae4bc5b688ef92ab11cd39ed9c8f572bf6214f522d9b4a1290e5f84d5`;
+- source archive bytes: `1853440`.
+
+Independent candidate validation reopened and hashed that archive. It also rebuilt and verified the current release bundle from current artifact bytes.
+
+The resulting local candidate is `c493ef88a648eb30b621e74fa5c0f7294df9048501a379395403ad3dcd8a4c65`. Its rollback revision is the published source revision `fc47c5f4ecbb7b4341af690fa42199f25d57f54c`.
+
+The compatibility candidate has `publication_authority = 'none` and `publication_status = 'not_published`. The existing published candidate and publication receipt remain unchanged.
+
 ## Claim boundary
 
 These checks establish dependency resolution, source compilation at the declared floor, selected static-lint execution, deterministic identity regeneration, and the named local gates. They do not publish a new source revision, grant consumer acceptance, prove dependency implementation equivalence, or grant runtime or effect authority.
