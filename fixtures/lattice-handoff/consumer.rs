@@ -1,5 +1,7 @@
 // Disposable downstream fixture. Lattice retains every field that creates runtime authority.
 #![allow(
+    unknown_lints,
+    missing_const_fn,
     clippy::manual_unwrap_or,
     clippy::manual_unwrap_or_default,
     reason = "explicit downstream fixture branches keep fallback values visible"

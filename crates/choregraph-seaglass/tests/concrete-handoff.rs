@@ -3,6 +3,8 @@
 #![allow(
     unknown_lints,
     assertion_density,
+    explicit_defaults,
+    no_panic,
     non_trait_imports,
     numeric_units,
     reason = "the conversion-only v2 fixture keeps explicit handoff and wrong-schema cases"
