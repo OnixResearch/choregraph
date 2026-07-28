@@ -41,6 +41,22 @@ A fresh clone from `https://git.onix.computer/zL2ncTUeASVYwcoGkEXv9JKgGbAF.git` 
 
 The endpoint root, an unknown RID, receive-pack discovery, and receive-pack POST each returned `404`.
 
+## Published downstream probe
+
+A disposable Lattice worktree at `676e0961950e54298f731e521d1843f4a0281ebb` selected `choregraph-core`, `choregraph-nickel`, and `choregraph-seaglass` from the published HTTPS revision.
+
+```text
+nix develop -c cargo check --lib
+```
+
+The check passed. Cargo compiled `choregraph-nickel` and `choregraph-seaglass` directly from published revision `81b260da2256147ec82cb5dd44c0a0c1dcb7500d`.
+
+```text
+nix develop /home/brittonr/git/OnixResearch/octet -c cargo octet check
+```
+
+Octet reached lint execution and reported 1,158 downstream findings. It did not stop at Rust-version or dependency resolution. This result is not an accepted Octet pass. It establishes that the upstream integration blocker is removed and exposes separate Lattice lint work.
+
 ## Claim boundary
 
 Publication proves the observed source identity and selected acquisition paths. It does not prove indefinite availability, seed trust, dependency correctness, consumer acceptance, runtime authority, or release eligibility.
