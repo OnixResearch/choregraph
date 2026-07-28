@@ -16,17 +16,17 @@
 
 ## Phase 3: Frontend, Interchange, Compatibility, and Proof
 
-- [ ] [serial] Add typed `lattice-workflow-v2` Nickel contracts, pure Rust lowering, evaluated fixtures, and explicit v1 preservation. r[choregraph.effect_v2.nickel]
-- [ ] [serial] Add canonical packed Preserves v2 machine and concrete-intent artifacts, domain-separated BLAKE3 identities, round trips, receipts, and stale-byte failures. r[choregraph.effect_v2.references] r[choregraph.effect_v2.kamacite] r[choregraph.effect_v2.occurrence_identity]
-- [ ] [serial] Extend Seaglass as a conversion-only v2 adapter and strengthen architecture failures for policy or runtime authority imports. r[choregraph.effect_v2.seaglass]
-- [ ] [serial] Extend the production-linked single-step proof for declaration matching, exact reference preservation, bounds, determinism, invariant preservation, and denial safety. r[choregraph.effect_v2.proof]
-- [ ] [serial] Extend finite-trace proof and expected-failure fixtures for replay suppression, reference mutation, undeclared output, and denial with intent. r[choregraph.effect_v2.proof] r[choregraph.effect_v2.replay]
+- [x] [serial] Add typed `lattice-workflow-v2` Nickel contracts, pure Rust lowering, evaluated fixtures, and explicit v1 preservation. r[choregraph.effect_v2.nickel]
+- [x] [serial] Add canonical packed Preserves v2 machine and concrete-intent artifacts, domain-separated BLAKE3 identities, round trips, receipts, and stale-byte failures. r[choregraph.effect_v2.references] r[choregraph.effect_v2.kamacite] r[choregraph.effect_v2.occurrence_identity]
+- [x] [serial] Extend Seaglass as a conversion-only v2 adapter and strengthen architecture failures for policy or runtime authority imports. r[choregraph.effect_v2.seaglass]
+- [x] [serial] Extend the production-linked single-step proof for declaration matching, exact reference preservation, bounds, determinism, invariant preservation, and denial safety. r[choregraph.effect_v2.proof]
+- [x] [serial] Extend finite-trace proof and expected-failure fixtures for replay suppression, reference mutation, undeclared output, and denial with intent. r[choregraph.effect_v2.proof] r[choregraph.effect_v2.replay]
 
 ## Phase 4: Downstream Handoff and Release Evidence
 
-- [ ] [serial] Add an exact disposable Lattice handoff fixture that requires a Choregraph concrete intent, preserves declared source references, separates content from occurrence identity, and leaves run, policy, authority, persistence, and attempts downstream. r[choregraph.effect_v2.lattice_handoff] r[choregraph.effect_v2.occurrence_identity]
-- [ ] [serial] Update architecture, machine-semantics, proof, interchange, frontend, migration, and authority-boundary documents with the v2 claim limits. r[choregraph.effect_v2.non_claims]
+- [x] [serial] Add an exact disposable Lattice handoff fixture that requires a Choregraph concrete intent, preserves declared source references, separates content from occurrence identity, and leaves run, policy, authority, persistence, and attempts downstream. r[choregraph.effect_v2.lattice_handoff] r[choregraph.effect_v2.occurrence_identity]
+- [x] [serial] Update architecture, machine-semantics, proof, interchange, frontend, migration, and authority-boundary documents with the v2 claim limits. r[choregraph.effect_v2.non_claims]
 - [ ] [serial] Run focused workspace tests, no-std checks, Clippy, foundation, Verus, Nickel, Kamacite, Seaglass, Octet, Cairn, Tracey, downstream, and Nix gates. r[choregraph.effect_v2.fixtures] r[choregraph.effect_v2.release]
-- [ ] [serial] Regenerate proof identities, canonical corpora, manifests, and the release bundle from current bytes, then independently verify exact equality. r[choregraph.effect_v2.release]
-- [ ] [serial] Record the exact Lattice handoff and publication blocker, and do not publish without explicit repository authority. r[choregraph.effect_v2.lattice_handoff] r[choregraph.effect_v2.non_claims]
+- [x] [serial] Regenerate proof identities, canonical corpora, manifests, and the release bundle from current bytes, then independently verify exact equality. r[choregraph.effect_v2.release]
+- [x] [serial] Record the exact Lattice handoff and publication blocker, and do not publish without explicit repository authority. r[choregraph.effect_v2.lattice_handoff] r[choregraph.effect_v2.non_claims]
 - [ ] [serial] Sync the accepted concrete-effect-intents specification, confirm Tracey has no new gaps, archive the completed change, and rerun post-archive checks. r[choregraph.effect_v2.release]

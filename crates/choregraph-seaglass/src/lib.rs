@@ -199,6 +199,60 @@ pub enum MachineDecision {
     AuthorityBoundaryViolation,
 }
 
+/// One selected canonical reference in the conversion-only v2 handoff.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SelectedReferenceHandoff {
+    pub slot_id: Option<String>,
+    pub source_ref: Option<String>,
+    pub profile: String,
+    pub identity: String,
+}
+
+/// One concrete Choregraph intent converted without policy or runtime authority.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ConcreteIntentHandoff {
+    pub declaration_key: String,
+    pub node_id: String,
+    pub from_state: StepState,
+    pub action: StepAction,
+    pub operation: String,
+    pub resource: String,
+    pub ability: String,
+    pub request: SelectedReferenceHandoff,
+    pub payload: SelectedReferenceHandoff,
+}
+
+/// One conversion-only plan over an already admitted v2 machine.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ConcreteExecutionPlan {
+    machine: choregraph_core::AdmittedMachine,
+}
+
+impl ConcreteExecutionPlan {
+    #[must_use]
+    pub const fn machine(&self) -> &choregraph_core::AdmittedMachine {
+        &self.machine
+    }
+}
+
+/// A v2 plan rejects every non-v2 machine.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ConcretePlanError {
+    WrongMachineSchema,
+}
+
+/// A v2 decision exposes converted intent data without dispatch authority.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ConcreteMachineDecision {
+    Accept {
+        next: choregraph_core::MachineState,
+        intents: Vec<ConcreteIntentHandoff>,
+    },
+    Deny {
+        reason: choregraph_core::DenialReason,
+    },
+}
+
 /// One admitted compatibility plan backed by the production Choregraph machine.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ExecutionPlan {
@@ -528,6 +582,16 @@ const fn compatibility_state(state: choregraph_core::LocalState) -> StepState {
     }
 }
 
+const fn compatibility_action(action: choregraph_core::Action) -> StepAction {
+    match action {
+        choregraph_core::Action::MarkReady => StepAction::MarkReady,
+        choregraph_core::Action::Start => StepAction::Start,
+        choregraph_core::Action::Complete => StepAction::Complete,
+        choregraph_core::Action::Fail => StepAction::Fail,
+        choregraph_core::Action::Cancel => StepAction::Cancel,
+    }
+}
+
 #[allow(
     unknown_lints,
     fragile_exhaustive_enum_match,
@@ -684,6 +748,75 @@ pub fn step_machine(
         }
         choregraph_core::Decision::Accept { .. } => MachineDecision::AuthorityBoundaryViolation,
         choregraph_core::Decision::Deny { reason } => MachineDecision::Deny { reason },
+    }
+}
+
+/// Accepts only an already admitted v2 machine for concrete-intent conversion.
+pub fn admit_concrete_machine(
+    machine: choregraph_core::AdmittedMachine,
+) -> Result<ConcreteExecutionPlan, ConcretePlanError> {
+    if machine.schema_version() != choregraph_core::MachineSchema::V2 {
+        return Err(ConcretePlanError::WrongMachineSchema);
+    }
+    Ok(ConcreteExecutionPlan { machine })
+}
+
+fn selected_reference_handoff(
+    slot_id: Option<&choregraph_core::SlotId>,
+    source_ref: Option<&choregraph_core::SourceRef>,
+    reference: &choregraph_core::ConcreteReference,
+) -> SelectedReferenceHandoff {
+    SelectedReferenceHandoff {
+        slot_id: slot_id.map(|value| value.as_str().to_string()),
+        source_ref: source_ref.map(|value| value.as_str().to_string()),
+        profile: reference.profile.as_str().to_string(),
+        identity: reference.identity.as_str().to_string(),
+    }
+}
+
+/// Converts one concrete intent without adding policy, occurrence, or execution facts.
+#[must_use]
+pub fn convert_concrete_intent(
+    intent: &choregraph_core::ConcreteEffectIntent,
+) -> ConcreteIntentHandoff {
+    ConcreteIntentHandoff {
+        declaration_key: intent.declaration_key.as_str().to_string(),
+        node_id: intent.node_id.as_str().to_string(),
+        from_state: compatibility_state(intent.transition.from),
+        action: compatibility_action(intent.transition.action),
+        operation: intent.operation.as_str().to_string(),
+        resource: intent.resource.as_str().to_string(),
+        ability: intent.ability.as_str().to_string(),
+        request: selected_reference_handoff(
+            intent.request_slot.as_ref(),
+            intent.request_source_ref.as_ref(),
+            &intent.request_reference,
+        ),
+        payload: selected_reference_handoff(
+            intent.payload_slot.as_ref(),
+            intent.payload_source_ref.as_ref(),
+            &intent.payload_reference,
+        ),
+    }
+}
+
+/// Delegates one v2 event to the production kernel and converts accepted intents.
+#[must_use]
+pub fn step_concrete_machine(
+    plan: &ConcreteExecutionPlan,
+    state: &choregraph_core::MachineState,
+    event: &choregraph_core::ConcreteEvent,
+) -> ConcreteMachineDecision {
+    match choregraph_core::step_concrete(&plan.machine, state, event) {
+        choregraph_core::ConcreteDecision::Accept { next, intents } => {
+            ConcreteMachineDecision::Accept {
+                next,
+                intents: intents.iter().map(convert_concrete_intent).collect(),
+            }
+        }
+        choregraph_core::ConcreteDecision::Deny { reason } => {
+            ConcreteMachineDecision::Deny { reason }
+        }
     }
 }
 

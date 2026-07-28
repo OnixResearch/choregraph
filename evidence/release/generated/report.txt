@@ -1,5 +1,5 @@
 status=bundled
-bundle-blake3=6912c485313908411040fa533bd75a1cfd2611d7589605268ae111b3ba1472bc
-artifacts=30
-artifact-bytes=126940
-manifest-bytes=8369
+bundle-blake3=e9318450dfbf245d8f05d5910ae00fc661c2694f870708891ac5eedb5a4b3027
+artifacts=36
+artifact-bytes=138922
+manifest-bytes=10078

@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 
 pub const CHOREGRAPH_EVALUATED_SCHEMA: &str = "choregraph.evaluated-graph.v1";
 pub const LATTICE_EVALUATED_SCHEMA: &str = "choregraph.lattice-workflow-projection.v1";
+pub const LATTICE_V2_EVALUATED_SCHEMA: &str = "choregraph.lattice-workflow-projection.v2";
 pub const RESTRICTED_EVALUATOR_PROFILE: &str = "choregraph.nickel-restricted.v1";
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -109,6 +110,46 @@ pub struct LatticeNodeConfig {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct LatticeNodeConfigV2 {
+    pub node_id: u64,
+    pub operation: String,
+    pub effectful: bool,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct EvaluatedConcreteReference {
+    pub profile: String,
+    pub identity: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(tag = "mode", rename_all = "kebab-case", deny_unknown_fields)]
+pub enum EvaluatedReferenceBinding {
+    Exact {
+        reference: EvaluatedConcreteReference,
+    },
+    Slot {
+        slot_id: String,
+        source_ref: String,
+    },
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct EvaluatedLatticeEffectV2 {
+    pub declaration_key: String,
+    pub node_id: u64,
+    pub from_state: String,
+    pub action: String,
+    pub resource: String,
+    pub ability: String,
+    pub request_binding: EvaluatedReferenceBinding,
+    pub payload_binding: EvaluatedReferenceBinding,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "source_format", deny_unknown_fields)]
 pub enum EvaluatedSource {
     #[serde(rename = "choregraph-v1")]
@@ -133,13 +174,27 @@ pub enum EvaluatedSource {
         edges: Vec<LatticePortEdge>,
         configs: Vec<LatticeNodeConfig>,
     },
+    #[serde(rename = "lattice-workflow-v2")]
+    LatticeWorkflowV2 {
+        schema: String,
+        lifecycle_profile: String,
+        events: Vec<String>,
+        limits: EvaluatedLimits,
+        imports: Vec<ImportDeclaration>,
+        nodes: Vec<LatticeNode>,
+        edges: Vec<LatticePortEdge>,
+        configs: Vec<LatticeNodeConfigV2>,
+        effects: Vec<EvaluatedLatticeEffectV2>,
+    },
 }
 
 impl EvaluatedSource {
     #[must_use]
     pub fn imports(&self) -> &[ImportDeclaration] {
         match self {
-            Self::Choregraph { imports, .. } | Self::LatticeWorkflow { imports, .. } => imports,
+            Self::Choregraph { imports, .. }
+            | Self::LatticeWorkflow { imports, .. }
+            | Self::LatticeWorkflowV2 { imports, .. } => imports,
         }
     }
 }

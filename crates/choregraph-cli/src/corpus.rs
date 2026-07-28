@@ -12,18 +12,26 @@
 )]
 
 use choregraph_core::{
-    Action, AdmissionLimits, AdmittedMachine, EdgeSpec, EffectDeclarationSpec, LocalState,
-    MachineSpec, NodeSpec, TransitionSelector,
+    Action, AdmissionLimits, AdmittedMachine, CANONICAL_REFERENCE_PROFILE_V1, ConcreteBindingInput,
+    ConcreteDecision, ConcreteEffectDeclarationSpec, ConcreteEffectIntent, ConcreteEffectRequest,
+    ConcreteEvent, ConcreteReferenceSpec, EdgeSpec, EffectDeclarationSpec, LocalState, MachineSpec,
+    MachineSpecV2, NodeSpec, ReferenceBindingSpec, TransitionSelector, step_concrete,
 };
 use choregraph_kamacite::{
     AggregateMachineDescriptor, ArtifactDomain, IdentityMaterials, KamaciteIdentityDomain,
-    TraceObservation, build_artifact_set, build_receipt_bundle, compute_identity,
-    compute_kamacite_identity, encode_fsm_receipt_body, encode_link_receipt_body,
-    encode_machine_descriptor,
+    TraceObservation, build_artifact_set, build_concrete_intent_artifact,
+    build_concrete_intent_receipt, build_concrete_machine_artifact, build_receipt_bundle,
+    compute_identity, compute_kamacite_identity, encode_concrete_intent_receipt_body,
+    encode_fsm_receipt_body, encode_link_receipt_body, encode_machine_descriptor,
 };
 use std::collections::BTreeSet;
 
 const PAYLOAD: &str = "blake3:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const CONCRETE_REQUEST: &str =
+    "blake3:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+const CONCRETE_SLOT: &str = "request/input";
+const CONCRETE_SOURCE: &str = "node/input/request";
+const CONCRETE_DECLARATION: &str = "request/main";
 const SOURCE_ENVELOPE: &[u8] = b"canonical-source-envelope-v1";
 const PROOF_SET: &[u8] = b"proof-set-status-pending-v1";
 const MATERIAL_LENGTH_BYTES: usize = size_of::<u64>();
@@ -31,6 +39,7 @@ const ADAPTER_SOURCES: &[&[u8]] = &[
     include_bytes!("../../choregraph-kamacite/src/lib.rs"),
     include_bytes!("../../choregraph-kamacite/src/aggregate.rs"),
     include_bytes!("../../choregraph-kamacite/src/codec.rs"),
+    include_bytes!("../../choregraph-kamacite/src/concrete.rs"),
     include_bytes!("../../choregraph-kamacite/src/identity.rs"),
     include_bytes!("../../choregraph-kamacite/src/lifecycle.rs"),
     include_bytes!("../../choregraph-kamacite/src/receipt.rs"),
@@ -78,6 +87,71 @@ fn diamond_machine() -> Result<AdmittedMachine, String> {
     });
     AdmittedMachine::admit(spec, AdmissionLimits::default())
         .map_err(|diagnostics| format!("diamond admission failed: {diagnostics:?}"))
+}
+
+fn concrete_reference(identity: &str) -> ConcreteReferenceSpec {
+    ConcreteReferenceSpec {
+        profile: String::from(CANONICAL_REFERENCE_PROFILE_V1),
+        identity: String::from(identity),
+    }
+}
+
+fn concrete_machine_and_intent() -> Result<(AdmittedMachine, ConcreteEffectIntent), String> {
+    let mut spec = MachineSpecV2::new(
+        vec![NodeSpec::new("effect", vec![String::from("http/request")])],
+        Vec::new(),
+    );
+    spec.effects.push(ConcreteEffectDeclarationSpec {
+        declaration_key: String::from(CONCRETE_DECLARATION),
+        node_id: String::from("effect"),
+        transition: TransitionSelector {
+            from: LocalState::Ready,
+            action: Action::Start,
+        },
+        operation: String::from("http/request"),
+        resource: String::from("service/example"),
+        ability: String::from("http/request"),
+        request_binding: ReferenceBindingSpec::Slot {
+            slot_id: String::from(CONCRETE_SLOT),
+            source_ref: String::from(CONCRETE_SOURCE),
+        },
+        payload_binding: ReferenceBindingSpec::Exact {
+            reference: concrete_reference(PAYLOAD),
+        },
+    });
+    let machine = AdmittedMachine::admit_v2(spec, AdmissionLimits::default())
+        .map_err(|diagnostics| format!("concrete machine admission failed: {diagnostics:?}"))?;
+    let ready = match step_concrete(
+        &machine,
+        &machine.initial_state(),
+        &ConcreteEvent::new("effect", Action::MarkReady),
+    ) {
+        ConcreteDecision::Accept { next, intents } if intents.is_empty() => next,
+        decision => return Err(format!("concrete mark-ready failed: {decision:?}")),
+    };
+    let mut start = ConcreteEvent::new("effect", Action::Start);
+    start.effects.push(ConcreteEffectRequest {
+        declaration_key: String::from(CONCRETE_DECLARATION),
+        request: ConcreteBindingInput {
+            slot_id: Some(String::from(CONCRETE_SLOT)),
+            source_ref: Some(String::from(CONCRETE_SOURCE)),
+            reference: concrete_reference(CONCRETE_REQUEST),
+        },
+        payload: ConcreteBindingInput {
+            slot_id: None,
+            source_ref: None,
+            reference: concrete_reference(PAYLOAD),
+        },
+    });
+    let intent = match step_concrete(&machine, &ready, &start) {
+        ConcreteDecision::Accept { mut intents, .. } => intents
+            .pop()
+            .ok_or_else(|| String::from("concrete start emitted no intent"))?,
+        ConcreteDecision::Deny { reason } => {
+            return Err(format!("concrete start denied: {reason:?}"));
+        }
+    };
+    Ok((machine, intent))
 }
 
 fn successful_trace() -> Vec<TraceObservation> {
@@ -156,6 +230,15 @@ pub fn build_kamacite_corpus() -> Result<Vec<KamaciteCorpusEntry>, String> {
     .map_err(|error| error.to_string())?;
     let bundle =
         build_receipt_bundle(&set, &successful_trace()).map_err(|error| error.to_string())?;
+    let (concrete_machine, concrete_intent) = concrete_machine_and_intent()?;
+    let concrete_machine_artifact =
+        build_concrete_machine_artifact(&concrete_machine).map_err(|error| error.to_string())?;
+    let concrete_intent_artifact =
+        build_concrete_intent_artifact(&concrete_machine, &concrete_intent)
+            .map_err(|error| error.to_string())?;
+    let concrete_receipt =
+        build_concrete_intent_receipt(&concrete_machine_artifact, &concrete_intent_artifact)
+            .map_err(|error| error.to_string())?;
 
     let unsupported = machine_variant(&set.machine_descriptor, |descriptor| {
         descriptor.lifecycle_profile_id = String::from("unsupported.lifecycle.v9");
@@ -188,6 +271,14 @@ pub fn build_kamacite_corpus() -> Result<Vec<KamaciteCorpusEntry>, String> {
         .semantic_claims
         .push(String::from("transition implementation is formally proven"));
     let overclaim = encode_fsm_receipt_body(&overclaim)
+        .map_err(|error| error.to_string())?
+        .packed_bytes;
+
+    let mut concrete_overclaim = concrete_receipt.body.clone();
+    concrete_overclaim
+        .semantic_claims
+        .push(String::from("runtime effect is authorized"));
+    let concrete_overclaim = encode_concrete_intent_receipt_body(&concrete_overclaim)
         .map_err(|error| error.to_string())?
         .packed_bytes;
 
@@ -244,6 +335,18 @@ pub fn build_kamacite_corpus() -> Result<Vec<KamaciteCorpusEntry>, String> {
             bytes: adapter_identity,
         },
         KamaciteCorpusEntry {
+            relative_path: "positive/machine-v2.preserves",
+            bytes: concrete_machine_artifact.canonical.packed_bytes.clone(),
+        },
+        KamaciteCorpusEntry {
+            relative_path: "positive/concrete-intent-v2.preserves",
+            bytes: concrete_intent_artifact.canonical.packed_bytes.clone(),
+        },
+        KamaciteCorpusEntry {
+            relative_path: "positive/concrete-intent.receipt.preserves",
+            bytes: concrete_receipt.canonical.packed_bytes.clone(),
+        },
+        KamaciteCorpusEntry {
             relative_path: "negative/malformed.preserves",
             bytes: vec![0xff],
         },
@@ -282,6 +385,10 @@ pub fn build_kamacite_corpus() -> Result<Vec<KamaciteCorpusEntry>, String> {
         KamaciteCorpusEntry {
             relative_path: "negative/stale-receipt-identity.txt",
             bytes: stale_identity,
+        },
+        KamaciteCorpusEntry {
+            relative_path: "negative/concrete-intent-overclaim.receipt.preserves",
+            bytes: concrete_overclaim,
         },
     ];
     let unique_paths = entries
@@ -350,6 +457,15 @@ mod tests {
             "positive/adapter-identity.txt" => {
                 include_bytes!("../../../fixtures/kamacite/positive/adapter-identity.txt")
             }
+            "positive/machine-v2.preserves" => {
+                include_bytes!("../../../fixtures/kamacite/positive/machine-v2.preserves")
+            }
+            "positive/concrete-intent-v2.preserves" => {
+                include_bytes!("../../../fixtures/kamacite/positive/concrete-intent-v2.preserves")
+            }
+            "positive/concrete-intent.receipt.preserves" => include_bytes!(
+                "../../../fixtures/kamacite/positive/concrete-intent.receipt.preserves"
+            ),
             "negative/malformed.preserves" => {
                 include_bytes!("../../../fixtures/kamacite/negative/malformed.preserves")
             }
@@ -380,6 +496,9 @@ mod tests {
             "negative/stale-receipt-identity.txt" => {
                 include_bytes!("../../../fixtures/kamacite/negative/stale-receipt-identity.txt")
             }
+            "negative/concrete-intent-overclaim.receipt.preserves" => include_bytes!(
+                "../../../fixtures/kamacite/negative/concrete-intent-overclaim.receipt.preserves"
+            ),
             _ => return None,
         };
         Some(bytes)

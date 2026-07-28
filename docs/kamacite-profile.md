@@ -28,7 +28,11 @@ Canonical packed Preserves bytes are authoritative. Text and JSON values are pro
 
 ## Choregraph schemas
 
-The aggregate descriptor uses `choregraph.machine-preserves.v1` and the `choregraph-machine-v1` root. Its review schema is [`../schemas/preserves/choregraph-machine-v1.preserves`](../schemas/preserves/choregraph-machine-v1.preserves).
+The v1 aggregate descriptor uses `choregraph.machine-preserves.v1` and the `choregraph-machine-v1` root. Its review schema is [`../schemas/preserves/choregraph-machine-v1.preserves`](../schemas/preserves/choregraph-machine-v1.preserves).
+
+The v2 descriptor uses `choregraph.machine-preserves.v2` and the `choregraph-machine-v2` root. Its review schema is [`../schemas/preserves/choregraph-machine-v2.preserves`](../schemas/preserves/choregraph-machine-v2.preserves).
+
+Concrete intents use `choregraph.concrete-intent-preserves.v2`. The intent schema is [`../schemas/preserves/choregraph-concrete-intent-v2.preserves`](../schemas/preserves/choregraph-concrete-intent-v2.preserves).
 
 The descriptor contains normalized nodes, edges, dependencies, effect declarations, limits, compatibility revisions, and exact profile identities. It identifies aggregate state as a parameterized node map. It does not contain a global product-state table.
 
@@ -38,7 +42,8 @@ The local lifecycle is one closed `kamacite.fsm-spec.v2` descriptor. It contains
 
 Project-owned, domain-separated BLAKE3 identities bind these materials:
 
-- canonical machine bytes;
+- canonical v1 or v2 machine bytes;
+- canonical concrete-intent bytes;
 - canonical lifecycle bytes;
 - canonical admitted IR bytes;
 - the proof set and trusted-surface material;
@@ -61,8 +66,12 @@ The corpus manifest is [`../fixtures/kamacite/corpus.ncl`](../fixtures/kamacite/
 
 Choregraph validates admission, lifecycle, source, and proof-reference link receipts. It also validates Kamacite-shaped exhaustiveness and trace receipts.
 
-All receipt bodies bind exact subject and dependency identities. Exhaustiveness receipts bind the state, event, transition, and denial coverage identities. Trace receipts bind each presented transition and positive guard evidence.
+All receipt bodies bind exact subject and dependency identities. Exhaustiveness receipts bind the state, event, transition, and denial coverage identities.
+
+Trace receipts bind each presented transition and positive guard evidence. Concrete-intent receipts bind one v2 machine identity, intent identity, and declaration key.
 
 ## Receipt non-claims
 
 A receipt binds exact artifacts and observed trace data. It does not prove transition correctness, source equivalence, verifier soundness, event truth, authorization, effect success, or release eligibility.
+
+A concrete-intent identity names content. Lattice must add run and attempt facts to create an occurrence identity.

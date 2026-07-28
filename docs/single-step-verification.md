@@ -13,7 +13,9 @@ For these views, the maintained Verus rail proves these properties:
 - equal explicit inputs produce equal indexed decisions;
 - accepted steps preserve the indexed state invariant;
 - accepted intent indexes belong to the admitted transition route;
-- denied steps contain no replacement state or intent indexes.
+- denied steps contain no replacement state or intent indexes;
+- exact and slot binding modes fail closed;
+- concrete reference witnesses preserve request and payload reference tokens.
 
 The positive proof root includes the production files by path. It does not contain a copied transition implementation.
 
@@ -21,7 +23,9 @@ The positive proof root includes the production files by path. It does not conta
 
 `AdmittedMachine::admit` builds normalized identifier maps and indexed graph views. `well_formed` calls the verified indexed graph gate.
 
-`step` converts the admitted machine, state, and event into indexed inputs. It calls the verified kernel for the precheck and the final decision.
+`step` and `step_concrete` convert admitted state and event data into indexed inputs. Both wrappers call the same verified kernel.
+
+The v2 resolver calls the verified binding predicate for each request and payload binding.
 
 The shell converts an accepted indexed decision into public types. It then runs `invariant`, `terminal_states_preserved`, and `effects_allowed` again.
 
@@ -60,7 +64,9 @@ Run the maintained Nix gate:
 nix build .#checks.x86_64-linux.single-step-verus --no-link -L
 ```
 
-The Nix gate also runs six expected-failure fixtures. Each fixture must fail with its selected postcondition diagnostic.
+The Nix gate also runs seven expected-failure fixtures. Each fixture must fail with its selected postcondition diagnostic.
+
+The concrete reference fixture changes one payload token. Verus rejects the changed postcondition.
 
 ## Evidence
 
@@ -79,6 +85,8 @@ The project proof core contains no trusted declaration or unrestricted assumptio
 The evidence trusts the selected Verus binary, Z3, rustc, vstd contracts, allocation semantics, and target platform.
 
 Identifier parsing and `BTreeMap`-to-index conversion are executable Rust. Verus does not prove these adapters.
+
+The proof models canonical references as abstract tokens. Kamacite checks canonical bytes and BLAKE3 identities outside the proof core.
 
 The public shell checks accepted converted outputs again. This check limits the adapter boundary, but it does not prove the adapter.
 

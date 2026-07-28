@@ -22,6 +22,8 @@ choregraph-core + all adapters + choregraph-release
 
 `choregraph-core` uses `no_std` plus `alloc`. It owns immutable machine data, admission, analytics, replay, and deterministic decisions.
 
+V1 and v2 machines use one admitted machine type. Both transition wrappers call the same production indexed kernel.
+
 The core excludes:
 
 - filesystem and environment access;
@@ -34,13 +36,19 @@ The foundation checker rejects forbidden dependencies, source tokens, path depen
 
 ## Adapter boundaries
 
-`choregraph-kamacite` owns pure in-memory conversion to canonical artifacts and receipt vocabulary. It uses a hash-checked, selected Kamacite codec snapshot. It does not read files, run processes, use clocks, access networks, authorize effects, or create behavioral proofs.
+`choregraph-kamacite` owns pure in-memory conversion to canonical artifacts and receipt vocabulary. It uses a hash-checked, selected Kamacite codec snapshot.
+
+The adapter encodes distinct v1 and v2 machine constructors. It also encodes v2 concrete intents and exact linkage receipts.
+
+It does not read files, run processes, use clocks, access networks, authorize effects, or create behavioral proofs.
 
 `choregraph-cli write-kamacite-corpus` is the imperative shell that writes maintained fixtures. The adapter returns only in-memory values.
 
 `choregraph-nickel` accepts only evaluated data. Source discovery, imports, contracts, and Nickel evaluation remain in a shell.
 
 `choregraph-seaglass` is a conversion-only compatibility boundary. It delegates admission, graph queries, analytics, lifecycle, readiness, resume, aggregate steps, and cycle probes to `choregraph-core`.
+
+The v2 path converts concrete intents only. It does not add run, policy, authority, persistence, attempt, or dispatch facts.
 
 The exact execution-graph implementation is compiled only as a conformance-test oracle. It is not a production dependency.
 

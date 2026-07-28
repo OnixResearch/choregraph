@@ -4,11 +4,15 @@
 
 ## Admission
 
-`AdmittedMachine::admit` validates an untrusted `MachineSpec` under explicit `AdmissionLimits`.
+`AdmittedMachine::admit` validates an untrusted v1 `MachineSpec` under explicit `AdmissionLimits`.
+
+`AdmittedMachine::admit_v2` validates a v2 `MachineSpecV2`. Both functions produce one normalized `AdmittedMachine` type.
 
 Admission validates counts before normalized allocation. It rejects malformed identifiers, missing endpoints, duplicate facts, self-loops, cycles, unsupported profiles, and invalid effects.
 
-An admitted machine stores immutable nodes, edges, dependency indexes, a topological order, operations, and exact effect declarations.
+An admitted machine stores immutable nodes, edges, dependency indexes, a topological order, operations, and versioned effect declarations.
+
+A v2 declaration has one unique key. Its request and payload bindings are either exact references or named runtime slots.
 
 Admission also stores numeric graph views. The production proof gate verifies these views without changing the public identifier model.
 
@@ -40,18 +44,25 @@ A denial contains one reason. It contains no replacement state and no effect int
 
 ## Effect intents
 
-An effect declaration binds one node, transition, operation, resource, ability, request, and canonical BLAKE3 payload reference.
+A v1 declaration binds one node, transition, operation, resource, ability, request, and canonical BLAKE3 payload reference.
 
-Declarations permit exact event requests. An event can request a subset of its matching declarations.
+A v2 declaration keeps static authority fields in the machine. A concrete event supplies canonical request and payload references for declared slots.
 
-An accepted decision returns sorted `EffectIntent` data. The core does not authorize, dispatch, retry, persist, or execute an intent.
+`step` handles v1 events. `step_concrete` handles v2 events. Both wrappers call the same production indexed kernel.
+
+Each v2 declaration can occur once in an event. Output order follows the declaration key, not event source order.
+
+A concrete intent preserves the selected slot, declared source reference, and exact event reference. Runtime references do not change machine identity.
+
+The core does not authorize, dispatch, retry, persist, or execute an intent.
 
 ## Executable predicates
 
 - `well_formed` validates normalized immutable machine facts.
 - `invariant` validates aggregate state.
 - `terminal_states_preserved` compares two aggregate states.
-- `effects_allowed` validates exact event, declaration, and intent linkage.
+- `effects_allowed` validates v1 event, declaration, and intent linkage.
+- `concrete_effects_allowed` validates v2 key, binding, source, and exact-reference linkage.
 
 ## Current evidence
 

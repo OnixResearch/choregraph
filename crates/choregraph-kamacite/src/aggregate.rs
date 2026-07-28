@@ -298,7 +298,9 @@ fn u64_to_usize(value: u64) -> Result<usize, AggregateError> {
     usize::try_from(value).map_err(|_| AggregateError::NumericLimitOverflow)
 }
 
-fn descriptor_limits(limits: AdmissionLimits) -> Result<DescriptorLimits, AggregateError> {
+pub(crate) fn descriptor_limits(
+    limits: AdmissionLimits,
+) -> Result<DescriptorLimits, AggregateError> {
     Ok(DescriptorLimits {
         max_nodes: usize_to_u64(limits.max_nodes)?,
         max_edges: usize_to_u64(limits.max_edges)?,
@@ -312,7 +314,9 @@ fn descriptor_limits(limits: AdmissionLimits) -> Result<DescriptorLimits, Aggreg
     })
 }
 
-fn admission_limits(limits: &DescriptorLimits) -> Result<AdmissionLimits, AggregateError> {
+pub(crate) fn admission_limits(
+    limits: &DescriptorLimits,
+) -> Result<AdmissionLimits, AggregateError> {
     Ok(AdmissionLimits {
         max_nodes: u64_to_usize(limits.max_nodes)?,
         max_edges: u64_to_usize(limits.max_edges)?,
@@ -326,7 +330,7 @@ fn admission_limits(limits: &DescriptorLimits) -> Result<AdmissionLimits, Aggreg
     })
 }
 
-fn state_id(state: LocalState) -> &'static str {
+pub(crate) fn state_id(state: LocalState) -> &'static str {
     match state {
         LocalState::Pending => "pending",
         LocalState::Ready => "ready",
@@ -337,7 +341,7 @@ fn state_id(state: LocalState) -> &'static str {
     }
 }
 
-fn action_id(action: Action) -> &'static str {
+pub(crate) fn action_id(action: Action) -> &'static str {
     match action {
         Action::MarkReady => "mark-ready",
         Action::Start => "start",
@@ -347,7 +351,7 @@ fn action_id(action: Action) -> &'static str {
     }
 }
 
-fn action_from_id(value: &str) -> Result<Action, AggregateError> {
+pub(crate) fn action_from_id(value: &str) -> Result<Action, AggregateError> {
     match value {
         "mark-ready" => Ok(Action::MarkReady),
         "start" => Ok(Action::Start),
@@ -358,7 +362,7 @@ fn action_from_id(value: &str) -> Result<Action, AggregateError> {
     }
 }
 
-fn state_from_id(value: &str) -> Result<LocalState, AggregateError> {
+pub(crate) fn state_from_id(value: &str) -> Result<LocalState, AggregateError> {
     match value {
         "pending" => Ok(LocalState::Pending),
         "ready" => Ok(LocalState::Ready),

@@ -4,13 +4,14 @@
     ambiguous_params,
     assertion_density,
     clippy::assign_op_pattern,
+    dead_code,
     nested_conditionals,
     non_trait_imports,
     raw_arithmetic_overflow,
     too_many_parameters,
     unbounded_collection_growth,
     usize_in_public_api,
-    reason = "Verus proof syntax and production-linked specifications require these local source shapes"
+    reason = "Verus proof syntax and production-linked proof witnesses require these local source shapes"
 )]
 
 // r[impl choregraph.proof.single_step.specifications]
@@ -20,6 +21,8 @@
 // r[impl choregraph.proof.single_step.preservation]
 // r[impl choregraph.proof.single_step.denial]
 // r[impl choregraph.proof.single_step.trellis]
+// r[impl choregraph.effect_v2.proof]
+// r[verify choregraph.effect_v2.proof]
 use alloc::vec::Vec;
 use vstd::prelude::*;
 
@@ -38,6 +41,9 @@ pub const ACTION_COMPLETE: u8 = 2u8;
 pub const ACTION_FAIL: u8 = 3u8;
 pub const ACTION_CANCEL: u8 = 4u8;
 
+pub const BINDING_EXACT: u8 = 0u8;
+pub const BINDING_SLOT: u8 = 1u8;
+
 pub const DENIAL_NONE: u8 = 0u8;
 pub const DENIAL_INVALID_STATE: u8 = 1u8;
 pub const DENIAL_UNKNOWN_NODE: u8 = 2u8;
@@ -54,6 +60,82 @@ pub struct IndexedDecision {
     pub reason: u8,
     pub next_states: Vec<u8>,
     pub intent_indices: Vec<usize>,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct IndexedConcreteReferenceWitness {
+    pub request_reference: usize,
+    pub payload_reference: usize,
+}
+
+pub open spec fn concrete_binding_accepts_spec(
+    mode: u8,
+    slot_matches: bool,
+    source_matches: bool,
+    exact_reference_matches: bool,
+    slot_absent: bool,
+    source_absent: bool,
+) -> bool {
+    if mode == BINDING_EXACT {
+        slot_absent && source_absent && exact_reference_matches
+    } else if mode == BINDING_SLOT {
+        slot_matches && source_matches
+    } else {
+        false
+    }
+}
+
+pub fn concrete_binding_accepts(
+    mode: u8,
+    slot_matches: bool,
+    source_matches: bool,
+    exact_reference_matches: bool,
+    slot_absent: bool,
+    source_absent: bool,
+) -> (result: bool)
+    ensures result == concrete_binding_accepts_spec(
+        mode,
+        slot_matches,
+        source_matches,
+        exact_reference_matches,
+        slot_absent,
+        source_absent,
+    )
+{
+    if mode == BINDING_EXACT {
+        slot_absent && source_absent && exact_reference_matches
+    } else if mode == BINDING_SLOT {
+        slot_matches && source_matches
+    } else {
+        false
+    }
+}
+
+pub open spec fn concrete_references_preserved_spec(
+    event_request_reference: usize,
+    event_payload_reference: usize,
+    intent_request_reference: usize,
+    intent_payload_reference: usize,
+) -> bool {
+    intent_request_reference == event_request_reference
+        && intent_payload_reference == event_payload_reference
+}
+
+pub fn concrete_reference_witness(
+    event_request_reference: usize,
+    event_payload_reference: usize,
+) -> (result: IndexedConcreteReferenceWitness)
+    ensures concrete_references_preserved_spec(
+        event_request_reference,
+        event_payload_reference,
+        result.request_reference,
+        result.payload_reference,
+    )
+{
+    IndexedConcreteReferenceWitness {
+        request_reference: event_request_reference,
+        payload_reference: event_payload_reference,
+    }
 }
 
 pub open spec fn local_state_valid_spec(state: u8) -> bool {

@@ -22,10 +22,11 @@ pub use identity::{
 pub use imports::{ObservedImport, ValidatedImportClosure, validate_import_closure};
 pub use lower::{LoweredSourceFormat, LoweringOutput, lower_evaluated_json, parse_evaluated_json};
 pub use model::{
-    CHOREGRAPH_EVALUATED_SCHEMA, EvaluatedEdge, EvaluatedEffect, EvaluatedLimits, EvaluatedNode,
-    EvaluatedSource, ImportDeclaration, ImportMediaClass, LATTICE_EVALUATED_SCHEMA, LatticeNode,
-    LatticeNodeConfig, LatticePort, LatticePortDirection, LatticePortEdge,
-    RESTRICTED_EVALUATOR_PROFILE,
+    CHOREGRAPH_EVALUATED_SCHEMA, EvaluatedConcreteReference, EvaluatedEdge, EvaluatedEffect,
+    EvaluatedLatticeEffectV2, EvaluatedLimits, EvaluatedNode, EvaluatedReferenceBinding,
+    EvaluatedSource, ImportDeclaration, ImportMediaClass, LATTICE_EVALUATED_SCHEMA,
+    LATTICE_V2_EVALUATED_SCHEMA, LatticeNode, LatticeNodeConfig, LatticeNodeConfigV2, LatticePort,
+    LatticePortDirection, LatticePortEdge, RESTRICTED_EVALUATOR_PROFILE,
 };
 pub use profile::{
     DEFAULT_MAX_EVALUATED_BYTES, DEFAULT_MAX_IMPORT_BYTES, DEFAULT_MAX_IMPORT_IDENTIFIER_BYTES,

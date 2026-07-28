@@ -92,6 +92,25 @@ let is_effect = fun value =>
   exact_fields ["node_id", "from_state", "action", "operation", "resource", "ability", "request", "payload"] value
   && std.array.all (fun name => bounded_string MAX_IDENTIFIER_CHARS (field name value)) ["node_id", "from_state", "action", "operation", "resource", "ability", "request", "payload"]
 in
+let is_concrete_reference = fun value =>
+  exact_fields ["profile", "identity"] value
+  && field "profile" value == "choregraph.packed-preserves.v1"
+  && std.is_string (field "identity" value)
+  && std.string.is_match "^blake3:[0-9a-f]{64}$" (field "identity" value)
+in
+let is_reference_binding = fun value =>
+  std.is_record value
+  && has "mode" value
+  && (
+    (field "mode" value == "exact"
+      && exact_fields ["mode", "reference"] value
+      && is_concrete_reference (field "reference" value))
+    || (field "mode" value == "slot"
+      && exact_fields ["mode", "slot_id", "source_ref"] value
+      && bounded_string MAX_IDENTIFIER_CHARS (field "slot_id" value)
+      && bounded_string MAX_IDENTIFIER_CHARS (field "source_ref" value))
+  )
+in
 let is_port = fun value =>
   exact_fields ["id", "direction"] value
   && natural 18446744073709551615 (field "id" value)
@@ -113,6 +132,20 @@ let is_lattice_config = fun value =>
   exact_fields ["node_id", "operation"] value
   && natural 18446744073709551615 (field "node_id" value)
   && bounded_string MAX_IDENTIFIER_CHARS (field "operation" value)
+in
+let is_lattice_config_v2 = fun value =>
+  exact_fields ["node_id", "operation", "effectful"] value
+  && natural 18446744073709551615 (field "node_id" value)
+  && bounded_string MAX_IDENTIFIER_CHARS (field "operation" value)
+  && std.is_bool (field "effectful" value)
+in
+let is_lattice_effect_v2 = fun value =>
+  exact_fields ["declaration_key", "node_id", "from_state", "action", "resource", "ability", "request_binding", "payload_binding"] value
+  && bounded_string MAX_IDENTIFIER_CHARS (field "declaration_key" value)
+  && natural 18446744073709551615 (field "node_id" value)
+  && std.array.all (fun name => bounded_string MAX_IDENTIFIER_CHARS (field name value)) ["from_state", "action", "resource", "ability"]
+  && is_reference_binding (field "request_binding" value)
+  && is_reference_binding (field "payload_binding" value)
 in
 let is_choregraph = fun value =>
   exact_fields ["source_format", "schema", "lifecycle_profile", "events", "limits", "imports", "nodes", "edges", "effects"] value
@@ -150,8 +183,40 @@ let is_lattice = fun value =>
   && std.array.length (field "configs" value) <= MAX_NODES
   && std.array.all is_lattice_config (field "configs" value)
 in
+let is_lattice_v2 = fun value =>
+  exact_fields ["source_format", "schema", "lifecycle_profile", "events", "limits", "imports", "nodes", "edges", "configs", "effects"] value
+  && field "source_format" value == "lattice-workflow-v2"
+  && field "schema" value == "choregraph.lattice-workflow-projection.v2"
+  && field "lifecycle_profile" value == "choregraph.lifecycle.linear.v1"
+  && is_events (field "events" value)
+  && is_limits (field "limits" value)
+  && is_imports (field "imports" value)
+  && std.is_array (field "nodes" value)
+  && std.array.length (field "nodes" value) <= MAX_NODES
+  && std.array.all is_lattice_node (field "nodes" value)
+  && std.is_array (field "edges" value)
+  && std.array.length (field "edges" value) <= MAX_EDGES
+  && std.array.all is_lattice_edge (field "edges" value)
+  && std.is_array (field "configs" value)
+  && std.array.length (field "configs" value) <= MAX_NODES
+  && std.array.all is_lattice_config_v2 (field "configs" value)
+  && std.is_array (field "effects" value)
+  && std.array.length (field "effects" value) <= MAX_EFFECTS
+  && std.array.all is_lattice_effect_v2 (field "effects" value)
+  && std.array.all
+    (fun config =>
+      !(field "effectful" config)
+      || std.array.any (fun effect => field "node_id" effect == field "node_id" config) (field "effects" value))
+    (field "configs" value)
+  && std.array.all
+    (fun effect =>
+      std.array.any
+        (fun config => field "node_id" config == field "node_id" effect && field "effectful" config)
+        (field "configs" value))
+    (field "effects" value)
+in
 {
-  EvaluatedGraph = std.contract.from_predicate (fun value => is_choregraph value || is_lattice value),
+  EvaluatedGraph = std.contract.from_predicate (fun value => is_choregraph value || is_lattice value || is_lattice_v2 value),
   RestrictedProfile = {
     id = "choregraph.nickel-restricted.v1",
     allowed_values = ["records", "arrays", "strings", "numbers", "booleans", "enums"],

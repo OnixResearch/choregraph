@@ -4,12 +4,19 @@ Choregraph begins its maintained frontend claim at evaluated data that satisfies
 
 ## Contract boundary
 
-[`../contracts/nickel/restricted-graph-contracts.ncl`](../contracts/nickel/restricted-graph-contracts.ncl) defines two evaluated formats:
+[`../contracts/nickel/restricted-graph-contracts.ncl`](../contracts/nickel/restricted-graph-contracts.ncl) defines three evaluated formats:
 
 - `choregraph.evaluated-graph.v1` for direct graph data;
-- `choregraph.lattice-workflow-projection.v1` for selected Lattice port graphs.
+- `choregraph.lattice-workflow-projection.v1` for selected Lattice port graphs;
+- `choregraph.lattice-workflow-projection.v2` for Lattice graphs with explicit concrete-effect declarations.
 
-The contract checks exact fields, required schemas, fixed lifecycle events, array bounds, scalar types, import declarations, and selected graph shapes. Rust then parses with `deny_unknown_fields`, rechecks every numeric ceiling, validates the import closure, constructs `MachineSpec`, and calls normal `AdmittedMachine::admit`.
+The contract checks exact fields, required schemas, fixed lifecycle events, array bounds, scalar types, import declarations, and selected graph shapes.
+
+The v2 contract requires each effectful node to have a declaration. It rejects effects on nodes that are not effectful.
+
+Rust parses with `deny_unknown_fields`, checks numeric ceilings, and validates the import closure. V1 calls `AdmittedMachine::admit`. V2 calls `AdmittedMachine::admit_v2`.
+
+A v2 slot source must name the declared node input, output, or configuration namespace. The frontend preserves this source reference.
 
 The CLI reads source through an operator-opened capability root. A conservative source gate rejects Nickel `import` syntax and string interpolation before evaluator execution. Declared graph imports remain data and are loaded after evaluation.
 

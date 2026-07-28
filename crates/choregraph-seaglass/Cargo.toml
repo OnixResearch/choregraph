@@ -14,5 +14,6 @@ workspace = true
 choregraph-core.workspace = true
 
 [dev-dependencies]
+blake3.workspace = true
 choregraph-nickel.workspace = true
 legacy-execution-graph = { package = "execution-graph-core", path = "../../vendor/execution-graph-core-selected", version = "=0.1.0" }

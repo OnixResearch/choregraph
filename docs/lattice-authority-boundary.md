@@ -37,11 +37,13 @@ This is syntactic architecture evidence. It is not a semantic proof.
 
 ## Intent handoff
 
-A Choregraph intent is a request for consumer handling. It is not an authorization result or proof of an external effect.
+A Choregraph concrete intent is a request for consumer handling. It is not an authorization result or proof of an external effect.
+
+The handoff includes the declaration key, static authority fields, selected slots, declared source references, and exact canonical references.
 
 The required Lattice sequence is:
 
-1. Bind the exact machine, workflow, run, node, transition, operation, resource, ability, request, and payload identities.
+1. Bind the exact machine, workflow, run, intent content, policy, authority, persistence, and attempt identities.
 2. Persist the intent and attempt identity before a product effect.
 3. Obtain current external authorization facts.
 4. Ask Basalt for a bounded decision over those supplied facts.
@@ -52,9 +54,13 @@ The required Lattice sequence is:
 
 The conformance authority fixture checks a bounded denial path. `Start` returns one declared intent. A later consumer-owned `Fail` result moves the node to `Failed` and does not return the prior intent again.
 
+`fixtures/lattice-handoff/consumer.rs` is a disposable downstream fixture. It rejects a synthetic binding that has no Choregraph intent.
+
+The fixture adds Lattice-owned run and attempt facts. Equal Choregraph content can produce different occurrence identities.
+
 ## Replay and crash boundary
 
-Replay calls production `step`, discards any historical intent, and has no dispatch field. A prior intent or authorization receipt cannot become fresh authority.
+Replay calls the matching production transition wrapper, discards any historical intent, and has no dispatch field. A prior receipt cannot become fresh authority.
 
 Lattice must persist attempt identity before dispatch. A crash after an external effect but before outcome persistence remains an unknown outcome. Neither repository can claim external exactly-once behavior from this sequence.
 

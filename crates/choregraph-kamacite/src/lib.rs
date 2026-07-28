@@ -4,10 +4,13 @@
 
 mod aggregate;
 mod codec;
+mod concrete;
 mod identity;
 mod lifecycle;
 mod receipt;
 
+#[cfg(test)]
+mod concrete_tests;
 #[cfg(test)]
 mod tests;
 
@@ -38,8 +41,21 @@ pub use aggregate::{
     encode_machine_descriptor, validate_machine_artifact,
 };
 pub use codec::{
-    CanonicalArtifact, CodecBoundaryError, FSM_RECEIPT_ROOT_LABEL, FSM_RECEIPT_SCHEMA_VERSION,
-    FSM_SPEC_ROOT_LABEL, FSM_SPEC_SCHEMA_VERSION, MACHINE_ROOT_LABEL, MACHINE_SCHEMA_VERSION,
+    CONCRETE_INTENT_RECEIPT_ROOT_LABEL, CONCRETE_INTENT_RECEIPT_SCHEMA_VERSION,
+    CONCRETE_INTENT_ROOT_LABEL, CONCRETE_INTENT_SCHEMA_VERSION, CONCRETE_MACHINE_ROOT_LABEL,
+    CONCRETE_MACHINE_SCHEMA_VERSION, CanonicalArtifact, CodecBoundaryError, FSM_RECEIPT_ROOT_LABEL,
+    FSM_RECEIPT_SCHEMA_VERSION, FSM_SPEC_ROOT_LABEL, FSM_SPEC_SCHEMA_VERSION, MACHINE_ROOT_LABEL,
+    MACHINE_SCHEMA_VERSION,
+};
+pub use concrete::{
+    ConcreteArtifactError, ConcreteIntentArtifact, ConcreteIntentDescriptorV2,
+    ConcreteIntentReceiptArtifact, ConcreteIntentReceiptBody, ConcreteMachineArtifact,
+    ConcreteMachineDescriptorV2, DescriptorConcreteEffectV2, DescriptorReferenceBindingV2,
+    DescriptorSelectedReferenceV2, build_concrete_intent_artifact, build_concrete_intent_receipt,
+    build_concrete_machine_artifact, encode_concrete_intent_descriptor,
+    encode_concrete_intent_receipt_body, encode_concrete_machine_descriptor,
+    validate_concrete_intent_artifact, validate_concrete_intent_receipt,
+    validate_concrete_machine_artifact,
 };
 pub use identity::{
     ArtifactDomain, ArtifactIdentity, BLAKE3_ALGORITHM, BLAKE3_HEX_LENGTH, IdentityChain,

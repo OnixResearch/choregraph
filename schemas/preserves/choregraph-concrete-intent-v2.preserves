@@ -1,0 +1,39 @@
+; Choregraph concrete-effect intent descriptor v2.
+; This identity names content. It is not a run or attempt identity.
+
+ConcreteIntentDescriptorV2 = <choregraph-concrete-intent-v2 {
+  schema_version: 1,
+  declaration_key: string,
+  node_id: string,
+  from_state: string,
+  action: string,
+  operation: string,
+  resource: string,
+  ability: string,
+  request: DescriptorSelectedReferenceV2,
+  payload: DescriptorSelectedReferenceV2,
+  non_claims: [string ...]
+}>
+
+DescriptorSelectedReferenceV2 = <DescriptorSelectedReferenceV2 {
+  slot_id: string / null,
+  source_ref: string / null,
+  profile: "choregraph.packed-preserves.v1",
+  identity: string
+}>
+
+ConcreteIntentReceiptBody = <choregraph-concrete-intent-receipt-v1 {
+  schema_version: 1,
+  machine_identity: ArtifactIdentity,
+  intent_identity: ArtifactIdentity,
+  declaration_key: string,
+  checked_laws: [string ...],
+  non_claims: [string ...],
+  semantic_claims: []
+}>
+
+ArtifactIdentity = <ArtifactIdentity {
+  domain: symbol,
+  algorithm: "blake3",
+  hex: string
+}>

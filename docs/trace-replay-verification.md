@@ -1,6 +1,8 @@
 # Trace replay verification
 
-Choregraph replays a bounded event slice through the production `step` function. Replay returns only state, a consumed count, or exact first-failure information. It never returns effect intents.
+Choregraph replays bounded v1 and v2 event slices through the production transition wrappers. Replay returns state, a consumed count, or exact failure information.
+
+`replay` calls `step`. `replay_concrete` calls `step_concrete`. Neither replay type returns effect intents.
 
 ## Public replay model
 
@@ -33,7 +35,7 @@ The `ReplayDecision` type has no intent field. The fold still lets production `s
 
 ## Production linkage
 
-The public fold is in `crates/choregraph-core/src/transition.rs`. It calls the same exported `step` function used for live transition decisions.
+The public folds are in `crates/choregraph-core/src/transition.rs`. Each fold calls the same exported transition wrapper used for live decisions.
 
 The Verus trace specifications are in `crates/choregraph-core/src/verified/trace.rs`. They recursively apply `indexed_step_accepts_spec` and `indexed_step_next_spec` from the production-called kernel.
 
@@ -88,7 +90,9 @@ Trace proof success does not prove:
 - external effect success or exactly-once behavior;
 - BLAKE3 binding derivation by a consumer.
 
-A historical intent records an earlier pure decision. It is not a fresh Basalt authorization, capability grant, or execution request.
+A historical concrete intent records an earlier pure decision. It is not a fresh Basalt authorization, capability grant, or execution request.
+
+Replay can recheck concrete references, but it discards every accepted concrete intent before the next event.
 
 ## Validation
 

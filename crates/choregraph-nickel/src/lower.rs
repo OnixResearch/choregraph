@@ -15,13 +15,16 @@
 use crate::diagnostic::{FrontendFailure, FrontendIssueCode};
 use crate::imports::{ObservedImport, ValidatedImportClosure, validate_import_closure};
 use crate::model::{
-    CHOREGRAPH_EVALUATED_SCHEMA, EvaluatedEffect, EvaluatedLimits, EvaluatedSource,
-    LATTICE_EVALUATED_SCHEMA, LatticeNode, LatticeNodeConfig, LatticePortDirection,
+    CHOREGRAPH_EVALUATED_SCHEMA, EvaluatedConcreteReference, EvaluatedEffect,
+    EvaluatedLatticeEffectV2, EvaluatedLimits, EvaluatedReferenceBinding, EvaluatedSource,
+    LATTICE_EVALUATED_SCHEMA, LATTICE_V2_EVALUATED_SCHEMA, LatticeNode, LatticeNodeConfig,
+    LatticeNodeConfigV2, LatticePortDirection,
 };
 use crate::profile::FrontendLimits;
 use choregraph_core::{
-    Action, AdmissionLimits, AdmittedMachine, EdgeSpec, EffectDeclarationSpec, LINEAR_LIFECYCLE_V1,
-    LocalState, MachineSpec, NodeSpec, TransitionSelector,
+    Action, AdmissionLimits, AdmittedMachine, ConcreteEffectDeclarationSpec, ConcreteReferenceSpec,
+    EdgeSpec, EffectDeclarationSpec, LINEAR_LIFECYCLE_V1, LocalState, MachineSpec, MachineSpecV2,
+    NodeSpec, ReferenceBindingSpec, TransitionSelector,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -35,6 +38,7 @@ const LIFECYCLE_EVENTS: [&str; LIFECYCLE_EVENT_COUNT] =
 pub enum LoweredSourceFormat {
     ChoregraphV1,
     LatticeWorkflowV1,
+    LatticeWorkflowV2,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -42,6 +46,11 @@ pub struct LoweringOutput {
     pub machine: AdmittedMachine,
     pub import_closure: ValidatedImportClosure,
     pub source_format: LoweredSourceFormat,
+}
+
+enum LoweredMachineSpec {
+    V1(MachineSpec),
+    V2(MachineSpecV2),
 }
 
 fn fail(code: FrontendIssueCode) -> FrontendFailure {
@@ -111,6 +120,24 @@ fn valid_events(mut events: Vec<String>) -> bool {
     events.len() == LIFECYCLE_EVENT_COUNT && events.iter().map(String::as_str).eq(LIFECYCLE_EVENTS)
 }
 
+fn validate_source_profile(
+    schema: &str,
+    expected_schema: &str,
+    lifecycle_profile: &str,
+    events: Vec<String>,
+) -> Result<(), FrontendFailure> {
+    if schema != expected_schema {
+        return Err(fail(FrontendIssueCode::UnsupportedSchema));
+    }
+    if lifecycle_profile != LINEAR_LIFECYCLE_V1 {
+        return Err(fail(FrontendIssueCode::UnsupportedLifecycle));
+    }
+    if !valid_events(events) {
+        return Err(fail(FrontendIssueCode::UnsupportedEvents));
+    }
+    Ok(())
+}
+
 fn action(value: &str) -> Result<Action, FrontendFailure> {
     match value {
         "mark-ready" => Ok(Action::MarkReady),
@@ -135,6 +162,41 @@ fn effect(input: EvaluatedEffect) -> Result<EffectDeclarationSpec, FrontendFailu
         request: input.request,
         payload: input.payload,
     })
+}
+
+fn concrete_reference(input: EvaluatedConcreteReference) -> ConcreteReferenceSpec {
+    ConcreteReferenceSpec {
+        profile: input.profile,
+        identity: input.identity,
+    }
+}
+
+fn reference_binding(input: EvaluatedReferenceBinding) -> ReferenceBindingSpec {
+    match input {
+        EvaluatedReferenceBinding::Exact { reference } => ReferenceBindingSpec::Exact {
+            reference: concrete_reference(reference),
+        },
+        EvaluatedReferenceBinding::Slot {
+            slot_id,
+            source_ref,
+        } => ReferenceBindingSpec::Slot {
+            slot_id,
+            source_ref,
+        },
+    }
+}
+
+fn binding_source_is_local(node_id: u64, binding: &EvaluatedReferenceBinding) -> bool {
+    let EvaluatedReferenceBinding::Slot { source_ref, .. } = binding else {
+        return true;
+    };
+    let node_prefix = format!("node/{node_id}/");
+    let Some(remainder) = source_ref.strip_prefix(&node_prefix) else {
+        return false;
+    };
+    remainder.starts_with("input/")
+        || remainder.starts_with("output/")
+        || remainder.starts_with("config/")
 }
 
 fn lattice_node_id(node_id: u64) -> String {
@@ -210,6 +272,68 @@ fn lower_lattice(
     Ok((lowered_nodes, lowered_edges))
 }
 
+fn lower_lattice_v2(
+    nodes: Vec<LatticeNode>,
+    edges: Vec<crate::model::LatticePortEdge>,
+    configs: Vec<LatticeNodeConfigV2>,
+    effects: Vec<EvaluatedLatticeEffectV2>,
+) -> Result<MachineSpecV2, FrontendFailure> {
+    let mut operations = BTreeMap::new();
+    let mut effectful_nodes = BTreeSet::new();
+    let mut legacy_configs = Vec::with_capacity(configs.len());
+    for config in configs {
+        if operations
+            .insert(config.node_id, config.operation.clone())
+            .is_some()
+        {
+            return Err(fail(FrontendIssueCode::DuplicateLatticeConfig));
+        }
+        if config.effectful {
+            effectful_nodes.insert(config.node_id);
+        }
+        legacy_configs.push(LatticeNodeConfig {
+            node_id: config.node_id,
+            operation: config.operation,
+        });
+    }
+    let (nodes, edges) = lower_lattice(nodes, edges, legacy_configs)?;
+    let mut declared_effectful_nodes = BTreeSet::new();
+    let mut lowered_effects = Vec::with_capacity(effects.len());
+    for effect in effects {
+        let Some(operation) = operations.get(&effect.node_id) else {
+            return Err(fail(FrontendIssueCode::UnknownLatticeEffectNode));
+        };
+        if !effectful_nodes.contains(&effect.node_id) {
+            return Err(fail(FrontendIssueCode::UnknownLatticeEffectNode));
+        }
+        if !binding_source_is_local(effect.node_id, &effect.request_binding)
+            || !binding_source_is_local(effect.node_id, &effect.payload_binding)
+        {
+            return Err(fail(FrontendIssueCode::InvalidLatticeSourceRef));
+        }
+        declared_effectful_nodes.insert(effect.node_id);
+        lowered_effects.push(ConcreteEffectDeclarationSpec {
+            declaration_key: effect.declaration_key,
+            node_id: lattice_node_id(effect.node_id),
+            transition: TransitionSelector {
+                from: state(&effect.from_state)?,
+                action: action(&effect.action)?,
+            },
+            operation: lattice_operation(operation),
+            resource: effect.resource,
+            ability: effect.ability,
+            request_binding: reference_binding(effect.request_binding),
+            payload_binding: reference_binding(effect.payload_binding),
+        });
+    }
+    if declared_effectful_nodes != effectful_nodes {
+        return Err(fail(FrontendIssueCode::MissingLatticeEffect));
+    }
+    let mut spec = MachineSpecV2::new(nodes, edges);
+    spec.effects = lowered_effects;
+    Ok(spec)
+}
+
 pub fn parse_evaluated_json(
     evaluated_json: &[u8],
     max_evaluated_bytes: u64,
@@ -244,15 +368,12 @@ pub fn lower_evaluated_json(
             edges,
             effects,
         } => {
-            if schema != CHOREGRAPH_EVALUATED_SCHEMA {
-                return Err(fail(FrontendIssueCode::UnsupportedSchema));
-            }
-            if lifecycle_profile != LINEAR_LIFECYCLE_V1 {
-                return Err(fail(FrontendIssueCode::UnsupportedLifecycle));
-            }
-            if !valid_events(events) {
-                return Err(fail(FrontendIssueCode::UnsupportedEvents));
-            }
+            validate_source_profile(
+                &schema,
+                CHOREGRAPH_EVALUATED_SCHEMA,
+                &lifecycle_profile,
+                events,
+            )?;
             let admission_limits = admission_limits(limits, frontend_limits.machine_ceiling)?;
             let mut spec = MachineSpec::new(
                 nodes
@@ -268,7 +389,11 @@ pub fn lower_evaluated_json(
                 .into_iter()
                 .map(effect)
                 .collect::<Result<Vec<_>, FrontendFailure>>()?;
-            (spec, admission_limits, LoweredSourceFormat::ChoregraphV1)
+            (
+                LoweredMachineSpec::V1(spec),
+                admission_limits,
+                LoweredSourceFormat::ChoregraphV1,
+            )
         }
         EvaluatedSource::LatticeWorkflow {
             schema,
@@ -280,26 +405,51 @@ pub fn lower_evaluated_json(
             edges,
             configs,
         } => {
-            if schema != LATTICE_EVALUATED_SCHEMA {
-                return Err(fail(FrontendIssueCode::UnsupportedSchema));
-            }
-            if lifecycle_profile != LINEAR_LIFECYCLE_V1 {
-                return Err(fail(FrontendIssueCode::UnsupportedLifecycle));
-            }
-            if !valid_events(events) {
-                return Err(fail(FrontendIssueCode::UnsupportedEvents));
-            }
+            validate_source_profile(
+                &schema,
+                LATTICE_EVALUATED_SCHEMA,
+                &lifecycle_profile,
+                events,
+            )?;
             let admission_limits = admission_limits(limits, frontend_limits.machine_ceiling)?;
             let (nodes, edges) = lower_lattice(nodes, edges, configs)?;
             (
-                MachineSpec::new(nodes, edges),
+                LoweredMachineSpec::V1(MachineSpec::new(nodes, edges)),
                 admission_limits,
                 LoweredSourceFormat::LatticeWorkflowV1,
             )
         }
+        EvaluatedSource::LatticeWorkflowV2 {
+            schema,
+            lifecycle_profile,
+            events,
+            limits,
+            imports: _,
+            nodes,
+            edges,
+            configs,
+            effects,
+        } => {
+            validate_source_profile(
+                &schema,
+                LATTICE_V2_EVALUATED_SCHEMA,
+                &lifecycle_profile,
+                events,
+            )?;
+            let admission_limits = admission_limits(limits, frontend_limits.machine_ceiling)?;
+            let spec = lower_lattice_v2(nodes, edges, configs, effects)?;
+            (
+                LoweredMachineSpec::V2(spec),
+                admission_limits,
+                LoweredSourceFormat::LatticeWorkflowV2,
+            )
+        }
     };
-    let machine = AdmittedMachine::admit(spec, limits)
-        .map_err(|_| fail(FrontendIssueCode::MachineAdmissionRejected))?;
+    let machine = match spec {
+        LoweredMachineSpec::V1(spec) => AdmittedMachine::admit(spec, limits),
+        LoweredMachineSpec::V2(spec) => AdmittedMachine::admit_v2(spec, limits),
+    }
+    .map_err(|_| fail(FrontendIssueCode::MachineAdmissionRejected))?;
     Ok(LoweringOutput {
         machine,
         import_closure,

@@ -699,7 +699,15 @@ fn resolve_binding(
     let reference = parse_event_reference(&input.reference, limits)?;
     match declaration {
         ReferenceBinding::Exact(expected) => {
-            if input.slot_id.is_some() || input.source_ref.is_some() || reference != *expected {
+            let accepted = crate::verified::concrete_binding_accepts(
+                crate::verified::BINDING_EXACT,
+                false,
+                false,
+                reference == *expected,
+                input.slot_id.is_none(),
+                input.source_ref.is_none(),
+            );
+            if !accepted {
                 return Err(crate::DenialReason::ConcreteBindingMismatch);
             }
             Ok(ResolvedBinding {
@@ -728,7 +736,15 @@ fn resolve_binding(
                     SourceRef::parse(value, limits.max_identifier_bytes)
                         .map_err(|_| crate::DenialReason::MalformedEffectRequest)
                 })?;
-            if selected_slot != *slot_id || selected_source != *source_ref {
+            let accepted = crate::verified::concrete_binding_accepts(
+                crate::verified::BINDING_SLOT,
+                selected_slot == *slot_id,
+                selected_source == *source_ref,
+                false,
+                false,
+                false,
+            );
+            if !accepted {
                 return Err(crate::DenialReason::ConcreteBindingMismatch);
             }
             Ok(ResolvedBinding {

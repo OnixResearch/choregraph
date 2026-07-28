@@ -22,6 +22,10 @@ const DECLARED_IMPORT_JSON: &[u8] =
 const MINIMAL_JSON: &[u8] = include_bytes!("../../../fixtures/nickel/evaluated/minimal.json");
 const SOURCE_ORDER_JSON: &[u8] =
     include_bytes!("../../../fixtures/nickel/evaluated/source-order.json");
+const LATTICE_EFFECT_V2_JSON: &[u8] =
+    include_bytes!("../../../fixtures/nickel/evaluated/lattice-effect-v2.json");
+const SINGLE_EFFECT_COUNT: usize = 1;
+const FIRST_ITEM: usize = 0;
 
 fn must<T, E: std::fmt::Debug>(result: Result<T, E>) -> T {
     match result {
@@ -82,6 +86,56 @@ fn lowers_lattice_port_diamond_to_stable_node_graph() {
             "lattice-node/3",
             "lattice-node/4"
         ]
+    );
+}
+
+#[test]
+fn lowers_lattice_v2_with_explicit_concrete_effect_declarations() {
+    let output = must(lower_evaluated_json(
+        LATTICE_EFFECT_V2_JSON,
+        &[],
+        FrontendLimits::default(),
+    ));
+    assert_eq!(output.source_format, LoweredSourceFormat::LatticeWorkflowV2);
+    assert_eq!(output.machine.schema(), choregraph_core::MACHINE_SCHEMA_V2);
+    assert_eq!(
+        output.machine.concrete_effect_declarations().len(),
+        SINGLE_EFFECT_COUNT
+    );
+    let declaration = &output.machine.concrete_effect_declarations()[FIRST_ITEM];
+    assert_eq!(declaration.declaration_key.as_str(), "request/main");
+    assert_eq!(declaration.node_id.as_str(), "lattice-node/1");
+    assert_eq!(declaration.operation.as_str(), "lattice/http-request");
+}
+
+#[test]
+fn rejects_lattice_v2_missing_effects_pure_effects_and_foreign_sources() {
+    let mut missing: serde_json::Value = must(serde_json::from_slice(LATTICE_EFFECT_V2_JSON));
+    must_array(&mut missing["effects"]).clear();
+    let missing = must(serde_json::to_vec(&missing));
+    let failure = lower_evaluated_json(&missing, &[], FrontendLimits::default());
+    assert_eq!(
+        failure.err().map(|error| error.issues[0].code),
+        Some(FrontendIssueCode::MissingLatticeEffect)
+    );
+
+    let mut pure: serde_json::Value = must(serde_json::from_slice(LATTICE_EFFECT_V2_JSON));
+    pure["configs"][FIRST_ITEM]["effectful"] = serde_json::Value::Bool(false);
+    let pure = must(serde_json::to_vec(&pure));
+    let failure = lower_evaluated_json(&pure, &[], FrontendLimits::default());
+    assert_eq!(
+        failure.err().map(|error| error.issues[0].code),
+        Some(FrontendIssueCode::UnknownLatticeEffectNode)
+    );
+
+    let mut foreign: serde_json::Value = must(serde_json::from_slice(LATTICE_EFFECT_V2_JSON));
+    foreign["effects"][FIRST_ITEM]["request_binding"]["source_ref"] =
+        serde_json::Value::String(String::from("node/2/input/request"));
+    let foreign = must(serde_json::to_vec(&foreign));
+    let failure = lower_evaluated_json(&foreign, &[], FrontendLimits::default());
+    assert_eq!(
+        failure.err().map(|error| error.issues[0].code),
+        Some(FrontendIssueCode::InvalidLatticeSourceRef)
     );
 }
 

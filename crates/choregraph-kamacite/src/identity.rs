@@ -32,6 +32,7 @@ pub enum ArtifactDomain {
     Adapter,
     Profile,
     Toolchain,
+    ConcreteIntent,
     Receipt,
 }
 
@@ -46,6 +47,7 @@ impl ArtifactDomain {
             Self::Adapter => "adapter",
             Self::Profile => "profile",
             Self::Toolchain => "toolchain",
+            Self::ConcreteIntent => "concrete-intent",
             Self::Receipt => "receipt",
         }
     }

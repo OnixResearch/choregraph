@@ -46,6 +46,9 @@ pub enum FrontendIssueCode {
     DuplicateLatticeConfig,
     MissingLatticeConfig,
     UnknownLatticeConfigNode,
+    MissingLatticeEffect,
+    UnknownLatticeEffectNode,
+    InvalidLatticeSourceRef,
     MachineAdmissionRejected,
     EmptyIdentityMaterial,
     StaleTranslationReceipt,
@@ -181,6 +184,15 @@ pub const fn summary(code: FrontendIssueCode) -> &'static str {
         FrontendIssueCode::MissingLatticeConfig => "Lattice node has no operation configuration",
         FrontendIssueCode::UnknownLatticeConfigNode => {
             "Lattice operation configuration references an unknown node"
+        }
+        FrontendIssueCode::MissingLatticeEffect => {
+            "effectful Lattice node has no concrete effect declaration"
+        }
+        FrontendIssueCode::UnknownLatticeEffectNode => {
+            "Lattice effect declaration references an unknown or pure node"
+        }
+        FrontendIssueCode::InvalidLatticeSourceRef => {
+            "Lattice effect slot names a source outside its declared node"
         }
         FrontendIssueCode::MachineAdmissionRejected => {
             "lowered graph failed canonical machine admission"

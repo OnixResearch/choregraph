@@ -61,7 +61,7 @@ let ProofManifest = {
   vstd_crate | NonEmpty,
   trellis_revision | GitRevision,
   trellis_sources | Array TrellisSource,
-  machine_schema | MachineSchema,
+  machine_schemas | Array MachineSchema,
   limits | Limits,
   theorems | Array NonEmpty,
   sources | Array Source,
@@ -73,7 +73,7 @@ let ProofManifest = {
   proof | ProofManifest = {
     schema = "choregraph.trace-replay-proof.v1",
     status = "verified",
-    claim = "The production-linked indexed fold preserves its invariant across every finite accepted prefix, stops at the first denial, and returns no dispatch intents.",
+    claim = "The production-linked indexed fold preserves every finite v1 or v2 accepted prefix, stops at the first denial, and returns no dispatch intents.",
     positive_command_argv = [
       "octet-production-verus",
       "--crate-type=lib",
@@ -103,11 +103,18 @@ let ProofManifest = {
         adapted_claim = "trace admission binds an explicit step count to a reviewed maximum",
       },
     ],
-    machine_schema = {
-      id = "choregraph.machine.v1",
-      source_path = "schemas/preserves/choregraph-machine-v1.preserves",
-      source_blake3 = "4cb7079deb17e77fe2806bd24a80f47e5df1ca7c405725429a3ea47236ecb0f6",
-    },
+    machine_schemas = [
+      {
+        id = "choregraph.machine.v1",
+        source_path = "schemas/preserves/choregraph-machine-v1.preserves",
+        source_blake3 = "4cb7079deb17e77fe2806bd24a80f47e5df1ca7c405725429a3ea47236ecb0f6",
+      },
+      {
+        id = "choregraph.machine.v2",
+        source_path = "schemas/preserves/choregraph-machine-v2.preserves",
+        source_blake3 = "2c77b25b6f4f90033e42f6b84b5764a4b503ee56e80b098b254ad3a0ea125305",
+      },
+    ],
     limits = {
       max_trace_events = MaxTraceEvents,
       trace_binding_bytes = TraceBindingBytes,
@@ -126,7 +133,7 @@ let ProofManifest = {
     sources = [
       {
         path = "Cargo.lock",
-        blake3 = "2a08fd00a3fb21198bd2dfc45c554ccb0c142b44b95d05f7eaf1b9036406ad6f",
+        blake3 = "cfcb76953e7991d53b201b1fd660fc3f94ad792e8b7065a1f9d2a2a32783f114",
         role = "resolved Rust dependency identity",
       },
       {
@@ -145,23 +152,28 @@ let ProofManifest = {
         role = "erased vstd dependency contract",
       },
       {
+        path = "crates/choregraph-core/src/concrete.rs",
+        blake3 = "df6f54b8c7b53b93dfa51de49fb454b7d5c0f82b3dc11e75d066c0eb45adffde",
+        role = "production v2 replay event and intent boundary",
+      },
+      {
         path = "crates/choregraph-core/src/lib.rs",
-        blake3 = "f491db7f9671a151f7985384cc7a937db21b271d44299455a6211ce7dc377b5a",
+        blake3 = "38637787398767cb61bea49499171b42c9d568166592199b34c7aaf0b255a0c8",
         role = "production module and public replay linkage",
       },
       {
         path = "crates/choregraph-core/src/model.rs",
-        blake3 = "883ff13ba2ef4c81629767449522519302433f742e984b1d720359b939fc7b76",
+        blake3 = "054759627c005d7cdb3c4bff7f7dd50533476fa7052298f2f27a3226ee7e8b6c",
         role = "bounded trace, binding, count, and failure types",
       },
       {
         path = "crates/choregraph-core/src/transition.rs",
-        blake3 = "7fb94f703451facdad98fc3d4e3b2d4b9c4834df4dde439941074dec6bf49ddb",
+        blake3 = "ac6e019fe15f9995adf26b41009d3295b1d69e9e22d30f1eb32970a22312f4ef",
         role = "public replay fold over the production step relation",
       },
       {
         path = "crates/choregraph-core/src/verified.rs",
-        blake3 = "dca1071b89410ac4193190f78fa68207528712d37a4dafe2a992bf9ef7b43246",
+        blake3 = "ce2cc20ba8550e8111419cf5821553ad928150dab52e9505afb5a16800faa57e",
         role = "production-called verified single-step kernel",
       },
       {
@@ -191,7 +203,7 @@ let ProofManifest = {
       },
       {
         path = "flake.nix",
-        blake3 = "d2bb2869b80ccfa6e9d44a9093703e791b026b4f3a2e85b0f7bd0ec42b216b49",
+        blake3 = "5df5966236fd4817e1c8e37e8e893982a7832226d1004359e93e51fdec2db38c",
         role = "maintained positive, negative, trust, and evidence gate",
       },
       {
@@ -252,7 +264,7 @@ let ProofManifest = {
       ],
       adapter_boundary = [
         "Identifier parsing and BTreeMap-to-index conversion are executable Rust and are not Verus-proved.",
-        "The public replay fold calls production step and executable property tests compare it with repeated steps.",
+        "The public replay folds call production step or step_concrete; executable property tests compare them with repeated steps.",
         "Caller-supplied machine and initial-state binding derivation is not proved by Choregraph core.",
         "The proof starts after bounded indexed trace admission, not at storage, source text, or observed history.",
       ],

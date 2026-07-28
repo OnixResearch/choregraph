@@ -31,12 +31,15 @@ const REQUIRED_DELEGATE_CALLS: &[&str] = &[
     "choregraph_core::ready_nodes",
     "choregraph_core::resume_decision",
     "choregraph_core::step",
+    "choregraph_core::step_concrete",
     "choregraph_core::would_create_cycle",
 ];
 const FORBIDDEN_AUTHORITY_TOKENS: &[&str] = &[
     "std::fs",
     "std::net",
     "std::process",
+    "std::env",
+    "std::time",
     "SystemTime",
     "Command::new",
     "cap_std",

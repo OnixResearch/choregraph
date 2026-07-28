@@ -23,7 +23,7 @@ const MAX_ARTIFACT_BYTES: usize = 16_777_216;
 const MAX_TOTAL_ARTIFACT_BYTES: usize = 67_108_864;
 const MAX_MANIFEST_BYTES: usize = 1_048_576;
 const MAX_SOURCE_ARCHIVE_BYTES: usize = 33_554_432;
-const ARTIFACT_COUNT: usize = 30;
+const ARTIFACT_COUNT: usize = 36;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ReleaseArtifactSpec {
@@ -43,6 +43,14 @@ pub const RELEASE_ARTIFACTS: [ReleaseArtifactSpec; ARTIFACT_COUNT] = [
     ReleaseArtifactSpec {
         role: ReleaseRole::MachineSchema,
         relative_path: "schemas/preserves/choregraph-machine-v1.preserves",
+    },
+    ReleaseArtifactSpec {
+        role: ReleaseRole::ConcreteMachineSchema,
+        relative_path: "schemas/preserves/choregraph-machine-v2.preserves",
+    },
+    ReleaseArtifactSpec {
+        role: ReleaseRole::ConcreteIntentSchema,
+        relative_path: "schemas/preserves/choregraph-concrete-intent-v2.preserves",
     },
     ReleaseArtifactSpec {
         role: ReleaseRole::LinkReceiptSchema,
@@ -105,6 +113,18 @@ pub const RELEASE_ARTIFACTS: [ReleaseArtifactSpec; ARTIFACT_COUNT] = [
         relative_path: "fixtures/kamacite/positive/machine.preserves",
     },
     ReleaseArtifactSpec {
+        role: ReleaseRole::KamaciteConcreteMachine,
+        relative_path: "fixtures/kamacite/positive/machine-v2.preserves",
+    },
+    ReleaseArtifactSpec {
+        role: ReleaseRole::KamaciteConcreteIntent,
+        relative_path: "fixtures/kamacite/positive/concrete-intent-v2.preserves",
+    },
+    ReleaseArtifactSpec {
+        role: ReleaseRole::KamaciteConcreteIntentReceipt,
+        relative_path: "fixtures/kamacite/positive/concrete-intent.receipt.preserves",
+    },
+    ReleaseArtifactSpec {
         role: ReleaseRole::KamaciteLifecycle,
         relative_path: "fixtures/kamacite/positive/lifecycle.preserves",
     },
@@ -139,6 +159,10 @@ pub const RELEASE_ARTIFACTS: [ReleaseArtifactSpec; ARTIFACT_COUNT] = [
     ReleaseArtifactSpec {
         role: ReleaseRole::LatticeDownstream,
         relative_path: "cairn/archive/1970-01-01-add-seaglass-lattice-conformance/evidence/lattice-downstream-validation-2026-07-27.md",
+    },
+    ReleaseArtifactSpec {
+        role: ReleaseRole::LatticeConcreteHandoff,
+        relative_path: "fixtures/lattice-handoff/consumer.rs",
     },
     ReleaseArtifactSpec {
         role: ReleaseRole::CairnReceipt,

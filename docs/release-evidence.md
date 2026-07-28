@@ -6,14 +6,14 @@ Choregraph release evidence uses a pure deterministic linkage core and a separat
 
 `choregraph-release` is `no_std + alloc`. It reads no files, starts no process, uses no clock, accesses no network, and has no publication authority.
 
-The core defines 30 closed artifact roles for:
+The core defines 36 closed artifact roles for:
 
-- source, license, schemas, production source, and built library;
+- source, license, v1 and v2 schemas, production source, and built library;
 - single-step and trace proof sources and results;
 - trusted surface and Rust, Verus, solver, Nickel, Nix, and Cargo identities;
-- Kamacite machine, lifecycle, trace, exhaustiveness, source, and proof-reference artifacts;
+- Kamacite v1 machine, v2 machine, concrete intent, concrete receipt, lifecycle, trace, source, and proof artifacts;
 - positive and negative fixtures;
-- execution-graph parity and Lattice downstream evidence;
+- execution-graph parity, Lattice downstream evidence, and the concrete-intent handoff;
 - Cairn, Octet, and Nix gate receipts.
 
 Each role has one required schema and status. A complete bundle has each role exactly once.
@@ -36,11 +36,13 @@ The pure verifier rebuilds the expected bundle from current observations. It com
 
 Validation fails for missing, duplicate, malformed, stale, skipped, unsupported, mismatched, or overclaimed evidence.
 
-`choregraph-cli write-release-bundle` reads 30 fixed relative paths through capability roots. It enforces input bounds and publishes one local manifest without replacement.
+`choregraph-cli write-release-bundle` reads 36 fixed relative paths through capability roots. It enforces input bounds and publishes one local manifest without replacement.
 
 `choregraph-cli verify-release-bundle` reopens the artifact and manifest roots. It rebuilds the expected bundle and requires exact manifest-byte equality. It does not trust a recorded identity without current artifact bytes.
 
 The checked-in manifest is `evidence/release/generated/choregraph.release.bundle`. The adjacent BLAKE3 file identifies the manifest bytes, not the internal bundle framing.
+
+The current v2 bundle identity is `e9318450dfbf245d8f05d5910ae00fc661c2694f870708891ac5eedb5a4b3027`. It is local release evidence only.
 
 ## Valence projection
 
@@ -78,6 +80,8 @@ That candidate is published as `rad:zL2ncTUeASVYwcoGkEXv9JKgGbAF`. The exact rea
 The compiler-compatibility candidate is `evidence/release/compatibility-publication-candidate.ncl`. It binds source revision `81b260da2256147ec82cb5dd44c0a0c1dcb7500d`, source archive `41adfbdae4bc5b688ef92ab11cd39ed9c8f572bf6214f522d9b4a1290e5f84d5`, and release bundle `6912c485313908411040fa533bd75a1cfd2611d7589605268ae111b3ba1472bc`. Its rollback revision is the published source revision.
 
 The operator separately authorized publication of the unchanged compatibility candidate. `evidence/release/compatibility-publication-receipt.ncl` binds it to the existing RID, current parent-feature signed refs, three observed replicas, and exact HTTPS acquisition.
+
+The v2 concrete-effect source and bundle have no publication authority. Publication requires a new exact source revision, archive identity, candidate, and operator authorization.
 
 Radicle `main` and `candidate` now resolve to `81b260da2256147ec82cb5dd44c0a0c1dcb7500d`. The earlier candidate and publication receipt remain unchanged.
 

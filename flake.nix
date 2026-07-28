@@ -275,6 +275,7 @@
                 for fixture in verus/failure-fixtures/*.rs; do
                   fixture_name="$(basename "$fixture")"
                   case "$fixture_name" in
+                    concrete_reference_mutation.rs) expected='result.payload_reference' ;;
                     denial_with_intent.rs) expected='result.intent_indices@.len()' ;;
                     premature_readiness.rs) expected='dependencies_complete_spec' ;;
                     state_map_mismatch.rs) expected='indexed_invariant_spec' ;;
@@ -306,6 +307,12 @@
                   crates/choregraph-core/src/transition.rs)" -eq 2
                 grep -F 'crate::verified::lifecycle_target(' \
                   crates/choregraph-core/src/transition.rs > /dev/null
+                test "$(grep -F -c 'crate::verified::concrete_binding_accepts(' \
+                  crates/choregraph-core/src/concrete.rs)" -eq 2
+                grep -F 'request_reference: request_binding.reference' \
+                  crates/choregraph-core/src/concrete.rs > /dev/null
+                grep -F 'payload_reference: payload_binding.reference' \
+                  crates/choregraph-core/src/concrete.rs > /dev/null
                 grep -F 'crate::verified_topology::admitted_graph_valid(' \
                   crates/choregraph-core/src/invariant.rs > /dev/null
                 if grep -F '(LocalState::Pending, Action::MarkReady)' \
@@ -326,8 +333,8 @@
                 jq --exit-status '
                   .proof.schema == "choregraph.single-step-proof.v1"
                   and .proof.status == "verified"
-                  and (.proof.theorems | length) == 6
-                  and (.proof.negative_fixtures | length) == 6
+                  and (.proof.theorems | length) == 7
+                  and (.proof.negative_fixtures | length) == 7
                   and .proof.trusted_surface.project_trusted_declarations == []
                   and (.proof.non_claims | length) > 0
                 ' "$TMPDIR/proof-manifest.json" > /dev/null
@@ -424,6 +431,10 @@
                   crates/choregraph-core/src/transition.rs > /dev/null
                 grep -F 'Decision::Accept { next, intents: _ }' \
                   crates/choregraph-core/src/transition.rs > /dev/null
+                grep -F 'match step_concrete(input.machine, &last_valid_state, event)' \
+                  crates/choregraph-core/src/transition.rs > /dev/null
+                grep -F 'ConcreteDecision::Accept { next, intents: _ }' \
+                  crates/choregraph-core/src/transition.rs > /dev/null
                 grep -F '../../crates/choregraph-core/src/verified.rs' \
                   verus/proofs/trace_replay.rs > /dev/null
                 grep -F '../../crates/choregraph-core/src/verified/trace.rs' \
@@ -453,6 +464,7 @@
                   and .proof.status == "verified"
                   and .proof.limits.max_trace_events == ${toString defaultMaxTraceEvents}
                   and .proof.limits.trace_binding_bytes == ${toString traceBindingBytes}
+                  and (.proof.machine_schemas | length) == 2
                   and (.proof.theorems | length) == 7
                   and (.proof.negative_fixtures | length) == 4
                   and .proof.trusted_surface.project_trusted_declarations == []
@@ -694,6 +706,12 @@
                 expected_machine_schema_hash="$(jq --raw-output '.profile.machine_schema_source_blake3' "$TMPDIR/kamacite-corpus.json")"
                 observed_machine_schema_hash="$(b3sum schemas/preserves/choregraph-machine-v1.preserves)"
                 test "''${observed_machine_schema_hash%% *}" = "$expected_machine_schema_hash"
+                expected_concrete_machine_schema_hash="$(jq --raw-output '.profile.concrete_machine_schema_source_blake3' "$TMPDIR/kamacite-corpus.json")"
+                observed_concrete_machine_schema_hash="$(b3sum schemas/preserves/choregraph-machine-v2.preserves)"
+                test "''${observed_concrete_machine_schema_hash%% *}" = "$expected_concrete_machine_schema_hash"
+                expected_concrete_intent_schema_hash="$(jq --raw-output '.profile.concrete_intent_schema_source_blake3' "$TMPDIR/kamacite-corpus.json")"
+                observed_concrete_intent_schema_hash="$(b3sum schemas/preserves/choregraph-concrete-intent-v2.preserves)"
+                test "''${observed_concrete_intent_schema_hash%% *}" = "$expected_concrete_intent_schema_hash"
                 expected_link_schema_hash="$(jq --raw-output '.profile.link_receipt_schema_source_blake3' "$TMPDIR/kamacite-corpus.json")"
                 observed_link_schema_hash="$(b3sum schemas/preserves/choregraph-link-receipt-v1.preserves)"
                 test "''${observed_link_schema_hash%% *}" = "$expected_link_schema_hash"

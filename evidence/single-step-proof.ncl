@@ -55,7 +55,7 @@ let ProofManifest = {
   proof | ProofManifest = {
     schema = "choregraph.single-step-proof.v1",
     status = "verified",
-    claim = "The production-called indexed kernel admits bounded graph views and preserves its named single-step invariants.",
+    claim = "The production-called indexed kernel preserves bounded state, declared intent membership, concrete binding decisions, and reference witnesses.",
     positive_command_argv = [
       "octet-production-verus",
       "--crate-type=lib",
@@ -93,6 +93,7 @@ let ProofManifest = {
     theorems = [
       "accepted_step_preserves_invariant_and_effects",
       "admitted_topology_has_each_node_once_and_edges_forward",
+      "concrete binding and reference preservation witnesses",
       "denial_has_no_replacement_or_intents",
       "equal_explicit_inputs_have_equal_decisions",
       "indexed_step executable refinement postconditions",
@@ -101,7 +102,7 @@ let ProofManifest = {
     sources = [
       {
         path = "Cargo.lock",
-        blake3 = "2a08fd00a3fb21198bd2dfc45c554ccb0c142b44b95d05f7eaf1b9036406ad6f",
+        blake3 = "cfcb76953e7991d53b201b1fd660fc3f94ad792e8b7065a1f9d2a2a32783f114",
         role = "resolved Rust dependency identity",
       },
       {
@@ -121,32 +122,37 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/admission.rs",
-        blake3 = "0e96e43f159de5a514a16b3e779cf9591540a1f2018ecdbcfcf336b55443bd17",
+        blake3 = "db788ac62571e4b90789a33ea02adfb7025cef04d5b7d8c704498a07f4cf15af",
         role = "production indexed graph construction",
       },
       {
+        path = "crates/choregraph-core/src/concrete.rs",
+        blake3 = "df6f54b8c7b53b93dfa51de49fb454b7d5c0f82b3dc11e75d066c0eb45adffde",
+        role = "production concrete binding resolver and exact intent construction",
+      },
+      {
         path = "crates/choregraph-core/src/invariant.rs",
-        blake3 = "4c5c5c7e7cc021e88292613f93d4f2215e9f50eff734d2996e5364871c0f5e74",
+        blake3 = "6f33222c644b3e683211c837bd1e896bbd8f19c4861307da860bffadca21d6ce",
         role = "production graph and post-step gates",
       },
       {
         path = "crates/choregraph-core/src/lib.rs",
-        blake3 = "f491db7f9671a151f7985384cc7a937db21b271d44299455a6211ce7dc377b5a",
+        blake3 = "38637787398767cb61bea49499171b42c9d568166592199b34c7aaf0b255a0c8",
         role = "production module linkage",
       },
       {
         path = "crates/choregraph-core/src/model.rs",
-        blake3 = "883ff13ba2ef4c81629767449522519302433f742e984b1d720359b939fc7b76",
+        blake3 = "054759627c005d7cdb3c4bff7f7dd50533476fa7052298f2f27a3226ee7e8b6c",
         role = "production indexed machine fields",
       },
       {
         path = "crates/choregraph-core/src/transition.rs",
-        blake3 = "7fb94f703451facdad98fc3d4e3b2d4b9c4834df4dde439941074dec6bf49ddb",
+        blake3 = "ac6e019fe15f9995adf26b41009d3295b1d69e9e22d30f1eb32970a22312f4ef",
         role = "production transition shell and kernel delegation",
       },
       {
         path = "crates/choregraph-core/src/verified.rs",
-        blake3 = "dca1071b89410ac4193190f78fa68207528712d37a4dafe2a992bf9ef7b43246",
+        blake3 = "ce2cc20ba8550e8111419cf5821553ad928150dab52e9505afb5a16800faa57e",
         role = "production-called verified transition kernel",
       },
       {
@@ -166,8 +172,13 @@ let ProofManifest = {
       },
       {
         path = "flake.nix",
-        blake3 = "d2bb2869b80ccfa6e9d44a9093703e791b026b4f3a2e85b0f7bd0ec42b216b49",
+        blake3 = "5df5966236fd4817e1c8e37e8e893982a7832226d1004359e93e51fdec2db38c",
         role = "maintained proof and failure-fixture gate",
+      },
+      {
+        path = "verus/failure-fixtures/concrete_reference_mutation.rs",
+        blake3 = "5a9a398c120f48e41c5e7243d63c7c28515b5f357f8e35f0fcf2dda50e22f00e",
+        role = "negative concrete reference preservation fixture",
       },
       {
         path = "verus/failure-fixtures/denial_with_intent.rs",
@@ -206,6 +217,11 @@ let ProofManifest = {
       },
     ],
     negative_fixtures = [
+      {
+        path = "verus/failure-fixtures/concrete_reference_mutation.rs",
+        expected_diagnostic = "postcondition not satisfied: result.payload_reference",
+        violated_obligation = "a concrete payload reference changes after acceptance",
+      },
       {
         path = "verus/failure-fixtures/denial_with_intent.rs",
         expected_diagnostic = "postcondition not satisfied: result.intent_indices@.len()",
@@ -247,6 +263,7 @@ let ProofManifest = {
       ],
       adapter_boundary = [
         "Identifier parsing and BTreeMap-to-index conversion are executable Rust and are not Verus-proved.",
+        "Canonical references are abstract proof tokens; Kamacite checks bytes and BLAKE3 identities outside Verus.",
         "The public shell accepts only an accepted indexed decision and reruns invariant and effect checks after conversion.",
         "The proof starts at admitted indexed graph and state views, not at arbitrary source text or Nickel evaluation.",
       ],

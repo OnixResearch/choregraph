@@ -28,7 +28,7 @@ const HEX_CHARACTERS_PER_BYTE: usize = 2;
 const DIGEST_HEX_BYTES: usize = 64;
 const NIBBLE_SHIFT_BITS: u32 = 4;
 const HEX_ALPHA_OFFSET: u8 = 10;
-const REQUIRED_ROLE_COUNT: usize = 30;
+const REQUIRED_ROLE_COUNT: usize = 36;
 
 pub const REQUIRED_NON_CLAIMS: &[&str] = &[
     "bundle linkage does not prove verifier soundness",
@@ -53,6 +53,8 @@ pub enum ReleaseRole {
     SourceTree,
     License,
     MachineSchema,
+    ConcreteMachineSchema,
+    ConcreteIntentSchema,
     LinkReceiptSchema,
     CoreSource,
     CoreLibrary,
@@ -68,6 +70,9 @@ pub enum ReleaseRole {
     NixInputs,
     DependencyLock,
     KamaciteMachine,
+    KamaciteConcreteMachine,
+    KamaciteConcreteIntent,
+    KamaciteConcreteIntentReceipt,
     KamaciteLifecycle,
     KamaciteTraceReceipt,
     KamaciteExhaustivenessReceipt,
@@ -77,6 +82,7 @@ pub enum ReleaseRole {
     NegativeFixtureCorpus,
     ExecutionGraphParity,
     LatticeDownstream,
+    LatticeConcreteHandoff,
     CairnReceipt,
     OctetReceipt,
     NixReceipt,
@@ -86,6 +92,8 @@ pub const REQUIRED_ROLES: [ReleaseRole; REQUIRED_ROLE_COUNT] = [
     ReleaseRole::SourceTree,
     ReleaseRole::License,
     ReleaseRole::MachineSchema,
+    ReleaseRole::ConcreteMachineSchema,
+    ReleaseRole::ConcreteIntentSchema,
     ReleaseRole::LinkReceiptSchema,
     ReleaseRole::CoreSource,
     ReleaseRole::CoreLibrary,
@@ -101,6 +109,9 @@ pub const REQUIRED_ROLES: [ReleaseRole; REQUIRED_ROLE_COUNT] = [
     ReleaseRole::NixInputs,
     ReleaseRole::DependencyLock,
     ReleaseRole::KamaciteMachine,
+    ReleaseRole::KamaciteConcreteMachine,
+    ReleaseRole::KamaciteConcreteIntent,
+    ReleaseRole::KamaciteConcreteIntentReceipt,
     ReleaseRole::KamaciteLifecycle,
     ReleaseRole::KamaciteTraceReceipt,
     ReleaseRole::KamaciteExhaustivenessReceipt,
@@ -110,6 +121,7 @@ pub const REQUIRED_ROLES: [ReleaseRole; REQUIRED_ROLE_COUNT] = [
     ReleaseRole::NegativeFixtureCorpus,
     ReleaseRole::ExecutionGraphParity,
     ReleaseRole::LatticeDownstream,
+    ReleaseRole::LatticeConcreteHandoff,
     ReleaseRole::CairnReceipt,
     ReleaseRole::OctetReceipt,
     ReleaseRole::NixReceipt,
@@ -122,6 +134,8 @@ impl ReleaseRole {
             Self::SourceTree => "source-tree",
             Self::License => "license",
             Self::MachineSchema => "machine-schema",
+            Self::ConcreteMachineSchema => "concrete-machine-schema",
+            Self::ConcreteIntentSchema => "concrete-intent-schema",
             Self::LinkReceiptSchema => "link-receipt-schema",
             Self::CoreSource => "core-source",
             Self::CoreLibrary => "core-library",
@@ -137,6 +151,9 @@ impl ReleaseRole {
             Self::NixInputs => "nix-inputs",
             Self::DependencyLock => "dependency-lock",
             Self::KamaciteMachine => "kamacite-machine",
+            Self::KamaciteConcreteMachine => "kamacite-concrete-machine",
+            Self::KamaciteConcreteIntent => "kamacite-concrete-intent",
+            Self::KamaciteConcreteIntentReceipt => "kamacite-concrete-intent-receipt",
             Self::KamaciteLifecycle => "kamacite-lifecycle",
             Self::KamaciteTraceReceipt => "kamacite-trace-receipt",
             Self::KamaciteExhaustivenessReceipt => "kamacite-exhaustiveness-receipt",
@@ -146,6 +163,7 @@ impl ReleaseRole {
             Self::NegativeFixtureCorpus => "negative-fixture-corpus",
             Self::ExecutionGraphParity => "execution-graph-parity",
             Self::LatticeDownstream => "lattice-downstream",
+            Self::LatticeConcreteHandoff => "lattice-concrete-handoff",
             Self::CairnReceipt => "cairn-receipt",
             Self::OctetReceipt => "octet-receipt",
             Self::NixReceipt => "nix-receipt",
@@ -314,8 +332,13 @@ impl ReleaseFailure {
 pub const fn expected_status(role: ReleaseRole) -> ArtifactStatus {
     match role {
         ReleaseRole::MachineSchema
+        | ReleaseRole::ConcreteMachineSchema
+        | ReleaseRole::ConcreteIntentSchema
         | ReleaseRole::LinkReceiptSchema
         | ReleaseRole::KamaciteMachine
+        | ReleaseRole::KamaciteConcreteMachine
+        | ReleaseRole::KamaciteConcreteIntent
+        | ReleaseRole::KamaciteConcreteIntentReceipt
         | ReleaseRole::KamaciteLifecycle
         | ReleaseRole::KamaciteTraceReceipt
         | ReleaseRole::KamaciteExhaustivenessReceipt
@@ -343,7 +366,8 @@ pub const fn expected_status(role: ReleaseRole) -> ArtifactStatus {
         | ReleaseRole::NixInputs
         | ReleaseRole::DependencyLock
         | ReleaseRole::PositiveFixtureCorpus
-        | ReleaseRole::NegativeFixtureCorpus => ArtifactStatus::Observed,
+        | ReleaseRole::NegativeFixtureCorpus
+        | ReleaseRole::LatticeConcreteHandoff => ArtifactStatus::Observed,
     }
 }
 
@@ -353,6 +377,8 @@ pub const fn expected_schema(role: ReleaseRole) -> &'static str {
         ReleaseRole::SourceTree => "choregraph.source-baseline.v1",
         ReleaseRole::License => "spdx.license-text.v1",
         ReleaseRole::MachineSchema => "choregraph.machine-schema.v1",
+        ReleaseRole::ConcreteMachineSchema => "choregraph.machine-schema.v2",
+        ReleaseRole::ConcreteIntentSchema => "choregraph.concrete-intent-schema.v2",
         ReleaseRole::LinkReceiptSchema => "choregraph.link-receipt-schema.v1",
         ReleaseRole::CoreSource => "rust.source.v1",
         ReleaseRole::CoreLibrary => "rust.library-artifact.v1",
@@ -368,6 +394,9 @@ pub const fn expected_schema(role: ReleaseRole) -> &'static str {
         ReleaseRole::NixInputs => "nix.flake-inputs.v1",
         ReleaseRole::DependencyLock => "cargo.lock.v1",
         ReleaseRole::KamaciteMachine => "choregraph.machine.v1",
+        ReleaseRole::KamaciteConcreteMachine => "choregraph.machine.v2",
+        ReleaseRole::KamaciteConcreteIntent => "choregraph.concrete-intent.v2",
+        ReleaseRole::KamaciteConcreteIntentReceipt => "choregraph.concrete-intent-receipt.v1",
         ReleaseRole::KamaciteLifecycle => "choregraph.lifecycle-fsm.v1",
         ReleaseRole::KamaciteTraceReceipt => "choregraph.fsm-trace-receipt.v1",
         ReleaseRole::KamaciteExhaustivenessReceipt => "choregraph.fsm-exhaustiveness-receipt.v1",
@@ -377,6 +406,7 @@ pub const fn expected_schema(role: ReleaseRole) -> &'static str {
         ReleaseRole::NegativeFixtureCorpus => "choregraph.negative-fixture-corpus.v1",
         ReleaseRole::ExecutionGraphParity => "choregraph.execution-graph-parity.v1",
         ReleaseRole::LatticeDownstream => "choregraph.lattice-downstream.v1",
+        ReleaseRole::LatticeConcreteHandoff => "choregraph.lattice-concrete-handoff.v1",
         ReleaseRole::CairnReceipt => "cairn.validation-receipt.v1",
         ReleaseRole::OctetReceipt => "octet.validation-receipt.v1",
         ReleaseRole::NixReceipt => "nix.flake-check-receipt.v1",
@@ -560,16 +590,21 @@ const fn projection_role(role: ReleaseRole) -> &'static str {
             "presented-proof-result"
         }
         ReleaseRole::MachineSchema
+        | ReleaseRole::ConcreteMachineSchema
+        | ReleaseRole::ConcreteIntentSchema
         | ReleaseRole::LinkReceiptSchema
         | ReleaseRole::KamaciteMachine
+        | ReleaseRole::KamaciteConcreteMachine
+        | ReleaseRole::KamaciteConcreteIntent
+        | ReleaseRole::KamaciteConcreteIntentReceipt
         | ReleaseRole::KamaciteLifecycle
         | ReleaseRole::KamaciteTraceReceipt
         | ReleaseRole::KamaciteExhaustivenessReceipt
         | ReleaseRole::KamaciteSourceReceipt
         | ReleaseRole::KamaciteProofReferenceReceipt => "canonical-artifact",
-        ReleaseRole::ExecutionGraphParity | ReleaseRole::LatticeDownstream => {
-            "conformance-observation"
-        }
+        ReleaseRole::ExecutionGraphParity
+        | ReleaseRole::LatticeDownstream
+        | ReleaseRole::LatticeConcreteHandoff => "conformance-observation",
         ReleaseRole::CairnReceipt | ReleaseRole::OctetReceipt | ReleaseRole::NixReceipt => {
             "gate-observation"
         }

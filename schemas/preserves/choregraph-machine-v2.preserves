@@ -1,0 +1,56 @@
+; Choregraph bounded concrete-effect machine descriptor v2.
+; Canonical packed Preserves bytes are the authority.
+
+ConcreteMachineDescriptorV2 = <choregraph-machine-v2 {
+  schema_version: 1,
+  machine_schema: "choregraph.machine.v2",
+  lifecycle_profile_id: "choregraph.lifecycle.linear.v1",
+  limits: DescriptorLimits,
+  nodes: [DescriptorNode ...],
+  edges: [DescriptorEdge ...],
+  effects: [DescriptorConcreteEffectV2 ...],
+  checked_laws: [string ...],
+  non_claims: [string ...]
+}>
+
+DescriptorConcreteEffectV2 = <DescriptorConcreteEffectV2 {
+  declaration_key: string,
+  node_id: string,
+  from_state: string,
+  action: string,
+  operation: string,
+  resource: string,
+  ability: string,
+  request_binding: DescriptorReferenceBindingV2,
+  payload_binding: DescriptorReferenceBindingV2
+}>
+
+DescriptorReferenceBindingV2 = <DescriptorReferenceBindingV2 {
+  mode: "exact" / "slot",
+  profile: "choregraph.packed-preserves.v1" / null,
+  identity: string / null,
+  slot_id: string / null,
+  source_ref: string / null
+}>
+
+DescriptorLimits = <DescriptorLimits {
+  max_nodes: integer,
+  max_edges: integer,
+  max_operations: integer,
+  max_effect_declarations: integer,
+  max_identifier_bytes: integer,
+  max_reference_bytes: integer,
+  max_event_bytes: integer,
+  max_intent_bytes: integer,
+  max_intents_per_transition: integer
+}>
+
+DescriptorNode = <DescriptorNode {
+  node_id: string,
+  operations: [string ...]
+}>
+
+DescriptorEdge = <DescriptorEdge {
+  source: string,
+  target: string
+}>
