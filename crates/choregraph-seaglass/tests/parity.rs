@@ -4,6 +4,9 @@
     reason = "parity fixtures use legacy collection signatures directly for readable comparisons"
 )]
 
+// r[verify choregraph.conformance.sources]
+// r[verify choregraph.conformance.inventory]
+// r[verify choregraph.conformance.parity]
 use std::collections::{BTreeMap, BTreeSet};
 
 const NODE_A: &str = "a";

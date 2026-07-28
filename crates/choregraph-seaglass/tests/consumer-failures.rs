@@ -5,6 +5,7 @@
     reason = "consumer failure fixtures use runtime test-harness entry points and explicit public boundary imports"
 )]
 
+// r[verify choregraph.conformance.negative]
 use choregraph_core::{
     Action, BoundedTrace, ConsumedCount, Decision, DenialReason, EffectIntent, EffectRequest,
     Event, EventIndex, LocalState, MachineState, ReplayBindings, ReplayDecision,

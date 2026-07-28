@@ -6,8 +6,16 @@
     reason = "the source architecture fixture collects finite static token inventories and one bounded test manifest"
 )]
 
+// r[verify choregraph.conformance.downstream]
+// r[verify choregraph.conformance.single_implementation]
+// r[verify choregraph.conformance.cutover]
+// r[verify choregraph.conformance.authority]
+// r[verify choregraph.conformance.validation]
 const ADAPTER_SOURCE: &str = include_str!("../src/lib.rs");
 const ADAPTER_MANIFEST: &str = include_str!("../Cargo.toml");
+const DOWNSTREAM_CHECK_SOURCE: &str = include_str!("../../../tools/check-lattice-downstream.rs");
+const REVIEWED_LATTICE_REVISION: &str = "c8d56ad83a57287064edb85f58808f53e4bf4536";
+const DOWNSTREAM_TEST_COMMAND: &str = ".arg(\"test\")";
 const DEPENDENCY_HEADER: &str = "[dependencies]";
 const DEV_DEPENDENCY_HEADER: &str = "[dev-dependencies]";
 const REQUIRED_PRODUCTION_DEPENDENCY: &str = "choregraph-core.workspace = true";
@@ -105,6 +113,8 @@ fn audit_manifest(manifest: &str) -> Vec<BoundaryViolation<'_>> {
 fn production_adapter_delegates_without_runtime_authority() {
     assert_eq!(audit_source(ADAPTER_SOURCE), Vec::new());
     assert_eq!(audit_manifest(ADAPTER_MANIFEST), Vec::new());
+    assert!(DOWNSTREAM_CHECK_SOURCE.contains(REVIEWED_LATTICE_REVISION));
+    assert!(DOWNSTREAM_CHECK_SOURCE.contains(DOWNSTREAM_TEST_COMMAND));
 }
 
 #[test]

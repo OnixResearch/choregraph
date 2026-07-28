@@ -5,6 +5,7 @@
     reason = "the conformance fixture uses runtime test-harness entry points and explicit public boundary imports"
 )]
 
+// r[verify choregraph.conformance.lattice]
 use choregraph_core::{
     Action, AdmittedMachine, Decision, DenialReason, EffectRequest, Event, LocalState,
     MachineState, ready_nodes, step,

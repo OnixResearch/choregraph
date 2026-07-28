@@ -7,6 +7,8 @@
 
 extern crate alloc;
 
+// r[impl choregraph.conformance.adapter]
+// r[impl choregraph.conformance.inventory]
 use alloc::collections::BTreeMap;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
