@@ -95,6 +95,7 @@ pub fn resume_decision(
     match local_state {
         LocalState::Completed => ResumeDecision::SkipCompleted,
         LocalState::Failed | LocalState::Cancelled => ResumeDecision::RejectTerminalMutation,
+        LocalState::Suspended => ResumeDecision::AwaitSignal,
         LocalState::Pending | LocalState::Ready | LocalState::Running => {
             if has_failed_dependency(machine, state, node_id) {
                 ResumeDecision::BlockedByFailedDependency

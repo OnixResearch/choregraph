@@ -11,6 +11,8 @@
 // r[impl choregraph.machine.parameterized_state]
 // r[impl choregraph.machine.effect_intents]
 // r[impl choregraph.machine.denial]
+// r[impl choregraph.machine.suspension_profile]
+// r[impl choregraph.machine.suspension_boundary]
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::string::String;
 use alloc::vec::Vec;
@@ -18,11 +20,13 @@ use alloc::vec::Vec;
 use crate::concrete::ConcreteEffectDeclaration;
 use crate::id::{
     AbilityId, DeclarationKey, NodeId, OperationId, PayloadRef, RequestId, ResourceId,
+    SuspensionClass,
 };
 
 pub const MACHINE_SCHEMA_V1: &str = "choregraph.machine.v1";
 pub const MACHINE_SCHEMA_V2: &str = "choregraph.machine.v2";
 pub const LINEAR_LIFECYCLE_V1: &str = "choregraph.lifecycle.linear.v1";
+pub const DURABLE_SUSPENSION_V1: &str = "choregraph.lifecycle.durable-suspension.v1";
 
 pub const DEFAULT_MAX_NODES: usize = 4_096;
 pub const DEFAULT_MAX_EDGES: usize = 16_384;
@@ -37,6 +41,11 @@ pub const DEFAULT_MAX_TRACE_EVENTS: u64 = 65_536;
 pub const TRACE_BINDING_BYTES: usize = 32;
 
 /// Bounded admission and transition limits selected by the caller.
+///
+/// Suspension classes share `max_identifier_bytes` (a class is a bounded
+/// identifier) and suspension references share `max_reference_bytes` (a
+/// reference is a canonical BLAKE3 reference). No separate suspension limit
+/// exists, so v1 limit descriptors stay byte-identical.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct AdmissionLimits {
     pub max_nodes: usize,
@@ -101,6 +110,10 @@ impl EdgeSpec {
 }
 
 /// Local lifecycle states for one admitted node.
+///
+/// `Suspended` is reachable only under [`DURABLE_SUSPENSION_V1`]. The bounded
+/// suspension facts live in [`MachineState`] suspension records, not in this
+/// state tag, so this enum stays `Copy`.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum LocalState {
     Pending,
@@ -109,9 +122,13 @@ pub enum LocalState {
     Completed,
     Failed,
     Cancelled,
+    Suspended,
 }
 
-/// Events supported by the linear lifecycle profile.
+/// Events supported by the admitted lifecycle profile.
+///
+/// `Suspend` and `ResumeSignal` have a target only under
+/// [`DURABLE_SUSPENSION_V1`]. Both actions always reject effect requests.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Action {
     MarkReady,
@@ -119,6 +136,8 @@ pub enum Action {
     Complete,
     Fail,
     Cancel,
+    Suspend,
+    ResumeSignal,
 }
 
 /// A local lifecycle transition failure.
@@ -155,6 +174,7 @@ pub struct MachineSpec {
     pub nodes: Vec<NodeSpec>,
     pub edges: Vec<EdgeSpec>,
     pub effects: Vec<EffectDeclarationSpec>,
+    pub suspensions: Vec<SuspensionDeclarationSpec>,
 }
 
 impl MachineSpec {
@@ -166,8 +186,42 @@ impl MachineSpec {
             nodes,
             edges,
             effects: Vec::new(),
+            suspensions: Vec::new(),
         }
     }
+}
+
+/// One untrusted durable-suspension declaration for restart-time state.
+///
+/// The class and reference are opaque bounded facts. Choregraph never parses
+/// approvers, policies, credentials, clocks, or product payloads from them.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SuspensionDeclarationSpec {
+    pub node_id: String,
+    pub class: String,
+    pub reference: String,
+}
+
+/// One exact admitted suspension declaration.
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct SuspensionDeclaration {
+    pub node_id: NodeId,
+    pub class: SuspensionClass,
+    pub reference: PayloadRef,
+}
+
+/// One exact suspension record bound to a suspended node in machine state.
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct SuspensionRecord {
+    pub class: SuspensionClass,
+    pub reference: PayloadRef,
+}
+
+/// The raw suspension fact carried by one suspend or resume-signal event.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SuspensionFactSpec {
+    pub class: String,
+    pub reference: String,
 }
 
 /// The selected machine schema after admission.
@@ -181,6 +235,7 @@ pub enum MachineSchema {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum LifecycleProfile {
     LinearV1,
+    DurableSuspensionV1,
 }
 
 /// One admitted immutable node.
@@ -238,6 +293,8 @@ pub struct AdmittedMachine {
     pub(crate) concrete_effects: Vec<ConcreteEffectDeclaration>,
     pub(crate) concrete_effect_key_indices: BTreeMap<DeclarationKey, usize>,
     pub(crate) concrete_effect_route_indices: BTreeMap<EffectKey, Vec<usize>>,
+    pub(crate) suspension_declarations: Vec<SuspensionDeclaration>,
+    pub(crate) suspension_declaration_indices: BTreeMap<NodeId, usize>,
 }
 
 impl AdmittedMachine {
@@ -305,6 +362,18 @@ impl AdmittedMachine {
     }
 
     #[must_use]
+    pub fn suspension_declarations(&self) -> &[SuspensionDeclaration] {
+        &self.suspension_declarations
+    }
+
+    #[must_use]
+    pub fn suspension_declaration(&self, node_id: &NodeId) -> Option<&SuspensionDeclaration> {
+        self.suspension_declaration_indices
+            .get(node_id)
+            .and_then(|index| self.suspension_declarations.get(*index))
+    }
+
+    #[must_use]
     pub fn initial_state(&self) -> MachineState {
         let entries = self
             .node_order
@@ -312,20 +381,53 @@ impl AdmittedMachine {
             .cloned()
             .map(|node_id| (node_id, LocalState::Pending))
             .collect();
-        MachineState { entries }
+        MachineState::new(entries)
+    }
+
+    /// Builds the restart state with every admitted suspension declaration
+    /// applied as a suspended node with its exact recorded facts.
+    ///
+    /// This is the durable-resume entrypoint: a consumer re-admits the machine
+    /// after a process exit and reconstructs the recorded wait without
+    /// replaying product history. Choregraph still does not persist anything.
+    #[must_use]
+    pub fn declared_suspension_state(&self) -> MachineState {
+        let mut state = self.initial_state();
+        for declaration in &self.suspension_declarations {
+            state.entries.insert(
+                declaration.node_id.clone(),
+                LocalState::Suspended,
+            );
+            state.suspensions.insert(
+                declaration.node_id.clone(),
+                SuspensionRecord {
+                    class: declaration.class.clone(),
+                    reference: declaration.reference.clone(),
+                },
+            );
+        }
+        state
     }
 }
 
 /// Parameterized aggregate state with one entry per admitted node.
+///
+/// Suspension records exist exactly for nodes in `LocalState::Suspended`.
+/// Machines admitted under `LINEAR_LIFECYCLE_V1` always have an empty
+/// suspension map, which keeps v1 canonical bytes and equality unchanged.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MachineState {
-    entries: BTreeMap<NodeId, LocalState>,
+    pub(crate) entries: BTreeMap<NodeId, LocalState>,
+    pub(crate) suspensions: BTreeMap<NodeId, SuspensionRecord>,
 }
 
 impl MachineState {
     #[must_use]
     pub fn new(entries: BTreeMap<NodeId, LocalState>) -> Self {
-        Self { entries }
+        Self {
+            entries,
+            suspensions: BTreeMap::new(),
+        }
     }
 
     #[must_use]
@@ -336,6 +438,16 @@ impl MachineState {
     #[must_use]
     pub fn state(&self, node_id: &NodeId) -> Option<LocalState> {
         self.entries.get(node_id).copied()
+    }
+
+    #[must_use]
+    pub fn suspensions(&self) -> &BTreeMap<NodeId, SuspensionRecord> {
+        &self.suspensions
+    }
+
+    #[must_use]
+    pub fn suspension(&self, node_id: &NodeId) -> Option<&SuspensionRecord> {
+        self.suspensions.get(node_id)
     }
 }
 
@@ -350,11 +462,15 @@ pub struct EffectRequest {
 }
 
 /// One bounded lifecycle event.
+///
+/// `suspension` carries the opaque class and reference for `Suspend` and
+/// `ResumeSignal` actions. It must be absent for every other action.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Event {
     pub node_id: String,
     pub action: Action,
     pub effects: Vec<EffectRequest>,
+    pub suspension: Option<SuspensionFactSpec>,
 }
 
 impl Event {
@@ -364,6 +480,25 @@ impl Event {
             node_id: node_id.into(),
             action,
             effects: Vec::new(),
+            suspension: None,
+        }
+    }
+
+    #[must_use]
+    pub fn suspension(
+        node_id: impl Into<String>,
+        action: Action,
+        class: impl Into<String>,
+        reference: impl Into<String>,
+    ) -> Self {
+        Self {
+            node_id: node_id.into(),
+            action,
+            effects: Vec::new(),
+            suspension: Some(SuspensionFactSpec {
+                class: class.into(),
+                reference: reference.into(),
+            }),
         }
     }
 }
@@ -623,6 +758,12 @@ pub enum DenialReason {
     ConcreteBindingMismatch,
     ConcreteIntentTooLarge { observed: usize, maximum: usize },
     UnsupportedMachineSchema,
+    UnsupportedProfileAction { action: Action },
+    SuspensionFactMissing,
+    SuspensionFactUnexpected,
+    MalformedSuspensionFact,
+    SuspensionMismatch,
+    SuspensionEffectsForbidden,
     InvariantWouldBreak,
     EffectsNotAllowed,
 }
@@ -667,6 +808,12 @@ pub enum AdmissionDiagnosticCode {
     DuplicateEffectDeclaration,
     DuplicateDeclarationKey,
     DuplicateConcreteEffectDeclaration,
+    DuplicateSuspensionDeclaration,
+    SuspensionDeclarationNodeMissing,
+    SuspensionDeclarationWithoutProfile,
+    MalformedSuspensionClass,
+    MalformedSuspensionReference,
+    SuspensionEffectTransition,
     UnknownReferenceProfile,
     MalformedBinding,
     MalformedReference,
@@ -693,6 +840,9 @@ pub enum InvariantIssue {
     MissingNode(NodeId),
     ExtraNode(NodeId),
     DependenciesIncomplete(NodeId),
+    SuspensionRecordMissing(NodeId),
+    SuspensionRecordUnexpected(NodeId),
+    SuspensionWithoutProfile(NodeId),
 }
 
 /// Resume behavior compatible with the current execution-graph vocabulary.
@@ -700,6 +850,7 @@ pub enum InvariantIssue {
 pub enum ResumeDecision {
     Execute,
     AwaitDependencies,
+    AwaitSignal,
     SkipCompleted,
     RejectTerminalMutation,
     BlockedByFailedDependency,

@@ -368,6 +368,7 @@ fn machine_spec(
         nodes,
         edges,
         effects,
+        suspensions: Vec::new(),
     })
 }
 

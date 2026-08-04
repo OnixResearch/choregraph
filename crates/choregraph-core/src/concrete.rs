@@ -35,7 +35,7 @@ use crate::model::{
     EdgeSpec, EffectKey, LINEAR_LIFECYCLE_V1, LimitKind, MACHINE_SCHEMA_V2, MachineSchema,
     MachineSpec, MachineState, NodeSpec, ReplayBindings, ReplayLimits, TransitionSelector,
 };
-use crate::transition::lifecycle_target;
+use crate::transition::lifecycle_target_for_profile;
 
 pub const CANONICAL_REFERENCE_PROFILE_V1: &str = "choregraph.packed-preserves.v1";
 const EVENT_ACTION_TAG_BYTES: usize = 1;
@@ -127,6 +127,7 @@ pub struct MachineSpecV2 {
     pub nodes: Vec<NodeSpec>,
     pub edges: Vec<EdgeSpec>,
     pub effects: Vec<ConcreteEffectDeclarationSpec>,
+    pub suspensions: Vec<crate::model::SuspensionDeclarationSpec>,
 }
 
 impl MachineSpecV2 {
@@ -138,6 +139,7 @@ impl MachineSpecV2 {
             nodes,
             edges,
             effects: Vec::new(),
+            suspensions: Vec::new(),
         }
     }
 }
@@ -164,6 +166,7 @@ pub struct ConcreteEvent {
     pub node_id: String,
     pub action: Action,
     pub effects: Vec<ConcreteEffectRequest>,
+    pub suspension: Option<crate::model::SuspensionFactSpec>,
 }
 
 impl ConcreteEvent {
@@ -173,6 +176,25 @@ impl ConcreteEvent {
             node_id: node_id.into(),
             action,
             effects: Vec::new(),
+            suspension: None,
+        }
+    }
+
+    #[must_use]
+    pub fn suspension(
+        node_id: impl Into<String>,
+        action: Action,
+        class: impl Into<String>,
+        reference: impl Into<String>,
+    ) -> Self {
+        Self {
+            node_id: node_id.into(),
+            action,
+            effects: Vec::new(),
+            suspension: Some(crate::model::SuspensionFactSpec {
+                class: class.into(),
+                reference: reference.into(),
+            }),
         }
     }
 }
@@ -428,6 +450,7 @@ fn declaration_size(declaration: &ConcreteEffectDeclaration) -> usize {
 fn parse_declaration(
     raw: &ConcreteEffectDeclarationSpec,
     limits: AdmissionLimits,
+    profile: crate::LifecycleProfile,
     diagnostics: &mut Vec<AdmissionDiagnostic>,
 ) -> Option<ConcreteEffectDeclaration> {
     let declaration_key = parse_id::<crate::id::DeclarationDomain>(
@@ -456,7 +479,18 @@ fn parse_declaration(
         parse_binding(&raw.request_binding, limits, "request-binding", diagnostics)?;
     let payload_binding =
         parse_binding(&raw.payload_binding, limits, "payload-binding", diagnostics)?;
-    if lifecycle_target(raw.transition.from, raw.transition.action).is_err() {
+    if matches!(
+        raw.transition.action,
+        crate::Action::Suspend | crate::Action::ResumeSignal
+    ) {
+        diagnostics.push(diagnostic(
+            AdmissionDiagnosticCode::SuspensionEffectTransition,
+            "effect-transition",
+        ));
+        return None;
+    }
+    if lifecycle_target_for_profile(profile, raw.transition.from, raw.transition.action).is_err()
+    {
         diagnostics.push(diagnostic(
             AdmissionDiagnosticCode::InvalidEffectTransition,
             "effect-transition",
@@ -487,10 +521,11 @@ fn admit_concrete_effects(
     machine: &AdmittedMachine,
     diagnostics: &mut Vec<AdmissionDiagnostic>,
 ) -> AdmittedConcreteEffects {
+    let profile = machine.lifecycle_profile();
     let mut declarations = Vec::new();
     let mut keys = BTreeSet::new();
     for raw in raw_effects {
-        let Some(declaration) = parse_declaration(raw, limits, diagnostics) else {
+        let Some(declaration) = parse_declaration(raw, limits, profile, diagnostics) else {
             continue;
         };
         if !keys.insert(declaration.declaration_key.clone()) {
@@ -575,7 +610,9 @@ impl AdmittedMachine {
                 "machine-schema",
             ));
         }
-        if spec.lifecycle_profile != LINEAR_LIFECYCLE_V1 {
+        if spec.lifecycle_profile != LINEAR_LIFECYCLE_V1
+            && spec.lifecycle_profile != crate::DURABLE_SUSPENSION_V1
+        {
             diagnostics.push(diagnostic(
                 AdmissionDiagnosticCode::UnsupportedLifecycleProfile,
                 "lifecycle-profile",
@@ -595,7 +632,10 @@ impl AdmittedMachine {
             return Err(diagnostics);
         }
 
-        let mut machine = Self::admit(MachineSpec::new(spec.nodes, spec.edges), limits)?;
+        let mut v1_spec = MachineSpec::new(spec.nodes, spec.edges);
+        v1_spec.lifecycle_profile = spec.lifecycle_profile.clone();
+        v1_spec.suspensions = spec.suspensions;
+        let mut machine = Self::admit(v1_spec, limits)?;
         let admitted_effects =
             admit_concrete_effects(&spec.effects, limits, &machine, &mut diagnostics);
         diagnostics.sort();
@@ -651,7 +691,22 @@ pub(crate) fn concrete_effects_match(machine: &AdmittedMachine) -> bool {
         if !node.operations.contains(&declaration.operation) {
             return false;
         }
-        if lifecycle_target(declaration.transition.from, declaration.transition.action).is_err() {
+        if !matches!(
+            declaration.transition.action,
+            crate::Action::Suspend | crate::Action::ResumeSignal
+        ) && lifecycle_target_for_profile(
+            machine.lifecycle_profile,
+            declaration.transition.from,
+            declaration.transition.action,
+        )
+        .is_err()
+        {
+            return false;
+        }
+        if matches!(
+            declaration.transition.action,
+            crate::Action::Suspend | crate::Action::ResumeSignal
+        ) {
             return false;
         }
         if !binding_is_well_formed(&declaration.request_binding, machine.limits) {
@@ -819,6 +874,10 @@ fn request_size(request: &ConcreteEffectRequest) -> Option<usize> {
 
 pub(crate) fn concrete_event_size(event: &ConcreteEvent) -> Option<usize> {
     let mut size = event.node_id.len().checked_add(EVENT_ACTION_TAG_BYTES)?;
+    if let Some(fact) = &event.suspension {
+        size = size.checked_add(fact.class.len())?;
+        size = size.checked_add(fact.reference.len())?;
+    }
     for request in &event.effects {
         size = size.checked_add(request_size(request)?)?;
     }

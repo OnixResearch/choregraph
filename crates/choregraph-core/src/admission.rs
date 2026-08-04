@@ -23,14 +23,16 @@ use alloc::vec::Vec;
 
 use crate::id::{
     BLAKE3_REFERENCE_BYTES, BoundedId, IdentifierError, NodeId, PayloadRef, PayloadRefError,
+    SuspensionClass,
 };
 use crate::invariant::well_formed;
 use crate::model::{
     AdmissionDiagnostic, AdmissionDiagnosticCode, AdmissionLimits, AdmittedMachine, AdmittedNode,
-    Edge, EffectDeclaration, EffectDeclarationSpec, EffectKey, LINEAR_LIFECYCLE_V1,
-    LifecycleProfile, LimitKind, MACHINE_SCHEMA_V1, MachineSchema, MachineSpec,
+    DURABLE_SUSPENSION_V1, Edge, EffectDeclaration, EffectDeclarationSpec, EffectKey,
+    LINEAR_LIFECYCLE_V1, LifecycleProfile, LimitKind, MACHINE_SCHEMA_V1, MachineSchema,
+    MachineSpec, SuspensionDeclaration,
 };
-use crate::transition::lifecycle_target;
+use crate::transition::lifecycle_target_for_profile;
 
 const MINIMUM_BYTE_LIMIT: usize = 1;
 const MINIMUM_EVENT_ACTION_TAG_BYTES: usize = 1;
@@ -342,6 +344,7 @@ fn declaration_size(declaration: &EffectDeclaration) -> Option<usize> {
 fn parse_effect_declaration(
     raw: &EffectDeclarationSpec,
     limits: AdmissionLimits,
+    profile: LifecycleProfile,
     diagnostics: &mut Vec<AdmissionDiagnostic>,
 ) -> Option<EffectDeclaration> {
     let node_id = parse_id::<crate::id::NodeDomain>(&raw.node_id, limits, diagnostics)?;
@@ -356,7 +359,19 @@ fn parse_effect_declaration(
             return None;
         }
     };
-    if lifecycle_target(raw.transition.from, raw.transition.action).is_err() {
+    if matches!(
+        raw.transition.action,
+        crate::Action::Suspend | crate::Action::ResumeSignal
+    ) {
+        diagnostics.push(diagnostic(
+            AdmissionDiagnosticCode::SuspensionEffectTransition,
+            Some(&raw.node_id),
+            Some(&raw.operation),
+        ));
+        return None;
+    }
+    if lifecycle_target_for_profile(profile, raw.transition.from, raw.transition.action).is_err()
+    {
         diagnostics.push(diagnostic(
             AdmissionDiagnosticCode::InvalidEffectTransition,
             Some(&raw.node_id),
@@ -378,12 +393,14 @@ fn parse_effect_declaration(
 fn admit_effects(
     spec: &MachineSpec,
     limits: AdmissionLimits,
+    profile: LifecycleProfile,
     nodes: &BTreeMap<NodeId, AdmittedNode>,
     diagnostics: &mut Vec<AdmissionDiagnostic>,
 ) -> AdmittedEffects {
     let mut unique = BTreeSet::new();
     for raw in &spec.effects {
-        let Some(declaration) = parse_effect_declaration(raw, limits, diagnostics) else {
+        let Some(declaration) = parse_effect_declaration(raw, limits, profile, diagnostics)
+        else {
             continue;
         };
         let Some(node) = nodes.get(&declaration.node_id) else {
@@ -446,6 +463,111 @@ fn admit_effects(
         }
     }
     (effects, index, route_indices)
+}
+
+type AdmittedSuspensions = (Vec<SuspensionDeclaration>, BTreeMap<NodeId, usize>);
+
+fn suspension_class_diagnostic(error: IdentifierError, subject: &str) -> AdmissionDiagnostic {
+    match error {
+        IdentifierError::TooLong { observed, maximum } => AdmissionDiagnostic {
+            code: AdmissionDiagnosticCode::MalformedSuspensionClass,
+            subject: Some(String::from(subject)),
+            related: None,
+            limit: Some(LimitKind::IdentifierBytes),
+            observed: Some(observed),
+            maximum: Some(maximum),
+        },
+        IdentifierError::Empty | IdentifierError::InvalidByte { .. } => diagnostic(
+            AdmissionDiagnosticCode::MalformedSuspensionClass,
+            Some(subject),
+            None,
+        ),
+    }
+}
+
+fn admit_suspensions(
+    spec: &MachineSpec,
+    limits: AdmissionLimits,
+    profile: LifecycleProfile,
+    nodes: &BTreeMap<NodeId, AdmittedNode>,
+    diagnostics: &mut Vec<AdmissionDiagnostic>,
+) -> AdmittedSuspensions {
+    let mut declarations = Vec::new();
+    if !spec.suspensions.is_empty() && profile != LifecycleProfile::DurableSuspensionV1 {
+        diagnostics.push(diagnostic(
+            AdmissionDiagnosticCode::SuspensionDeclarationWithoutProfile,
+            Some(DURABLE_SUSPENSION_V1),
+            None,
+        ));
+        return (declarations, BTreeMap::new());
+    }
+    for raw in &spec.suspensions {
+        let Some(node_id) = parse_id::<crate::id::NodeDomain>(&raw.node_id, limits, diagnostics)
+        else {
+            continue;
+        };
+        if !nodes.contains_key(&node_id) {
+            diagnostics.push(diagnostic(
+                AdmissionDiagnosticCode::SuspensionDeclarationNodeMissing,
+                Some(&raw.node_id),
+                None,
+            ));
+            continue;
+        }
+        let class =
+            match SuspensionClass::parse(raw.class.clone(), limits.max_identifier_bytes) {
+                Ok(class) => class,
+                Err(error) => {
+                    diagnostics.push(suspension_class_diagnostic(error, &raw.class));
+                    continue;
+                }
+            };
+        let reference = match PayloadRef::parse(&raw.reference, limits.max_reference_bytes) {
+            Ok(reference) => reference,
+            Err(PayloadRefError::TooLong { observed, maximum }) => {
+                diagnostics.push(AdmissionDiagnostic {
+                    code: AdmissionDiagnosticCode::MalformedSuspensionReference,
+                    subject: Some(raw.reference.clone()),
+                    related: None,
+                    limit: Some(LimitKind::ReferenceBytes),
+                    observed: Some(observed),
+                    maximum: Some(maximum),
+                });
+                continue;
+            }
+            Err(PayloadRefError::Malformed) => {
+                diagnostics.push(diagnostic(
+                    AdmissionDiagnosticCode::MalformedSuspensionReference,
+                    Some(&raw.reference),
+                    None,
+                ));
+                continue;
+            }
+        };
+        if declarations
+            .iter()
+            .any(|declaration: &SuspensionDeclaration| declaration.node_id == node_id)
+        {
+            diagnostics.push(diagnostic(
+                AdmissionDiagnosticCode::DuplicateSuspensionDeclaration,
+                Some(&raw.node_id),
+                None,
+            ));
+            continue;
+        }
+        declarations.push(SuspensionDeclaration {
+            node_id,
+            class,
+            reference,
+        });
+    }
+    declarations.sort();
+    let indices = declarations
+        .iter()
+        .enumerate()
+        .map(|(index, declaration)| (declaration.node_id.clone(), index))
+        .collect();
+    (declarations, indices)
 }
 
 fn graph_indexes(
@@ -529,6 +651,8 @@ impl AdmittedMachine {
         }
         let lifecycle_profile = if spec.lifecycle_profile == LINEAR_LIFECYCLE_V1 {
             Some(LifecycleProfile::LinearV1)
+        } else if spec.lifecycle_profile == DURABLE_SUSPENSION_V1 {
+            Some(LifecycleProfile::DurableSuspensionV1)
         } else {
             diagnostics.push(diagnostic(
                 AdmissionDiagnosticCode::UnsupportedLifecycleProfile,
@@ -542,17 +666,6 @@ impl AdmittedMachine {
         if !diagnostics.is_empty() {
             return Err(diagnostics);
         }
-
-        let nodes = admit_nodes(&spec, limits, &mut diagnostics);
-        let edges = admit_edges(&spec, limits, &nodes, &mut diagnostics);
-        let (effects, effect_index, effect_route_indices) =
-            admit_effects(&spec, limits, &nodes, &mut diagnostics);
-        diagnostics.sort();
-        diagnostics.dedup();
-        if !diagnostics.is_empty() {
-            return Err(diagnostics);
-        }
-
         let Some(lifecycle_profile) = lifecycle_profile else {
             return Err(alloc::vec![diagnostic(
                 AdmissionDiagnosticCode::UnsupportedLifecycleProfile,
@@ -560,6 +673,18 @@ impl AdmittedMachine {
                 None,
             )]);
         };
+
+        let nodes = admit_nodes(&spec, limits, &mut diagnostics);
+        let edges = admit_edges(&spec, limits, &nodes, &mut diagnostics);
+        let (effects, effect_index, effect_route_indices) =
+            admit_effects(&spec, limits, lifecycle_profile, &nodes, &mut diagnostics);
+        let (suspension_declarations, suspension_declaration_indices) =
+            admit_suspensions(&spec, limits, lifecycle_profile, &nodes, &mut diagnostics);
+        diagnostics.sort();
+        diagnostics.dedup();
+        if !diagnostics.is_empty() {
+            return Err(diagnostics);
+        }
         let (dependencies, dependents) = graph_indexes(&nodes, &edges);
         let topological_order = topological_order(&nodes, &dependencies, &dependents);
         if topological_order.len() != nodes.len() {
@@ -646,6 +771,8 @@ impl AdmittedMachine {
             concrete_effects: Vec::new(),
             concrete_effect_key_indices: BTreeMap::new(),
             concrete_effect_route_indices: BTreeMap::new(),
+            suspension_declarations,
+            suspension_declaration_indices,
         };
         if !well_formed(&machine) {
             return Err(alloc::vec![diagnostic(

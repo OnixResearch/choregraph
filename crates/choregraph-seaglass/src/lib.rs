@@ -146,10 +146,14 @@ pub enum StepTransitionError {
 }
 
 /// Resume decisions, including the stricter Choregraph failure classes.
+///
+/// `AwaitSignal` is observable only for durable-suspension machines. The
+/// closed linear compatibility path never produces it.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ResumeDecision {
     Execute,
     AwaitDependencies,
+    AwaitSignal,
     SkipCompleted,
     RejectTerminalMutation,
     BlockedByFailedDependency,
@@ -495,6 +499,12 @@ fn diagnostic_code(diagnostic: &choregraph_core::AdmissionDiagnostic) -> GraphDi
         | choregraph_core::AdmissionDiagnosticCode::ReferenceTooLong
         | choregraph_core::AdmissionDiagnosticCode::IntentTooLarge
         | choregraph_core::AdmissionDiagnosticCode::TooManyIntentsForTransition
+        | choregraph_core::AdmissionDiagnosticCode::DuplicateSuspensionDeclaration
+        | choregraph_core::AdmissionDiagnosticCode::SuspensionDeclarationNodeMissing
+        | choregraph_core::AdmissionDiagnosticCode::SuspensionDeclarationWithoutProfile
+        | choregraph_core::AdmissionDiagnosticCode::MalformedSuspensionClass
+        | choregraph_core::AdmissionDiagnosticCode::MalformedSuspensionReference
+        | choregraph_core::AdmissionDiagnosticCode::SuspensionEffectTransition
         | choregraph_core::AdmissionDiagnosticCode::NormalizationInvariant => {
             GraphDiagnosticCode::GraphTooLarge
         }
@@ -579,6 +589,9 @@ const fn compatibility_state(state: choregraph_core::LocalState) -> StepState {
         choregraph_core::LocalState::Completed => StepState::Completed,
         choregraph_core::LocalState::Failed => StepState::Failed,
         choregraph_core::LocalState::Cancelled => StepState::Cancelled,
+        // Unreachable: this closed adapter admits only linear-profile machines and
+        // constructs states from `StepState` inputs, so no suspended state can occur.
+        choregraph_core::LocalState::Suspended => unreachable!()
     }
 }
 
@@ -589,6 +602,9 @@ const fn compatibility_action(action: choregraph_core::Action) -> StepAction {
         choregraph_core::Action::Complete => StepAction::Complete,
         choregraph_core::Action::Fail => StepAction::Fail,
         choregraph_core::Action::Cancel => StepAction::Cancel,
+        // Unreachable: admission rejects suspension actions on effect declarations,
+        // so no admitted intent can carry them into this conversion.
+        choregraph_core::Action::Suspend | choregraph_core::Action::ResumeSignal => unreachable!()
     }
 }
 
@@ -726,6 +742,7 @@ pub fn resume_decision_checked(
         choregraph_core::ResumeDecision::BlockedByFailedDependency => {
             Ok(ResumeDecision::BlockedByFailedDependency)
         }
+        choregraph_core::ResumeDecision::AwaitSignal => Ok(ResumeDecision::AwaitSignal),
         choregraph_core::ResumeDecision::UnknownNode => Err(ResumeDecisionError::UnknownNode),
         choregraph_core::ResumeDecision::InvalidState => {
             Err(ResumeDecisionError::InvalidState(Vec::new()))

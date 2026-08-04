@@ -22,7 +22,7 @@ use crate::model::{
     AdmittedMachine, Edge, EffectDeclaration, EffectIntent, EffectKey, Event, InvariantIssue,
     LifecycleProfile, LocalState, MachineSchema, MachineState, TransitionSelector,
 };
-use crate::transition::lifecycle_target;
+use crate::transition::{lifecycle_target, lifecycle_target_for_profile};
 
 fn dependencies_complete(
     machine: &AdmittedMachine,
@@ -169,6 +169,21 @@ fn effects_match(machine: &AdmittedMachine) -> bool {
         {
             return false;
         }
+        if matches!(
+            declaration.transition.action,
+            crate::Action::Suspend | crate::Action::ResumeSignal
+        ) {
+            return false;
+        }
+        if lifecycle_target_for_profile(
+            machine.lifecycle_profile,
+            declaration.transition.from,
+            declaration.transition.action,
+        )
+        .is_err()
+        {
+            return false;
+        }
         let key = EffectKey {
             node_id: declaration.node_id.clone(),
             transition: declaration.transition,
@@ -208,10 +223,45 @@ fn normalized_edges(machine: &AdmittedMachine) -> bool {
     true
 }
 
+fn suspension_declarations_match(machine: &AdmittedMachine) -> bool {
+    let mut normalized = machine.suspension_declarations.clone();
+    normalized.sort();
+    normalized.dedup();
+    if normalized != machine.suspension_declarations {
+        return false;
+    }
+    if !machine.suspension_declarations.is_empty()
+        && machine.lifecycle_profile != LifecycleProfile::DurableSuspensionV1
+    {
+        return false;
+    }
+    let mut expected_indices = BTreeMap::new();
+    for (index, declaration) in machine.suspension_declarations.iter().enumerate() {
+        if !machine.nodes.contains_key(&declaration.node_id) {
+            return false;
+        }
+        if declaration.class.as_str().len() > machine.limits.max_identifier_bytes
+            || declaration.reference.as_str().len() > machine.limits.max_reference_bytes
+        {
+            return false;
+        }
+        if expected_indices
+            .insert(declaration.node_id.clone(), index)
+            .is_some()
+        {
+            return false;
+        }
+    }
+    expected_indices == machine.suspension_declaration_indices
+}
+
 /// Returns true when all immutable admitted-machine facts remain closed and normalized.
 #[must_use]
 pub fn well_formed(machine: &AdmittedMachine) -> bool {
-    if machine.lifecycle_profile != LifecycleProfile::LinearV1 {
+    if !matches!(
+        machine.lifecycle_profile,
+        LifecycleProfile::LinearV1 | LifecycleProfile::DurableSuspensionV1
+    ) {
         return false;
     }
     let effect_count = machine
@@ -262,6 +312,7 @@ pub fn well_formed(machine: &AdmittedMachine) -> bool {
         && indexed_views_match(machine)
         && topology_matches(machine)
         && is_effect_set_valid
+        && suspension_declarations_match(machine)
 }
 
 /// Returns deterministic state-invariant failures.
@@ -285,6 +336,26 @@ pub fn validate_invariant(machine: &AdmittedMachine, state: &MachineState) -> Ve
         ) && !dependencies_complete(machine, state, node_id)
         {
             issues.insert(InvariantIssue::DependenciesIncomplete(node_id.clone()));
+        }
+        match local_state {
+            LocalState::Suspended => {
+                if machine.lifecycle_profile != LifecycleProfile::DurableSuspensionV1 {
+                    issues.insert(InvariantIssue::SuspensionWithoutProfile(node_id.clone()));
+                }
+                if !state.suspensions().contains_key(node_id) {
+                    issues.insert(InvariantIssue::SuspensionRecordMissing(node_id.clone()));
+                }
+            }
+            _ => {
+                if state.suspensions().contains_key(node_id) {
+                    issues.insert(InvariantIssue::SuspensionRecordUnexpected(node_id.clone()));
+                }
+            }
+        }
+    }
+    for node_id in state.suspensions().keys() {
+        if !state.entries().contains_key(node_id) {
+            issues.insert(InvariantIssue::SuspensionRecordUnexpected(node_id.clone()));
         }
     }
     issues.into_iter().collect()
@@ -351,7 +422,8 @@ pub fn effects_allowed(
         from: local_state,
         action: event.action,
     };
-    if lifecycle_target(local_state, event.action).is_err() {
+    if lifecycle_target_for_profile(machine.lifecycle_profile, local_state, event.action).is_err()
+    {
         return false;
     }
 

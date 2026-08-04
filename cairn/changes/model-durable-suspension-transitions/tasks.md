@@ -1,9 +1,9 @@
 ## Phase 1: Baseline and dependency
 
-- [ ] [depends:bind-concrete-effect-intents] S1 Begin transition work only after concrete effect intents use the one production `step` relation and its current proof links. r[choregraph.machine.suspension_profile]
-- [ ] [serial] S2 Run and record current core, lifecycle, resume, replay, canonical corpus, adapter, no-std, Verus, downstream, Octet, Cairn, and Nix baselines. r[choregraph.machine.suspension_proof]
-- [ ] [serial] S3 Inventory every exhaustive local-state, lifecycle-profile, transition, readiness, resume, replay, serialization, adapter, fixture, proof, and report match. r[choregraph.machine.suspension_profile] r[choregraph.machine.suspension_replay]
-- [ ] [parallel] S4 Record the Swamp durable suspension reference behavior, AGPL clean-room boundary, adopt/reject decisions, and no runtime dependency. r[choregraph.machine.suspension_boundary]
+- [x] [depends:bind-concrete-effect-intents] S1 Begin transition work only after concrete effect intents use the one production `step` relation and its current proof links. r[choregraph.machine.suspension_profile]
+- [x] [serial] S2 Run and record current core, lifecycle, resume, replay, canonical corpus, adapter, no-std, Verus, downstream, Octet, Cairn, and Nix baselines. r[choregraph.machine.suspension_proof]
+- [x] [serial] S3 Inventory every exhaustive local-state, lifecycle-profile, transition, readiness, resume, replay, serialization, adapter, fixture, proof, and report match. r[choregraph.machine.suspension_profile] r[choregraph.machine.suspension_replay]
+- [x] [parallel] S4 Record the Swamp durable suspension reference behavior, AGPL clean-room boundary, adopt/reject decisions, and no runtime dependency. r[choregraph.machine.suspension_boundary]
 
 ## Phase 2: Profile and canonical model
 

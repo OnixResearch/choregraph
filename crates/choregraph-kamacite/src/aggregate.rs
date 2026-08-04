@@ -338,6 +338,7 @@ pub(crate) fn state_id(state: LocalState) -> &'static str {
         LocalState::Completed => "completed",
         LocalState::Failed => "failed",
         LocalState::Cancelled => "cancelled",
+        LocalState::Suspended => "suspended",
     }
 }
 
@@ -348,6 +349,8 @@ pub(crate) fn action_id(action: Action) -> &'static str {
         Action::Complete => "complete",
         Action::Fail => "fail",
         Action::Cancel => "cancel",
+        Action::Suspend => "suspend",
+        Action::ResumeSignal => "resume-signal",
     }
 }
 
@@ -590,6 +593,7 @@ fn machine_spec(descriptor: &AggregateMachineDescriptor) -> Result<MachineSpec, 
         nodes,
         edges,
         effects,
+        suspensions: Vec::new(),
     })
 }
 

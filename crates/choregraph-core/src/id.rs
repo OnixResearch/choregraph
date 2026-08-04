@@ -32,6 +32,8 @@ pub struct DeclarationDomain;
 pub struct SlotDomain;
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct SourceDomain;
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct SuspensionClassDomain;
 
 /// A validated bounded identifier in one semantic domain.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -48,6 +50,7 @@ pub type RequestId = BoundedId<RequestDomain>;
 pub type DeclarationKey = BoundedId<DeclarationDomain>;
 pub type SlotId = BoundedId<SlotDomain>;
 pub type SourceRef = BoundedId<SourceDomain>;
+pub type SuspensionClass = BoundedId<SuspensionClassDomain>;
 
 /// A deterministic identifier validation error.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]

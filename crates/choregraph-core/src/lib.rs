@@ -33,7 +33,7 @@ pub use concrete::{
 pub use id::{
     AbilityId, BLAKE3_DIGEST_HEX_BYTES, BLAKE3_REFERENCE_BYTES, BLAKE3_REFERENCE_PREFIX, BoundedId,
     DeclarationKey, IdentifierError, NodeId, OperationId, PayloadRef, PayloadRefError, RequestId,
-    ResourceId, SlotId, SourceRef,
+    ResourceId, SlotId, SourceRef, SuspensionClass,
 };
 pub use invariant::{
     effects_allowed, invariant, terminal_states_preserved, validate_invariant, well_formed,
@@ -43,12 +43,16 @@ pub use model::{
     Bottleneck, BoundedTrace, ConsumedCount, DEFAULT_MAX_EDGES, DEFAULT_MAX_EFFECT_DECLARATIONS,
     DEFAULT_MAX_EVENT_BYTES, DEFAULT_MAX_IDENTIFIER_BYTES, DEFAULT_MAX_INTENT_BYTES,
     DEFAULT_MAX_INTENTS_PER_TRANSITION, DEFAULT_MAX_NODES, DEFAULT_MAX_OPERATIONS,
-    DEFAULT_MAX_REFERENCE_BYTES, DEFAULT_MAX_TRACE_EVENTS, Decision, DenialReason, Edge, EdgeSpec,
-    EffectDeclaration, EffectDeclarationSpec, EffectIntent, EffectRequest, Event, EventIndex,
-    InvariantIssue, LINEAR_LIFECYCLE_V1, LastValidState, LifecycleProfile, LimitKind, LocalState,
+    DEFAULT_MAX_REFERENCE_BYTES, DEFAULT_MAX_TRACE_EVENTS,
+    DURABLE_SUSPENSION_V1, Decision, DenialReason, Edge, EdgeSpec, EffectDeclaration,
+    EffectDeclarationSpec, EffectIntent, EffectRequest, Event, EventIndex, InvariantIssue,
+    LINEAR_LIFECYCLE_V1, LastValidState, LifecycleProfile, LimitKind, LocalState,
     LocalTransitionError, MACHINE_SCHEMA_V1, MACHINE_SCHEMA_V2, MachineSchema, MachineSpec,
     MachineState, NodeSpec, ParallelGroup, ReplayBindings, ReplayDecision, ReplayFailure,
-    ReplayFailureReason, ReplayInput, ReplayLimits, ResumeDecision, TRACE_BINDING_BYTES,
+    ReplayFailureReason, ReplayInput, ReplayLimits, ResumeDecision, SuspensionDeclaration,
+    SuspensionDeclarationSpec, SuspensionFactSpec, SuspensionRecord, TRACE_BINDING_BYTES,
     TraceBinding, TransitionSelector,
 };
-pub use transition::{lifecycle_target, replay, replay_concrete, step, step_concrete};
+pub use transition::{
+    lifecycle_target, lifecycle_target_for_profile, replay, replay_concrete, step, step_concrete,
+};

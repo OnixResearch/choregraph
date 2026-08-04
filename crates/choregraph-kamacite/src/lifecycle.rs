@@ -197,6 +197,7 @@ fn state_id(state: LocalState) -> &'static str {
         LocalState::Completed => "completed",
         LocalState::Failed => "failed",
         LocalState::Cancelled => "cancelled",
+        LocalState::Suspended => "suspended",
     }
 }
 
@@ -207,6 +208,8 @@ fn action_id(action: Action) -> &'static str {
         Action::Complete => "complete",
         Action::Fail => "fail",
         Action::Cancel => "cancel",
+        Action::Suspend => "suspend",
+        Action::ResumeSignal => "resume-signal",
     }
 }
 
