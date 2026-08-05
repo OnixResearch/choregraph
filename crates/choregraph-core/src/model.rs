@@ -430,6 +430,22 @@ impl MachineState {
         }
     }
 
+    /// Builds one aggregate state with explicit suspension records.
+    ///
+    /// Consumers use this to reconstruct a recorded durable wait from their own
+    /// persisted facts. The executable invariant still validates that records
+    /// exist exactly for suspended nodes before any transition accepts it.
+    #[must_use]
+    pub fn with_suspensions(
+        entries: BTreeMap<NodeId, LocalState>,
+        suspensions: BTreeMap<NodeId, SuspensionRecord>,
+    ) -> Self {
+        Self {
+            entries,
+            suspensions,
+        }
+    }
+
     #[must_use]
     pub fn entries(&self) -> &BTreeMap<NodeId, LocalState> {
         &self.entries

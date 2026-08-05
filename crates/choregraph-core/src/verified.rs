@@ -667,7 +667,7 @@ pub fn suspensions_consistent(
     true
 }
 
-pub fn bytes_equal(left: &Vec<u8>, right: &Vec<u8>) -> (result: bool)
+pub fn bytes_equal(left: &[u8], right: &[u8]) -> (result: bool)
     ensures result == (left@ == right@)
 {
     if left.len() != right.len() {
