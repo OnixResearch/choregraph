@@ -37,6 +37,7 @@ pub const LATTICE_REVISION: &str = "c8d56ad83a57287064edb85f58808f53e4bf4536";
 pub const GLOBAL_STATE_MODEL: &str = "parameterized-map-from-node-id-to-local-state";
 pub const GLOBAL_STATE_CARDINALITY: &str = "not-enumerated";
 const DESCRIPTOR_SCHEMA_VERSION: u32 = 1;
+const DURABLE_DESCRIPTOR_SCHEMA_VERSION: u32 = 2;
 const PROFILE_SCHEMA_NUMBER: u32 = 1;
 const KAMACITE_LICENSE: &str = "MIT OR Apache-2.0";
 const MACHINE_SCHEMA_SOURCE_BLAKE3: &str =
@@ -44,6 +45,7 @@ const MACHINE_SCHEMA_SOURCE_BLAKE3: &str =
 const LINK_RECEIPT_SCHEMA_SOURCE_BLAKE3: &str =
     "35fe04687697fe9d8027f924aade0a2ddccb65f5b9843a17c8692b8fa93212c1";
 const MACHINE_NON_CLAIM_COUNT: usize = 4;
+const DURABLE_MACHINE_NON_CLAIM_COUNT: usize = 5;
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct DescriptorLimits {
@@ -111,6 +113,38 @@ pub struct AggregateMachineDescriptor {
     pub dependencies: Vec<DescriptorDependencySet>,
     pub topological_order: Vec<String>,
     pub effects: Vec<DescriptorEffect>,
+    pub compatibility: CompatibilityMetadata,
+    pub checked_laws: Vec<String>,
+    pub non_claims: Vec<String>,
+}
+
+/// One suspension declaration row in a durable machine descriptor.
+#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+pub struct DescriptorSuspension {
+    pub node_id: String,
+    pub class: String,
+    pub reference: String,
+}
+
+/// The durable-suspension machine descriptor. Version 2 keeps version 1
+/// artifacts byte-identical: linear machines never gain this field set.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename = "choregraph-machine-durable-v1", deny_unknown_fields)]
+pub struct DurableMachineDescriptor {
+    pub schema_version: u32,
+    pub machine_schema: String,
+    pub lifecycle_profile_id: String,
+    pub lifecycle_profile_identity: ArtifactIdentity,
+    pub kamacite_profile_identity: ArtifactIdentity,
+    pub global_state_model: String,
+    pub global_state_cardinality: String,
+    pub limits: DescriptorLimits,
+    pub nodes: Vec<DescriptorNode>,
+    pub edges: Vec<DescriptorEdge>,
+    pub dependencies: Vec<DescriptorDependencySet>,
+    pub topological_order: Vec<String>,
+    pub effects: Vec<DescriptorEffect>,
+    pub suspensions: Vec<DescriptorSuspension>,
     pub compatibility: CompatibilityMetadata,
     pub checked_laws: Vec<String>,
     pub non_claims: Vec<String>,
@@ -451,6 +485,9 @@ fn machine_descriptor(
     lifecycle_identity: ArtifactIdentity,
     profile_identity: ArtifactIdentity,
 ) -> Result<AggregateMachineDescriptor, AggregateError> {
+    if machine.lifecycle_profile() != choregraph_core::LifecycleProfile::LinearV1 {
+        return Err(AggregateError::UnsupportedProfile);
+    }
     let parts = normalized_parts(machine)?;
     Ok(AggregateMachineDescriptor {
         schema_version: DESCRIPTOR_SCHEMA_VERSION,
@@ -594,6 +631,178 @@ fn machine_spec(descriptor: &AggregateMachineDescriptor) -> Result<MachineSpec, 
         edges,
         effects,
         suspensions: Vec::new(),
+    })
+}
+
+/// Builds the version-2 descriptor for an admitted durable-suspension machine.
+pub fn durable_machine_descriptor(
+    machine: &AdmittedMachine,
+    lifecycle_identity: ArtifactIdentity,
+    profile_identity: ArtifactIdentity,
+) -> Result<DurableMachineDescriptor, AggregateError> {
+    if machine.lifecycle_profile() != choregraph_core::LifecycleProfile::DurableSuspensionV1 {
+        return Err(AggregateError::UnsupportedProfile);
+    }
+    let parts = normalized_parts(machine)?;
+    let suspensions = machine
+        .suspension_declarations()
+        .iter()
+        .map(|declaration| DescriptorSuspension {
+            node_id: String::from(declaration.node_id.as_str()),
+            class: String::from(declaration.class.as_str()),
+            reference: String::from(declaration.reference.as_str()),
+        })
+        .collect();
+    Ok(DurableMachineDescriptor {
+        schema_version: DURABLE_DESCRIPTOR_SCHEMA_VERSION,
+        machine_schema: String::from(machine.schema()),
+        lifecycle_profile_id: String::from(crate::lifecycle::DURABLE_FSM_ID),
+        lifecycle_profile_identity: lifecycle_identity,
+        kamacite_profile_identity: profile_identity,
+        global_state_model: String::from(GLOBAL_STATE_MODEL),
+        global_state_cardinality: String::from(GLOBAL_STATE_CARDINALITY),
+        limits: descriptor_limits(machine.limits())?,
+        nodes: parts.nodes,
+        edges: parts.edges,
+        dependencies: parts.dependencies,
+        topological_order: parts.topological_order,
+        effects: parts.effects,
+        suspensions,
+        compatibility: CompatibilityMetadata {
+            execution_graph_revision: String::from(EXECUTION_GRAPH_REVISION),
+            lattice_revision: String::from(LATTICE_REVISION),
+            kamacite_revision: String::from(KAMACITE_REVISION),
+        },
+        checked_laws: vec![
+            String::from("bounded-normalized-admitted-machine"),
+            String::from("parameterized-aggregate-state"),
+            String::from("exact-lifecycle-profile-binding"),
+            String::from("durable-suspension-exact-reference-binding"),
+        ],
+        non_claims: vec![
+            String::from("does not enumerate aggregate product states"),
+            String::from("does not prove Nickel evaluation semantics"),
+            String::from("does not authorize or execute runtime effects"),
+            String::from("does not establish release eligibility"),
+            String::from("does not prove approval authority, signal truth, or persistence durability"),
+        ],
+    })
+}
+
+pub fn encode_durable_machine_descriptor(
+    descriptor: &DurableMachineDescriptor,
+) -> Result<CanonicalArtifact, AggregateError> {
+    encode(
+        descriptor,
+        MACHINE_SCHEMA_VERSION,
+        crate::codec::DURABLE_MACHINE_ROOT_LABEL,
+    )
+    .map_err(Into::into)
+}
+
+fn durable_machine_spec(
+    descriptor: &DurableMachineDescriptor,
+) -> Result<MachineSpec, AggregateError> {
+    let mut spec = MachineSpec::new(
+        descriptor
+            .nodes
+            .iter()
+            .map(|node| NodeSpec::new(node.node_id.clone(), node.operations.clone()))
+            .collect(),
+        descriptor
+            .edges
+            .iter()
+            .map(|edge| EdgeSpec::new(edge.source.clone(), edge.target.clone()))
+            .collect(),
+    );
+    spec.schema = descriptor.machine_schema.clone();
+    spec.lifecycle_profile = descriptor.lifecycle_profile_id.clone();
+    spec.effects = descriptor
+        .effects
+        .iter()
+        .map(|effect| {
+            Ok(EffectDeclarationSpec {
+                node_id: effect.node_id.clone(),
+                transition: TransitionSelector {
+                    from: state_from_id(&effect.from_state)?,
+                    action: action_from_id(&effect.action)?,
+                },
+                operation: effect.operation.clone(),
+                resource: effect.resource.clone(),
+                ability: effect.ability.clone(),
+                request: effect.request.clone(),
+                payload: effect.payload.clone(),
+            })
+        })
+        .collect::<Result<Vec<_>, AggregateError>>()?;
+    spec.suspensions = descriptor
+        .suspensions
+        .iter()
+        .map(|suspension| choregraph_core::SuspensionDeclarationSpec {
+            node_id: suspension.node_id.clone(),
+            class: suspension.class.clone(),
+            reference: suspension.reference.clone(),
+        })
+        .collect();
+    Ok(spec)
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ValidatedDurableMachineArtifact {
+    pub machine: AdmittedMachine,
+    pub descriptor: DurableMachineDescriptor,
+    pub canonical: CanonicalArtifact,
+    pub identity: ArtifactIdentity,
+}
+
+pub fn validate_durable_machine_artifact(
+    input: &[u8],
+    lifecycle: &LifecycleArtifact,
+    expected_profile_identity: &ArtifactIdentity,
+) -> Result<ValidatedDurableMachineArtifact, AggregateError> {
+    expected_profile_identity.validate(ArtifactDomain::Profile)?;
+    lifecycle
+        .project_identity
+        .validate(ArtifactDomain::Lifecycle)?;
+    let (descriptor, canonical): (DurableMachineDescriptor, CanonicalArtifact) =
+        decode(input, MACHINE_SCHEMA_VERSION, crate::codec::DURABLE_MACHINE_ROOT_LABEL)?;
+    if descriptor.schema_version != DURABLE_DESCRIPTOR_SCHEMA_VERSION
+        || descriptor.lifecycle_profile_id != crate::lifecycle::DURABLE_FSM_ID
+        || descriptor.compatibility.kamacite_revision != KAMACITE_REVISION
+    {
+        return Err(AggregateError::UnsupportedProfile);
+    }
+    if descriptor.global_state_model != GLOBAL_STATE_MODEL
+        || descriptor.global_state_cardinality != GLOBAL_STATE_CARDINALITY
+    {
+        return Err(AggregateError::GlobalStateEnumeration);
+    }
+    if descriptor.lifecycle_profile_identity != lifecycle.project_identity
+        || descriptor.kamacite_profile_identity != *expected_profile_identity
+    {
+        return Err(AggregateError::UnsupportedProfile);
+    }
+    if descriptor.non_claims.len() != DURABLE_MACHINE_NON_CLAIM_COUNT {
+        return Err(AggregateError::DescriptorMismatch);
+    }
+    let limits = admission_limits(&descriptor.limits)?;
+    let spec = durable_machine_spec(&descriptor)?;
+    let machine = AdmittedMachine::admit(spec, limits)
+        .map_err(|_diagnostics| AggregateError::AdmissionRejected)?;
+    let expected = durable_machine_descriptor(
+        &machine,
+        lifecycle.project_identity.clone(),
+        expected_profile_identity.clone(),
+    )?;
+    if descriptor != expected {
+        return Err(AggregateError::DescriptorMismatch);
+    }
+    let identity = compute_identity(ArtifactDomain::Machine, &canonical.packed_bytes)?;
+    Ok(ValidatedDurableMachineArtifact {
+        machine,
+        descriptor,
+        canonical,
+        identity,
     })
 }
 

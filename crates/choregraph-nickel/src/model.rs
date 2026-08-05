@@ -54,6 +54,18 @@ pub struct EvaluatedNode {
     pub operations: Vec<String>,
 }
 
+/// One durable-suspension declaration in an evaluated Choregraph source.
+///
+/// The closed field set is the boundary defense: approver, policy, credential,
+/// clock, persistence, and notification fields fail deserialization.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct EvaluatedSuspension {
+    pub node_id: String,
+    pub class: String,
+    pub reference: String,
+}
+
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct EvaluatedEdge {
@@ -162,6 +174,8 @@ pub enum EvaluatedSource {
         nodes: Vec<EvaluatedNode>,
         edges: Vec<EvaluatedEdge>,
         effects: Vec<EvaluatedEffect>,
+        #[serde(default)]
+        suspensions: Vec<EvaluatedSuspension>,
     },
     #[serde(rename = "lattice-workflow-v1")]
     LatticeWorkflow {

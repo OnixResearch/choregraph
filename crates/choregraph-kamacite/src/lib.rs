@@ -36,9 +36,11 @@ mod selected_kamacite_codec;
 pub use aggregate::{
     AggregateError, AggregateMachineDescriptor, ArtifactSet, CompatibilityMetadata,
     DescriptorDependencySet, DescriptorEdge, DescriptorEffect, DescriptorLimits, DescriptorNode,
-    GLOBAL_STATE_CARDINALITY, GLOBAL_STATE_MODEL, IdentityMaterials, KAMACITE_REVISION,
-    SupportedKamaciteProfile, ValidatedMachineArtifact, build_artifact_set, build_profile_artifact,
-    encode_machine_descriptor, validate_machine_artifact,
+    DescriptorSuspension, DurableMachineDescriptor, GLOBAL_STATE_CARDINALITY, GLOBAL_STATE_MODEL,
+    IdentityMaterials, KAMACITE_REVISION, SupportedKamaciteProfile,
+    ValidatedDurableMachineArtifact, ValidatedMachineArtifact, build_artifact_set,
+    build_profile_artifact, durable_machine_descriptor, encode_durable_machine_descriptor,
+    encode_machine_descriptor, validate_durable_machine_artifact, validate_machine_artifact,
 };
 pub use codec::{
     CONCRETE_INTENT_RECEIPT_ROOT_LABEL, CONCRETE_INTENT_RECEIPT_SCHEMA_VERSION,
@@ -63,9 +65,11 @@ pub use identity::{
     compute_kamacite_identity,
 };
 pub use lifecycle::{
-    FsmCoverageEvidence, FsmDenialRow, FsmEvent, FsmGuard, FsmMatrixCell, FsmSideEffect, FsmState,
-    FsmTransitionRow, LIFECYCLE_FSM_ID, LifecycleArtifact, LifecycleDescriptor, LifecycleError,
-    build_lifecycle_artifact, transition_identity, validate_lifecycle_artifact,
+    DURABLE_FSM_ID, FsmCoverageEvidence, FsmDenialRow, FsmEvent, FsmGuard, FsmMatrixCell,
+    FsmSideEffect, FsmState, FsmTransitionRow, LIFECYCLE_FSM_ID, LifecycleArtifact,
+    LifecycleDescriptor, LifecycleError, build_durable_lifecycle_artifact,
+    build_lifecycle_artifact, transition_identity, validate_durable_lifecycle_artifact,
+    validate_lifecycle_artifact,
 };
 pub use receipt::{
     FsmGuardDecision, FsmReceiptArtifact, FsmReceiptBody, FsmTraceStep, LinkReceiptArtifact,

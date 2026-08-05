@@ -17,14 +17,15 @@ use crate::imports::{ObservedImport, ValidatedImportClosure, validate_import_clo
 use crate::model::{
     CHOREGRAPH_EVALUATED_SCHEMA, EvaluatedConcreteReference, EvaluatedEffect,
     EvaluatedLatticeEffectV2, EvaluatedLimits, EvaluatedReferenceBinding, EvaluatedSource,
-    LATTICE_EVALUATED_SCHEMA, LATTICE_V2_EVALUATED_SCHEMA, LatticeNode, LatticeNodeConfig,
-    LatticeNodeConfigV2, LatticePortDirection,
+    EvaluatedSuspension, LATTICE_EVALUATED_SCHEMA, LATTICE_V2_EVALUATED_SCHEMA, LatticeNode,
+    LatticeNodeConfig, LatticeNodeConfigV2, LatticePortDirection,
 };
 use crate::profile::FrontendLimits;
 use choregraph_core::{
     Action, AdmissionLimits, AdmittedMachine, ConcreteEffectDeclarationSpec, ConcreteReferenceSpec,
-    EdgeSpec, EffectDeclarationSpec, LINEAR_LIFECYCLE_V1, LocalState, MachineSpec, MachineSpecV2,
-    NodeSpec, ReferenceBindingSpec, TransitionSelector,
+    DURABLE_SUSPENSION_V1, EdgeSpec, EffectDeclarationSpec, LINEAR_LIFECYCLE_V1, LocalState,
+    MachineSpec, MachineSpecV2, NodeSpec, ReferenceBindingSpec, SuspensionDeclarationSpec,
+    TransitionSelector,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -33,6 +34,16 @@ const LATTICE_OPERATION_PREFIX: &str = "lattice/";
 const LIFECYCLE_EVENT_COUNT: usize = 5;
 const LIFECYCLE_EVENTS: [&str; LIFECYCLE_EVENT_COUNT] =
     ["cancel", "complete", "fail", "mark-ready", "start"];
+const DURABLE_EVENT_COUNT: usize = 7;
+const DURABLE_EVENTS: [&str; DURABLE_EVENT_COUNT] = [
+    "cancel",
+    "complete",
+    "fail",
+    "mark-ready",
+    "resume-signal",
+    "start",
+    "suspend",
+];
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum LoweredSourceFormat {
@@ -114,10 +125,18 @@ fn state(value: &str) -> Result<LocalState, FrontendFailure> {
     }
 }
 
-fn valid_events(mut events: Vec<String>) -> bool {
+fn valid_events<const COUNT: usize>(mut events: Vec<String>, expected: [&str; COUNT]) -> bool {
     events.sort();
     events.dedup();
-    events.len() == LIFECYCLE_EVENT_COUNT && events.iter().map(String::as_str).eq(LIFECYCLE_EVENTS)
+    events.len() == COUNT && events.iter().map(String::as_str).eq(expected)
+}
+
+fn suspension_declaration(input: EvaluatedSuspension) -> SuspensionDeclarationSpec {
+    SuspensionDeclarationSpec {
+        node_id: input.node_id,
+        class: input.class,
+        reference: input.reference,
+    }
 }
 
 struct SourceProfile<'a> {
@@ -125,19 +144,26 @@ struct SourceProfile<'a> {
     expected_schema: &'a str,
     lifecycle_profile: &'a str,
     events: Vec<String>,
+    allow_suspension: bool,
 }
 
 fn validate_source_profile(profile: SourceProfile<'_>) -> Result<(), FrontendFailure> {
     if profile.observed_schema != profile.expected_schema {
         return Err(fail(FrontendIssueCode::UnsupportedSchema));
     }
-    if profile.lifecycle_profile != LINEAR_LIFECYCLE_V1 {
-        return Err(fail(FrontendIssueCode::UnsupportedLifecycle));
+    if profile.lifecycle_profile == LINEAR_LIFECYCLE_V1 {
+        if !valid_events(profile.events, LIFECYCLE_EVENTS) {
+            return Err(fail(FrontendIssueCode::UnsupportedEvents));
+        }
+        return Ok(());
     }
-    if !valid_events(profile.events) {
-        return Err(fail(FrontendIssueCode::UnsupportedEvents));
+    if profile.lifecycle_profile == DURABLE_SUSPENSION_V1 && profile.allow_suspension {
+        if !valid_events(profile.events, DURABLE_EVENTS) {
+            return Err(fail(FrontendIssueCode::UnsupportedEvents));
+        }
+        return Ok(());
     }
-    Ok(())
+    Err(fail(FrontendIssueCode::UnsupportedLifecycle))
 }
 
 fn action(value: &str) -> Result<Action, FrontendFailure> {
@@ -369,12 +395,14 @@ pub fn lower_evaluated_json(
             nodes,
             edges,
             effects,
+            suspensions,
         } => {
             validate_source_profile(SourceProfile {
                 observed_schema: &schema,
                 expected_schema: CHOREGRAPH_EVALUATED_SCHEMA,
                 lifecycle_profile: &lifecycle_profile,
                 events,
+                allow_suspension: true,
             })?;
             let admission_limits = admission_limits(limits, frontend_limits.machine_ceiling)?;
             let mut spec = MachineSpec::new(
@@ -387,10 +415,15 @@ pub fn lower_evaluated_json(
                     .map(|edge| EdgeSpec::new(edge.source, edge.target))
                     .collect(),
             );
+            spec.lifecycle_profile = lifecycle_profile;
             spec.effects = effects
                 .into_iter()
                 .map(effect)
                 .collect::<Result<Vec<_>, FrontendFailure>>()?;
+            spec.suspensions = suspensions
+                .into_iter()
+                .map(suspension_declaration)
+                .collect();
             (
                 LoweredMachineSpec::V1(spec),
                 admission_limits,
@@ -412,6 +445,7 @@ pub fn lower_evaluated_json(
                 expected_schema: LATTICE_EVALUATED_SCHEMA,
                 lifecycle_profile: &lifecycle_profile,
                 events,
+                allow_suspension: false,
             })?;
             let admission_limits = admission_limits(limits, frontend_limits.machine_ceiling)?;
             let (nodes, edges) = lower_lattice(nodes, edges, configs)?;
@@ -437,6 +471,7 @@ pub fn lower_evaluated_json(
                 expected_schema: LATTICE_V2_EVALUATED_SCHEMA,
                 lifecycle_profile: &lifecycle_profile,
                 events,
+                allow_suspension: false,
             })?;
             let admission_limits = admission_limits(limits, frontend_limits.machine_ceiling)?;
             let spec = lower_lattice_v2(nodes, edges, configs, effects)?;

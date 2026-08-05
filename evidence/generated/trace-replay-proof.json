@@ -39,6 +39,11 @@
         "expected_diagnostic": "postcondition not satisfied: replay_dispatch_intents_spec",
         "path": "verus/trace-failure-fixtures/replay_with_dispatch_intent.rs",
         "violated_obligation": "replay returns fresh dispatch authority"
+      },
+      {
+        "expected_diagnostic": "postcondition not satisfied: replay_final_suspensions_from_spec",
+        "path": "verus/trace-failure-fixtures/suspended_trace_drops_fact.rs",
+        "violated_obligation": "replay drops the suspension fact recorded by an accepted suspend"
       }
     ],
     "non_claims": [
@@ -83,32 +88,32 @@
         "role": "erased vstd dependency contract"
       },
       {
-        "blake3": "70b9855abd8fd318ee7d59c3d372cb6845179f7f203c6ec1aee018e8e486d64e",
+        "blake3": "dea59aed4710cdee14460206942c907f575e172685fa4e167cc45852e8ba8801",
         "path": "crates/choregraph-core/src/concrete.rs",
         "role": "production v2 replay event and intent boundary"
       },
       {
-        "blake3": "38637787398767cb61bea49499171b42c9d568166592199b34c7aaf0b255a0c8",
+        "blake3": "1b009daaa9a4604be776c522cb5d626bdf7de6061deaeaed9d1bffd4b54ef021",
         "path": "crates/choregraph-core/src/lib.rs",
         "role": "production module and public replay linkage"
       },
       {
-        "blake3": "bbde5bac0289507bc3a385579947aa2ecde40ad2e2dc696894d0e824aba6be94",
+        "blake3": "873b159c57c4a956730f52179948b1dce27bb12c8e19c72d714112d12a9ba71b",
         "path": "crates/choregraph-core/src/model.rs",
         "role": "bounded trace, binding, count, and failure types"
       },
       {
-        "blake3": "ac6e019fe15f9995adf26b41009d3295b1d69e9e22d30f1eb32970a22312f4ef",
+        "blake3": "d0e18f721280b48dfd88130ca86a3134588aa9cae52678962ce75165aab9cbd5",
         "path": "crates/choregraph-core/src/transition.rs",
         "role": "public replay fold over the production step relation"
       },
       {
-        "blake3": "ce2cc20ba8550e8111419cf5821553ad928150dab52e9505afb5a16800faa57e",
+        "blake3": "49d30d9bb40c0b3554a0174bd6afffe819639d67b477845114de154982ef1894",
         "path": "crates/choregraph-core/src/verified.rs",
         "role": "production-called verified single-step kernel"
       },
       {
-        "blake3": "16a30a0bfd64357fa2b8ea63d6998f171d224bc01c1c56391b62a743b43a7708",
+        "blake3": "9599b74608ae6cf33de0d8e85f1ca80000af1d02b51e35a1c74e65f070399d8a",
         "path": "crates/choregraph-core/src/verified/trace.rs",
         "role": "production trace specifications and finite induction theorems"
       },
@@ -133,7 +138,7 @@
         "role": "reviewed selected-source baseline"
       },
       {
-        "blake3": "5df5966236fd4817e1c8e37e8e893982a7832226d1004359e93e51fdec2db38c",
+        "blake3": "f913942d1e4533d2b0fb98e0919a13370816cfd0e3ad64a0be49494462a58e80",
         "path": "flake.nix",
         "role": "maintained positive, negative, trust, and evidence gate"
       },
@@ -161,6 +166,11 @@
         "blake3": "9400608f314ef3a2316245b667f87848d199454e4ceeed9dcaed3431da5743e1",
         "path": "verus/trace-failure-fixtures/replay_with_dispatch_intent.rs",
         "role": "negative dispatch-authority fixture"
+      },
+      {
+        "blake3": "13291f4afd5ba61eccde31a4e039db5babde6c410c657b5771224766667f20cc",
+        "path": "verus/trace-failure-fixtures/suspended_trace_drops_fact.rs",
+        "role": "negative suspension-fact replay fixture"
       }
     ],
     "status": "verified",
@@ -169,6 +179,7 @@
       "admitted_trace_respects_limit",
       "replay_prefix_length_bounded",
       "finite_replay_preserves_invariant",
+      "accepted_suspended_prefix_remains_consistent",
       "first_failure_is_exact",
       "equal_replay_inputs_have_equal_decisions",
       "replay_never_returns_dispatch_intents"

@@ -24,6 +24,8 @@ const SOURCE_ORDER_JSON: &[u8] =
     include_bytes!("../../../fixtures/nickel/evaluated/source-order.json");
 const LATTICE_EFFECT_V2_JSON: &[u8] =
     include_bytes!("../../../fixtures/nickel/evaluated/lattice-effect-v2.json");
+const DURABLE_SUSPENSION_JSON: &[u8] =
+    include_bytes!("../../../fixtures/nickel/evaluated/durable-suspension.json");
 const SINGLE_EFFECT_COUNT: usize = 1;
 const FIRST_ITEM: usize = 0;
 
@@ -86,6 +88,88 @@ fn lowers_lattice_port_diamond_to_stable_node_graph() {
             "lattice-node/3",
             "lattice-node/4"
         ]
+    );
+}
+
+#[test]
+fn lowers_durable_suspension_profile_with_explicit_selection() {
+    let output = must(lower_evaluated_json(
+        DURABLE_SUSPENSION_JSON,
+        &[],
+        FrontendLimits::default(),
+    ));
+    assert_eq!(output.source_format, LoweredSourceFormat::ChoregraphV1);
+    assert_eq!(
+        output.machine.lifecycle_profile(),
+        choregraph_core::LifecycleProfile::DurableSuspensionV1
+    );
+    assert_eq!(
+        output.machine.suspension_declarations().len(),
+        SINGLE_EFFECT_COUNT
+    );
+    let declaration = &output.machine.suspension_declarations()[FIRST_ITEM];
+    assert_eq!(declaration.node_id.as_str(), "gate");
+    assert_eq!(declaration.class.as_str(), "manual-approval");
+    let restarted = output.machine.declared_suspension_state();
+    assert_eq!(
+        restarted.state(&declaration.node_id),
+        Some(choregraph_core::LocalState::Suspended)
+    );
+}
+
+#[test]
+fn rejects_suspension_inference_widening_and_product_fields() {
+    let mut linear_events: serde_json::Value = must(serde_json::from_slice(DURABLE_SUSPENSION_JSON));
+    must_array(&mut linear_events["events"]).retain(|event| event != "suspend");
+    let linear_events = must(serde_json::to_vec(&linear_events));
+    let failure = lower_evaluated_json(&linear_events, &[], FrontendLimits::default());
+    assert_eq!(
+        failure.err().map(|error| error.issues[0].code),
+        Some(FrontendIssueCode::UnsupportedEvents)
+    );
+
+    let mut inferred: serde_json::Value = must(serde_json::from_slice(DURABLE_SUSPENSION_JSON));
+    inferred["lifecycle_profile"] =
+        serde_json::Value::String(String::from(choregraph_core::LINEAR_LIFECYCLE_V1));
+    must_array(&mut inferred["events"]).retain(|event| event != "suspend" && event != "resume-signal");
+    let inferred = must(serde_json::to_vec(&inferred));
+    let failure = lower_evaluated_json(&inferred, &[], FrontendLimits::default());
+    assert_eq!(
+        failure.err().map(|error| error.issues[0].code),
+        Some(FrontendIssueCode::MachineAdmissionRejected)
+    );
+
+    let mut unknown: serde_json::Value = must(serde_json::from_slice(DURABLE_SUSPENSION_JSON));
+    unknown["lifecycle_profile"] =
+        serde_json::Value::String(String::from("choregraph.lifecycle.unknown.v9"));
+    let unknown = must(serde_json::to_vec(&unknown));
+    let failure = lower_evaluated_json(&unknown, &[], FrontendLimits::default());
+    assert_eq!(
+        failure.err().map(|error| error.issues[0].code),
+        Some(FrontendIssueCode::UnsupportedLifecycle)
+    );
+
+    let mut product: serde_json::Value = must(serde_json::from_slice(DURABLE_SUSPENSION_JSON));
+    product["suspensions"][FIRST_ITEM]["approver"] =
+        serde_json::Value::String(String::from("alice"));
+    let product = must(serde_json::to_vec(&product));
+    let failure = lower_evaluated_json(&product, &[], FrontendLimits::default());
+    assert_eq!(
+        failure.err().map(|error| error.issues[0].code),
+        Some(FrontendIssueCode::MalformedEvaluatedValue)
+    );
+}
+
+#[test]
+fn lattice_workflow_formats_reject_suspension_inference() {
+    let mut lattice: serde_json::Value = must(serde_json::from_slice(DIAMOND_JSON));
+    lattice["lifecycle_profile"] =
+        serde_json::Value::String(String::from(choregraph_core::DURABLE_SUSPENSION_V1));
+    let lattice = must(serde_json::to_vec(&lattice));
+    let failure = lower_evaluated_json(&lattice, &[], FrontendLimits::default());
+    assert_eq!(
+        failure.err().map(|error| error.issues[0].code),
+        Some(FrontendIssueCode::UnsupportedLifecycle)
     );
 }
 

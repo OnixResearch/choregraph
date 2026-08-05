@@ -55,7 +55,7 @@ let ProofManifest = {
   proof | ProofManifest = {
     schema = "choregraph.single-step-proof.v1",
     status = "verified",
-    claim = "The production-called indexed kernel preserves bounded state, declared intent membership, concrete binding decisions, and reference witnesses.",
+    claim = "The production-called indexed kernel preserves bounded state, declared intent membership, concrete binding decisions, reference witnesses, durable suspension facts, exact resume binding, and effect-free suspension transitions.",
     positive_command_argv = [
       "octet-production-verus",
       "--crate-type=lib",
@@ -91,13 +91,19 @@ let ProofManifest = {
       },
     ],
     theorems = [
+      "accepted_resume_requires_exact_fact_and_clears",
       "accepted_step_preserves_invariant_and_effects",
+      "accepted_suspend_records_exact_fact",
       "admitted_topology_has_each_node_once_and_edges_forward",
       "concrete binding and reference preservation witnesses",
       "denial_has_no_replacement_or_intents",
       "equal_explicit_inputs_have_equal_decisions",
       "indexed_step executable refinement postconditions",
+      "mismatched_resume_is_denied",
       "readiness_is_sound",
+      "suspended_state_blocks_execution_actions",
+      "suspension_transitions_emit_no_effects",
+      "suspension_update_preserves_consistency",
     ],
     sources = [
       {
@@ -122,37 +128,37 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/admission.rs",
-        blake3 = "db788ac62571e4b90789a33ea02adfb7025cef04d5b7d8c704498a07f4cf15af",
+        blake3 = "347384983b7d59136791a5f3006974683b8bd7c51d838b585fc06fc8b332a43e",
         role = "production indexed graph construction",
       },
       {
         path = "crates/choregraph-core/src/concrete.rs",
-        blake3 = "70b9855abd8fd318ee7d59c3d372cb6845179f7f203c6ec1aee018e8e486d64e",
+        blake3 = "dea59aed4710cdee14460206942c907f575e172685fa4e167cc45852e8ba8801",
         role = "production concrete binding resolver and exact intent construction",
       },
       {
         path = "crates/choregraph-core/src/invariant.rs",
-        blake3 = "ddea359369cf1739353684223ce492ac5e65dc4d211c5dfacf52ed8995dc2479",
+        blake3 = "13078fde3e2b5c6c3227d211c36b52e60b29cc223e00c47da5b2f51867ee41c7",
         role = "production graph and post-step gates",
       },
       {
         path = "crates/choregraph-core/src/lib.rs",
-        blake3 = "38637787398767cb61bea49499171b42c9d568166592199b34c7aaf0b255a0c8",
+        blake3 = "1b009daaa9a4604be776c522cb5d626bdf7de6061deaeaed9d1bffd4b54ef021",
         role = "production module linkage",
       },
       {
         path = "crates/choregraph-core/src/model.rs",
-        blake3 = "bbde5bac0289507bc3a385579947aa2ecde40ad2e2dc696894d0e824aba6be94",
+        blake3 = "873b159c57c4a956730f52179948b1dce27bb12c8e19c72d714112d12a9ba71b",
         role = "production indexed machine fields",
       },
       {
         path = "crates/choregraph-core/src/transition.rs",
-        blake3 = "ac6e019fe15f9995adf26b41009d3295b1d69e9e22d30f1eb32970a22312f4ef",
+        blake3 = "d0e18f721280b48dfd88130ca86a3134588aa9cae52678962ce75165aab9cbd5",
         role = "production transition shell and kernel delegation",
       },
       {
         path = "crates/choregraph-core/src/verified.rs",
-        blake3 = "ce2cc20ba8550e8111419cf5821553ad928150dab52e9505afb5a16800faa57e",
+        blake3 = "49d30d9bb40c0b3554a0174bd6afffe819639d67b477845114de154982ef1894",
         role = "production-called verified transition kernel",
       },
       {
@@ -172,7 +178,7 @@ let ProofManifest = {
       },
       {
         path = "flake.nix",
-        blake3 = "5df5966236fd4817e1c8e37e8e893982a7832226d1004359e93e51fdec2db38c",
+        blake3 = "f913942d1e4533d2b0fb98e0919a13370816cfd0e3ad64a0be49494462a58e80",
         role = "maintained proof and failure-fixture gate",
       },
       {
@@ -194,6 +200,21 @@ let ProofManifest = {
         path = "verus/failure-fixtures/state_map_mismatch.rs",
         blake3 = "97b7d87f487b7a1463d50acefefb51355929b3a4f7f10e6394810718d6dd3cf3",
         role = "negative state-shape fixture",
+      },
+      {
+        path = "verus/failure-fixtures/suspended_mark_ready.rs",
+        blake3 = "a7c93e4f77686e4815b02eac13c8997eddc3a5de535889da8a4fb7933016df9b",
+        role = "negative suspended readiness fixture",
+      },
+      {
+        path = "verus/failure-fixtures/suspension_effect_intent.rs",
+        blake3 = "e8362e129f79dc3bda08d6bef9c1acc5bbea879ede45a0fccd7563c6e93300bc",
+        role = "negative suspension effect fixture",
+      },
+      {
+        path = "verus/failure-fixtures/suspension_resume_mismatch.rs",
+        blake3 = "23b4763f2c1955f9de0b4f885ed75afc889cbb45f8525b740c20408e123addca",
+        role = "negative resume-binding fixture",
       },
       {
         path = "verus/failure-fixtures/terminal_mutation.rs",
@@ -236,6 +257,21 @@ let ProofManifest = {
         path = "verus/failure-fixtures/state_map_mismatch.rs",
         expected_diagnostic = "postcondition not satisfied: indexed_invariant_spec",
         violated_obligation = "dependency and state vectors have different lengths",
+      },
+      {
+        path = "verus/failure-fixtures/suspended_mark_ready.rs",
+        expected_diagnostic = "postcondition not satisfied: lifecycle_target_spec",
+        violated_obligation = "a suspended node starts without a resume signal",
+      },
+      {
+        path = "verus/failure-fixtures/suspension_effect_intent.rs",
+        expected_diagnostic = "postcondition not satisfied: indexed_step_accepts_spec",
+        violated_obligation = "a suspend transition emits a product effect intent",
+      },
+      {
+        path = "verus/failure-fixtures/suspension_resume_mismatch.rs",
+        expected_diagnostic = "postcondition not satisfied: indexed_step_accepts_spec",
+        violated_obligation = "a resume signal with a mismatched fact moves state",
       },
       {
         path = "verus/failure-fixtures/terminal_mutation.rs",

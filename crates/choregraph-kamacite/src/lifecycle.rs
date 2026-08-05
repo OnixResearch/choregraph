@@ -20,12 +20,15 @@ use crate::identity::{
     ArtifactDomain, ArtifactIdentity, KamaciteIdentity, KamaciteIdentityDomain, compute_identity,
     compute_kamacite_identity,
 };
-use choregraph_core::{Action, LocalState, LocalTransitionError, lifecycle_target};
+use choregraph_core::{
+    Action, LifecycleProfile, LocalState, LocalTransitionError, lifecycle_target_for_profile,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::fmt::{Display, Formatter};
 
 pub const LIFECYCLE_FSM_ID: &str = "choregraph.lifecycle.linear.v1";
+pub const DURABLE_FSM_ID: &str = "choregraph.lifecycle.durable-suspension.v1";
 const SUPPORTED_SCHEMA_VERSION: u32 = 1;
 const DETERMINISM_POLICY: &str = "deterministic";
 const TOTALITY_POLICY: &str = "closed-matrix-with-explicit-denials";
@@ -44,6 +47,9 @@ const FSM_TRANSITION_KIND: &str = "transition";
 const LOCAL_STATE_COUNT: usize = 6;
 const ACTION_COUNT: usize = 5;
 const MATRIX_CELL_COUNT: usize = LOCAL_STATE_COUNT * ACTION_COUNT;
+const DURABLE_STATE_COUNT: usize = 7;
+const DURABLE_ACTION_COUNT: usize = 7;
+const DURABLE_MATRIX_CELL_COUNT: usize = DURABLE_STATE_COUNT * DURABLE_ACTION_COUNT;
 
 const STATES: [LocalState; LOCAL_STATE_COUNT] = [
     LocalState::Pending,
@@ -59,6 +65,24 @@ const ACTIONS: [Action; ACTION_COUNT] = [
     Action::Complete,
     Action::Fail,
     Action::Cancel,
+];
+const DURABLE_STATES: [LocalState; DURABLE_STATE_COUNT] = [
+    LocalState::Pending,
+    LocalState::Ready,
+    LocalState::Running,
+    LocalState::Completed,
+    LocalState::Failed,
+    LocalState::Cancelled,
+    LocalState::Suspended,
+];
+const DURABLE_ACTIONS: [Action; DURABLE_ACTION_COUNT] = [
+    Action::MarkReady,
+    Action::Start,
+    Action::Complete,
+    Action::Fail,
+    Action::Cancel,
+    Action::Suspend,
+    Action::ResumeSignal,
 ];
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -214,10 +238,20 @@ fn action_id(action: Action) -> &'static str {
 }
 
 fn row_guards(state: LocalState, action: Action) -> Vec<String> {
-    if state == LocalState::Pending && action == Action::MarkReady {
+    let dependency_gated = (state == LocalState::Pending && action == Action::MarkReady)
+        || (state == LocalState::Suspended && action == Action::ResumeSignal);
+    if dependency_gated {
         vec![String::from(DEPENDENCIES_COMPLETE_GUARD)]
     } else {
         Vec::new()
+    }
+}
+
+fn row_side_effect(action: Action) -> &'static str {
+    if matches!(action, Action::Suspend | Action::ResumeSignal) {
+        NO_SIDE_EFFECT
+    } else {
+        MACHINE_DECLARED_INTENTS_EFFECT
     }
 }
 
@@ -228,36 +262,42 @@ fn denial_reason(error: LocalTransitionError) -> String {
     }
 }
 
-fn descriptor(source_envelope_identity: Option<KamaciteIdentity>) -> LifecycleDescriptor {
-    let states = STATES
-        .into_iter()
+fn descriptor_for(
+    profile: LifecycleProfile,
+    state_table: &[LocalState],
+    action_table: &[Action],
+    fsm_id: &str,
+    source_envelope_identity: Option<KamaciteIdentity>,
+) -> LifecycleDescriptor {
+    let states = state_table
+        .iter()
         .map(|state| FsmState {
-            state_id: String::from(state_id(state)),
-            label: String::from(state_id(state)),
+            state_id: String::from(state_id(*state)),
+            label: String::from(state_id(*state)),
         })
         .collect();
-    let events = ACTIONS
-        .into_iter()
+    let events = action_table
+        .iter()
         .map(|action| FsmEvent {
-            event_id: String::from(action_id(action)),
-            label: String::from(action_id(action)),
+            event_id: String::from(action_id(*action)),
+            label: String::from(action_id(*action)),
         })
         .collect();
     let mut transitions = Vec::new();
     let mut denials = Vec::new();
-    for state in STATES {
-        for action in ACTIONS {
-            match lifecycle_target(state, action) {
+    for state in state_table {
+        for action in action_table {
+            match lifecycle_target_for_profile(profile, *state, *action) {
                 Ok(target) => transitions.push(FsmTransitionRow {
-                    from_state: String::from(state_id(state)),
-                    event: String::from(action_id(action)),
+                    from_state: String::from(state_id(*state)),
+                    event: String::from(action_id(*action)),
                     to_state: String::from(state_id(target)),
-                    guards: row_guards(state, action),
-                    side_effect: String::from(MACHINE_DECLARED_INTENTS_EFFECT),
+                    guards: row_guards(*state, *action),
+                    side_effect: String::from(row_side_effect(*action)),
                 }),
                 Err(error) => denials.push(FsmDenialRow {
-                    from_state: String::from(state_id(state)),
-                    event: String::from(action_id(action)),
+                    from_state: String::from(state_id(*state)),
+                    event: String::from(action_id(*action)),
                     reason: denial_reason(error),
                     guards: Vec::new(),
                     side_effect: String::from(NO_SIDE_EFFECT),
@@ -268,7 +308,7 @@ fn descriptor(source_envelope_identity: Option<KamaciteIdentity>) -> LifecycleDe
     }
     LifecycleDescriptor {
         schema_version: SUPPORTED_SCHEMA_VERSION,
-        fsm_id: String::from(LIFECYCLE_FSM_ID),
+        fsm_id: String::from(fsm_id),
         source_envelope_identity,
         states,
         events,
@@ -313,6 +353,102 @@ fn descriptor(source_envelope_identity: Option<KamaciteIdentity>) -> LifecycleDe
             String::from("does not prove source equivalence"),
         ],
     }
+}
+
+fn descriptor(source_envelope_identity: Option<KamaciteIdentity>) -> LifecycleDescriptor {
+    descriptor_for(
+        LifecycleProfile::LinearV1,
+        &STATES,
+        &ACTIONS,
+        LIFECYCLE_FSM_ID,
+        source_envelope_identity,
+    )
+}
+
+fn durable_descriptor(source_envelope_identity: Option<KamaciteIdentity>) -> LifecycleDescriptor {
+    let mut descriptor = descriptor_for(
+        LifecycleProfile::DurableSuspensionV1,
+        &DURABLE_STATES,
+        &DURABLE_ACTIONS,
+        DURABLE_FSM_ID,
+        source_envelope_identity,
+    );
+    descriptor
+        .checked_laws
+        .push(String::from("suspension-transitions-emit-no-effect-intents"));
+    descriptor
+        .non_claims
+        .push(String::from("does not prove approval authority or signal truth"));
+    descriptor
+}
+
+fn build_artifact(
+    descriptor: LifecycleDescriptor,
+    expected_cells: usize,
+) -> Result<LifecycleArtifact, LifecycleError> {
+    let canonical = encode(&descriptor, FSM_SPEC_SCHEMA_VERSION, FSM_SPEC_ROOT_LABEL)?;
+    let identity =
+        compute_kamacite_identity(KamaciteIdentityDomain::FsmSpec, &canonical.packed_bytes);
+    let project_identity = compute_identity(ArtifactDomain::Lifecycle, &canonical.packed_bytes)
+        .map_err(|error| LifecycleError::Identity(error.to_string()))?;
+    let coverage = coverage_evidence(&descriptor)?;
+    if !coverage.missing_cells.is_empty() {
+        return Err(LifecycleError::MatrixNotClosed {
+            covered: expected_cells - coverage.missing_cells.len(),
+            expected: expected_cells,
+        });
+    }
+    Ok(LifecycleArtifact {
+        descriptor,
+        canonical,
+        identity,
+        project_identity,
+        coverage,
+    })
+}
+
+pub fn build_durable_lifecycle_artifact(
+    source_envelope_identity: Option<KamaciteIdentity>,
+) -> Result<LifecycleArtifact, LifecycleError> {
+    if let Some(identity) = &source_envelope_identity {
+        identity
+            .validate(KamaciteIdentityDomain::Source)
+            .map_err(|error| LifecycleError::Identity(error.to_string()))?;
+    }
+    build_artifact(
+        durable_descriptor(source_envelope_identity),
+        DURABLE_MATRIX_CELL_COUNT,
+    )
+}
+
+pub fn validate_durable_lifecycle_artifact(input: &[u8]) -> Result<LifecycleArtifact, LifecycleError> {
+    let (decoded, canonical): (LifecycleDescriptor, CanonicalArtifact) =
+        crate::codec::decode(input, FSM_SPEC_SCHEMA_VERSION, FSM_SPEC_ROOT_LABEL)?;
+    if decoded.fsm_id != DURABLE_FSM_ID || decoded.schema_version != SUPPORTED_SCHEMA_VERSION {
+        return Err(LifecycleError::UnsupportedProfile);
+    }
+    let expected = durable_descriptor(decoded.source_envelope_identity.clone());
+    if decoded != expected {
+        return Err(LifecycleError::ProfileMismatch);
+    }
+    let identity =
+        compute_kamacite_identity(KamaciteIdentityDomain::FsmSpec, &canonical.packed_bytes);
+    let project_identity = compute_identity(ArtifactDomain::Lifecycle, &canonical.packed_bytes)
+        .map_err(|error| LifecycleError::Identity(error.to_string()))?;
+    let coverage = coverage_evidence(&decoded)?;
+    if !coverage.missing_cells.is_empty() {
+        return Err(LifecycleError::MatrixNotClosed {
+            covered: DURABLE_MATRIX_CELL_COUNT - coverage.missing_cells.len(),
+            expected: DURABLE_MATRIX_CELL_COUNT,
+        });
+    }
+    Ok(LifecycleArtifact {
+        descriptor: decoded,
+        canonical,
+        identity,
+        project_identity,
+        coverage,
+    })
 }
 
 pub fn build_lifecycle_artifact(

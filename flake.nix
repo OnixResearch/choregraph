@@ -279,6 +279,9 @@
                     denial_with_intent.rs) expected='result.intent_indices@.len()' ;;
                     premature_readiness.rs) expected='dependencies_complete_spec' ;;
                     state_map_mismatch.rs) expected='indexed_invariant_spec' ;;
+                    suspended_mark_ready.rs) expected='lifecycle_target_spec' ;;
+                    suspension_effect_intent.rs) expected='indexed_step_accepts_spec' ;;
+                    suspension_resume_mismatch.rs) expected='indexed_step_accepts_spec' ;;
                     terminal_mutation.rs) expected='terminal_states_preserved_spec' ;;
                     topological_edge_reversal.rs) expected='topological_order_spec' ;;
                     undeclared_intent.rs) expected='effects_allowed_spec' ;;
@@ -303,6 +306,9 @@
                   echo 'single-step proof core gained an unrecorded trust escape' >&2
                   exit 1
                 fi
+                grep -F 'STATE_SUSPENDED' crates/choregraph-core/src/verified.rs > /dev/null
+                grep -F 'ACTION_RESUME_SIGNAL' crates/choregraph-core/src/verified.rs > /dev/null
+                grep -F 'suspensions_consistent_spec' crates/choregraph-core/src/verified.rs > /dev/null
                 test "$(grep -F -c 'crate::verified::indexed_step(' \
                   crates/choregraph-core/src/transition.rs)" -eq 2
                 grep -F 'crate::verified::lifecycle_target(' \
@@ -333,8 +339,8 @@
                 jq --exit-status '
                   .proof.schema == "choregraph.single-step-proof.v1"
                   and .proof.status == "verified"
-                  and (.proof.theorems | length) == 7
-                  and (.proof.negative_fixtures | length) == 7
+                  and (.proof.theorems | length) == 13
+                  and (.proof.negative_fixtures | length) == 10
                   and .proof.trusted_surface.project_trusted_declarations == []
                   and (.proof.non_claims | length) > 0
                 ' "$TMPDIR/proof-manifest.json" > /dev/null
@@ -406,6 +412,7 @@
                     failure_index_skips_denial.rs) expected='replay_failure_index_from_spec' ;;
                     preservation_without_initial_invariant.rs) expected='indexed_invariant_spec' ;;
                     replay_with_dispatch_intent.rs) expected='replay_dispatch_intents_spec' ;;
+                    suspended_trace_drops_fact.rs) expected='replay_final_suspensions_from_spec' ;;
                     *) echo "unclassified trace failure fixture: $fixture_name" >&2; exit 1 ;;
                   esac
                   set +e
@@ -465,8 +472,8 @@
                   and .proof.limits.max_trace_events == ${toString defaultMaxTraceEvents}
                   and .proof.limits.trace_binding_bytes == ${toString traceBindingBytes}
                   and (.proof.machine_schemas | length) == 2
-                  and (.proof.theorems | length) == 7
-                  and (.proof.negative_fixtures | length) == 4
+                  and (.proof.theorems | length) == 8
+                  and (.proof.negative_fixtures | length) == 5
                   and .proof.trusted_surface.project_trusted_declarations == []
                   and (.proof.non_claims | length) >= 5
                 ' "$TMPDIR/proof-manifest.json" > /dev/null

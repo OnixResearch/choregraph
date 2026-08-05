@@ -26,11 +26,15 @@ use crate::{
 };
 use choregraph_core::{
     Action, AdmissionLimits, AdmittedMachine, EdgeSpec, EffectDeclarationSpec, LocalState,
-    MachineSpec, NodeSpec, TransitionSelector,
+    MachineSpec, NodeSpec, SuspensionDeclarationSpec, TransitionSelector,
 };
 use serde::Serialize;
 
 const PAYLOAD: &str = "blake3:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const SUSPENSION_REFERENCE: &str =
+    "blake3:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+const SUSPENSION_CLASS: &str = "manual-approval";
+const DURABLE_MATRIX_CELLS: usize = 49;
 const SOURCE_ENVELOPE: &[u8] = b"canonical-source-envelope-v1";
 const PROOF_SET: &[u8] = b"proof-set-status-pending-v1";
 const GENERATOR: &[u8] = b"choregraph-generator-source-v1";
@@ -189,6 +193,135 @@ fn canonical_artifacts_round_trip_with_stable_normalized_identities() {
     ));
     assert_eq!(validated.machine, admitted(false));
     assert_eq!(validated.identity, first.identities.machine);
+}
+
+#[test]
+fn durable_artifacts_round_trip_with_exact_suspension_facts() {
+    let machine = durable_machine();
+    let lifecycle = must(crate::build_durable_lifecycle_artifact(None));
+    let (_profile, _profile_artifact, profile_identity) = must(build_profile_artifact());
+    let descriptor = must(crate::durable_machine_descriptor(
+        &machine,
+        lifecycle.project_identity.clone(),
+        profile_identity.clone(),
+    ));
+    let artifact = must(crate::encode_durable_machine_descriptor(&descriptor));
+    let validated = must(crate::validate_durable_machine_artifact(
+        &artifact.packed_bytes,
+        &lifecycle,
+        &profile_identity,
+    ));
+    assert_eq!(validated.machine, machine);
+    assert_eq!(validated.descriptor.suspensions.len(), 1);
+    let restarted = validated.machine.declared_suspension_state();
+    let gate = must(
+        choregraph_core::NodeId::parse("gate", AdmissionLimits::default().max_identifier_bytes)
+            .map_err(|error| format!("gate node id: {error:?}")),
+    );
+    assert_eq!(
+        restarted.state(&gate),
+        Some(choregraph_core::LocalState::Suspended)
+    );
+
+    let decoded = must(crate::validate_durable_lifecycle_artifact(
+        &lifecycle.canonical.packed_bytes,
+    ));
+    assert_eq!(decoded.descriptor.fsm_id, crate::DURABLE_FSM_ID);
+    assert_eq!(
+        decoded.descriptor.transitions.len() + decoded.descriptor.denials.len(),
+        DURABLE_MATRIX_CELLS
+    );
+    assert!(decoded.descriptor.transitions.iter().any(|row| {
+        row.from_state == "ready"
+            && row.event == "suspend"
+            && row.to_state == "suspended"
+            && row.side_effect == "none"
+    }));
+    assert!(decoded.descriptor.transitions.iter().any(|row| {
+        row.from_state == "suspended"
+            && row.event == "resume-signal"
+            && row.to_state == "ready"
+            && row.side_effect == "none"
+            && !row.guards.is_empty()
+    }));
+    assert!(
+        decoded
+            .descriptor
+            .denials
+            .iter()
+            .any(|row| row.from_state == "suspended" && row.event == "start")
+    );
+    assert!(
+        !decoded
+            .descriptor
+            .terminal_states
+            .iter()
+            .any(|state| state == "suspended")
+    );
+}
+
+#[test]
+fn durable_descriptor_tampering_and_profile_inference_fail_closed() {
+    let machine = durable_machine();
+    let lifecycle = must(crate::build_durable_lifecycle_artifact(None));
+    let (_profile, _profile_artifact, profile_identity) = must(build_profile_artifact());
+    let descriptor = must(crate::durable_machine_descriptor(
+        &machine,
+        lifecycle.project_identity.clone(),
+        profile_identity.clone(),
+    ));
+    let artifact = must(crate::encode_durable_machine_descriptor(&descriptor));
+
+    let as_v1 = validate_machine_artifact(&artifact.packed_bytes, &lifecycle, &profile_identity);
+    assert!(as_v1.is_err());
+
+    let mut malformed = descriptor.clone();
+    malformed.suspensions[0].class = String::from("bad class!");
+    let malformed = must(crate::encode_durable_machine_descriptor(&malformed));
+    let failure = crate::validate_durable_machine_artifact(
+        &malformed.packed_bytes,
+        &lifecycle,
+        &profile_identity,
+    );
+    assert!(matches!(failure, Err(AggregateError::AdmissionRejected)));
+
+    let mut wrong_version = descriptor.clone();
+    wrong_version.schema_version = 1;
+    let wrong_version = must(crate::encode_durable_machine_descriptor(&wrong_version));
+    let failure = crate::validate_durable_machine_artifact(
+        &wrong_version.packed_bytes,
+        &lifecycle,
+        &profile_identity,
+    );
+    assert!(matches!(failure, Err(AggregateError::UnsupportedProfile)));
+
+    let linear = admitted(false);
+    let inference = crate::durable_machine_descriptor(
+        &linear,
+        lifecycle.project_identity.clone(),
+        profile_identity.clone(),
+    );
+    assert!(matches!(inference, Err(AggregateError::UnsupportedProfile)));
+
+    let widened = build_artifact_set(&machine, materials(PROOF_SET));
+    assert!(matches!(widened, Err(AggregateError::UnsupportedProfile)));
+}
+
+fn durable_machine() -> AdmittedMachine {
+    let mut spec = MachineSpec::new(
+        vec![
+            NodeSpec::new("source", Vec::new()),
+            NodeSpec::new("gate", Vec::new()),
+        ],
+        vec![EdgeSpec::new("source", "gate")],
+    );
+    spec.lifecycle_profile = String::from(choregraph_core::DURABLE_SUSPENSION_V1);
+    spec.suspensions.push(SuspensionDeclarationSpec {
+        node_id: String::from("gate"),
+        class: String::from(SUSPENSION_CLASS),
+        reference: String::from(SUSPENSION_REFERENCE),
+    });
+    must(AdmittedMachine::admit(spec, AdmissionLimits::default()))
 }
 
 #[test]

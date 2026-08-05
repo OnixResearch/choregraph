@@ -56,6 +56,36 @@ A concrete intent preserves the selected slot, declared source reference, and ex
 
 The core does not authorize, dispatch, retry, persist, or execute an intent.
 
+## Durable suspension profile
+
+The opt-in `choregraph.lifecycle.durable-suspension.v1` profile adds one non-terminal `Suspended` local state. Machines select the profile by exact string at admission. No adapter infers the profile from node names or product configuration.
+
+A suspended node carries one bounded suspension class and one canonical BLAKE3 reference. The class shares the identifier byte limit. The reference shares the reference byte limit. Both are opaque: the kernel compares bytes and never parses approvers, policies, credentials, clocks, or payloads.
+
+The durable profile accepts these additional transitions:
+
+```text
+Ready -> Suspended (suspend)
+Running -> Suspended (suspend)
+Suspended -> Ready (resume-signal)
+```
+
+Suspend and resume-signal events carry the exact class and reference. Both actions always reject effect requests. A resume signal must match the recorded class and reference byte for byte. Resume also requires completed dependencies. Duplicate, stale, wrong-node, wrong-class, wrong-reference, nested, premature, malformed, and oversized cases fail closed with one deterministic denial reason.
+
+A suspended node is never ready. `resume_decision` returns `AwaitSignal` for suspended nodes even when dependencies are complete. Dependency completion alone never releases a suspension.
+
+`AdmittedMachine::declared_suspension_state` reconstructs a recorded wait after a process restart. Admission validates each declared suspension: known node, bounded class, canonical reference, no duplicates, durable profile required. Consumers can also build a restart state with `MachineState::with_suspensions`; the executable invariant accepts the state only when records exist exactly for suspended nodes.
+
+Replay binds suspension facts through the production `step` relation. A trace can end validly in suspended state. Replay of the same admitted trace produces the same state, decisions, and trace identity.
+
+The canonical Kamacite path versions durable artifacts explicitly. Linear machines keep the version-1 descriptor with unchanged bytes. Durable machines use the version-2 descriptor with suspension declarations and the durable FSM artifact. The version-1 descriptor rejects durable machines, and the version-2 descriptor rejects linear machines.
+
+Suspension conformance does not establish approval authority, persistence durability, signal truth, timeout correctness, or downstream effect safety. See `SUSPENSION_NON_CLAIMS` in `choregraph-core`.
+
+## Migration
+
+Existing v1 machines keep `LINEAR_LIFECYCLE_V1` behavior, canonical bytes, and decisions. Consumers that need durable waits re-admit their machine with the durable profile string and declare suspension facts explicitly. A v1 artifact never gains suspension fields.
+
 ## Executable predicates
 
 - `well_formed` validates normalized immutable machine facts.

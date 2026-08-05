@@ -14,19 +14,25 @@
 use choregraph_core::{
     Action, AdmissionLimits, AdmittedMachine, CANONICAL_REFERENCE_PROFILE_V1, ConcreteBindingInput,
     ConcreteDecision, ConcreteEffectDeclarationSpec, ConcreteEffectIntent, ConcreteEffectRequest,
-    ConcreteEvent, ConcreteReferenceSpec, EdgeSpec, EffectDeclarationSpec, LocalState, MachineSpec,
-    MachineSpecV2, NodeSpec, ReferenceBindingSpec, TransitionSelector, step_concrete,
+    ConcreteEvent, ConcreteReferenceSpec, DURABLE_SUSPENSION_V1, EdgeSpec, EffectDeclarationSpec,
+    LocalState, MachineSpec, MachineSpecV2, NodeSpec, ReferenceBindingSpec,
+    SuspensionDeclarationSpec, TransitionSelector, step_concrete,
 };
 use choregraph_kamacite::{
     AggregateMachineDescriptor, ArtifactDomain, IdentityMaterials, KamaciteIdentityDomain,
     TraceObservation, build_artifact_set, build_concrete_intent_artifact,
-    build_concrete_intent_receipt, build_concrete_machine_artifact, build_receipt_bundle,
-    compute_identity, compute_kamacite_identity, encode_concrete_intent_receipt_body,
-    encode_fsm_receipt_body, encode_link_receipt_body, encode_machine_descriptor,
+    build_concrete_intent_receipt, build_concrete_machine_artifact,
+    build_durable_lifecycle_artifact, build_receipt_bundle, compute_identity,
+    compute_kamacite_identity, durable_machine_descriptor, encode_concrete_intent_receipt_body,
+    encode_durable_machine_descriptor, encode_fsm_receipt_body, encode_link_receipt_body,
+    encode_machine_descriptor,
 };
 use std::collections::BTreeSet;
 
 const PAYLOAD: &str = "blake3:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const SUSPENSION_CLASS: &str = "manual-approval";
+const SUSPENSION_REFERENCE: &str =
+    "blake3:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
 const CONCRETE_REQUEST: &str =
     "blake3:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 const CONCRETE_SLOT: &str = "request/input";
@@ -87,6 +93,24 @@ fn diamond_machine() -> Result<AdmittedMachine, String> {
     });
     AdmittedMachine::admit(spec, AdmissionLimits::default())
         .map_err(|diagnostics| format!("diamond admission failed: {diagnostics:?}"))
+}
+
+fn durable_machine() -> Result<AdmittedMachine, String> {
+    let mut spec = MachineSpec::new(
+        vec![
+            NodeSpec::new("source", Vec::new()),
+            NodeSpec::new("gate", Vec::new()),
+        ],
+        vec![EdgeSpec::new("source", "gate")],
+    );
+    spec.lifecycle_profile = String::from(DURABLE_SUSPENSION_V1);
+    spec.suspensions.push(SuspensionDeclarationSpec {
+        node_id: String::from("gate"),
+        class: String::from(SUSPENSION_CLASS),
+        reference: String::from(SUSPENSION_REFERENCE),
+    });
+    AdmittedMachine::admit(spec, AdmissionLimits::default())
+        .map_err(|diagnostics| format!("durable machine admission failed: {diagnostics:?}"))
 }
 
 fn concrete_reference(identity: &str) -> ConcreteReferenceSpec {
@@ -289,6 +313,25 @@ pub fn build_kamacite_corpus() -> Result<Vec<KamaciteCorpusEntry>, String> {
         compute_kamacite_identity(KamaciteIdentityDomain::Adapter, &adapter_material);
     let adapter_identity = format!("{}\n", adapter_identity.hex).into_bytes();
 
+    let source_identity =
+        compute_kamacite_identity(KamaciteIdentityDomain::Source, SOURCE_ENVELOPE);
+    let durable_lifecycle = build_durable_lifecycle_artifact(Some(source_identity))
+        .map_err(|error| error.to_string())?;
+    let durable_descriptor = durable_machine_descriptor(
+        &durable_machine()?,
+        durable_lifecycle.project_identity.clone(),
+        set.identities.profile.clone(),
+    )
+    .map_err(|error| error.to_string())?;
+    let durable_artifact = encode_durable_machine_descriptor(&durable_descriptor)
+        .map_err(|error| error.to_string())?;
+    let mut durable_malformed = durable_descriptor.clone();
+    if let Some(suspension) = durable_malformed.suspensions.first_mut() {
+        suspension.class = String::from("bad class!");
+    }
+    let durable_malformed = encode_durable_machine_descriptor(&durable_malformed)
+        .map_err(|error| error.to_string())?;
+
     let entries = vec![
         KamaciteCorpusEntry {
             relative_path: "positive/profile.preserves",
@@ -347,6 +390,14 @@ pub fn build_kamacite_corpus() -> Result<Vec<KamaciteCorpusEntry>, String> {
             bytes: concrete_receipt.canonical.packed_bytes.clone(),
         },
         KamaciteCorpusEntry {
+            relative_path: "positive/durable-lifecycle.preserves",
+            bytes: durable_lifecycle.canonical.packed_bytes.clone(),
+        },
+        KamaciteCorpusEntry {
+            relative_path: "positive/durable-machine.preserves",
+            bytes: durable_artifact.packed_bytes.clone(),
+        },
+        KamaciteCorpusEntry {
             relative_path: "negative/malformed.preserves",
             bytes: vec![0xff],
         },
@@ -389,6 +440,10 @@ pub fn build_kamacite_corpus() -> Result<Vec<KamaciteCorpusEntry>, String> {
         KamaciteCorpusEntry {
             relative_path: "negative/concrete-intent-overclaim.receipt.preserves",
             bytes: concrete_overclaim,
+        },
+        KamaciteCorpusEntry {
+            relative_path: "negative/durable-malformed-suspension.preserves",
+            bytes: durable_malformed.packed_bytes.clone(),
         },
     ];
     let unique_paths = entries
@@ -498,6 +553,15 @@ mod tests {
             }
             "negative/concrete-intent-overclaim.receipt.preserves" => include_bytes!(
                 "../../../fixtures/kamacite/negative/concrete-intent-overclaim.receipt.preserves"
+            ),
+            "positive/durable-lifecycle.preserves" => {
+                include_bytes!("../../../fixtures/kamacite/positive/durable-lifecycle.preserves")
+            }
+            "positive/durable-machine.preserves" => {
+                include_bytes!("../../../fixtures/kamacite/positive/durable-machine.preserves")
+            }
+            "negative/durable-malformed-suspension.preserves" => include_bytes!(
+                "../../../fixtures/kamacite/negative/durable-malformed-suspension.preserves"
             ),
             _ => return None,
         };

@@ -19,6 +19,7 @@ use serde::de::DeserializeOwned;
 
 pub const MACHINE_SCHEMA_VERSION: &str = "choregraph.machine-preserves.v1";
 pub const MACHINE_ROOT_LABEL: &str = "choregraph-machine-v1";
+pub const DURABLE_MACHINE_ROOT_LABEL: &str = "choregraph-machine-durable-v1";
 pub const CONCRETE_MACHINE_SCHEMA_VERSION: &str = "choregraph.machine-preserves.v2";
 pub const CONCRETE_MACHINE_ROOT_LABEL: &str = "choregraph-machine-v2";
 pub const CONCRETE_INTENT_SCHEMA_VERSION: &str = "choregraph.concrete-intent-preserves.v2";

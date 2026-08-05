@@ -20,8 +20,9 @@ pub use analytics::{
     bottlenecks, critical_path, parallel_groups, ready_nodes, resume_decision, would_create_cycle,
 };
 pub use boundary::{
-    Capability, FOUNDATION_CLAIM, MACHINE_CLAIM, TRANSITION_IMPLEMENTATION_POLICY,
-    TransitionImplementationPolicy, excluded_capabilities, permits,
+    Capability, FOUNDATION_CLAIM, MACHINE_CLAIM, SUSPENSION_NON_CLAIMS,
+    TRANSITION_IMPLEMENTATION_POLICY, TransitionImplementationPolicy, excluded_capabilities,
+    permits,
 };
 pub use concrete::{
     CANONICAL_REFERENCE_PROFILE_V1, CanonicalReferenceProfile, ConcreteBindingInput,

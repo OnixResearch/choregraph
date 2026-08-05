@@ -40,6 +40,19 @@ pub const MACHINE_CLAIM: &str = "executable-machine-semantics-unproved";
 pub const TRANSITION_IMPLEMENTATION_POLICY: TransitionImplementationPolicy =
     TransitionImplementationPolicy::ChoregraphCoreOnly;
 
+/// Non-claims bound to durable-suspension conformance evidence.
+///
+/// A matching opaque reference proves reference equality and transition shape
+/// only. Every product meaning stays with the consumer.
+pub const SUSPENSION_NON_CLAIMS: &[&str] = &[
+    "suspension conformance does not establish approval authority",
+    "a matching suspension reference proves reference equality only",
+    "suspension evidence does not prove persistence durability",
+    "suspension evidence does not prove signal truth or freshness",
+    "suspension evidence does not authorize downstream effects",
+    "suspension evidence does not establish release eligibility",
+];
+
 const EXCLUDED_CAPABILITIES: &[Capability] = &[
     Capability::FileSystem,
     Capability::Environment,
@@ -70,7 +83,7 @@ pub fn excluded_capabilities() -> Vec<Capability> {
 
 #[cfg(test)]
 mod tests {
-    use super::{Capability, excluded_capabilities, permits};
+    use super::{Capability, SUSPENSION_NON_CLAIMS, excluded_capabilities, permits};
 
     #[test]
     fn permits_pure_machine_capabilities() {
@@ -83,5 +96,17 @@ mod tests {
         for capability in excluded_capabilities() {
             assert!(!permits(capability));
         }
+    }
+
+    #[test]
+    fn suspension_non_claims_cover_product_authority() {
+        assert_eq!(SUSPENSION_NON_CLAIMS.len(), 6);
+        for claim in SUSPENSION_NON_CLAIMS {
+            assert!(!claim.is_empty());
+        }
+        assert!(!permits(Capability::Persistence));
+        assert!(!permits(Capability::TokenVerification));
+        assert!(!permits(Capability::Clock));
+        assert!(!permits(Capability::EffectExecution));
     }
 }
