@@ -489,8 +489,7 @@ fn parse_declaration(
         ));
         return None;
     }
-    if lifecycle_target_for_profile(profile, raw.transition.from, raw.transition.action).is_err()
-    {
+    if lifecycle_target_for_profile(profile, raw.transition.from, raw.transition.action).is_err() {
         diagnostics.push(diagnostic(
             AdmissionDiagnosticCode::InvalidEffectTransition,
             "effect-transition",

@@ -422,8 +422,7 @@ pub fn effects_allowed(
         from: local_state,
         action: event.action,
     };
-    if lifecycle_target_for_profile(machine.lifecycle_profile, local_state, event.action).is_err()
-    {
+    if lifecycle_target_for_profile(machine.lifecycle_profile, local_state, event.action).is_err() {
         return false;
     }
 

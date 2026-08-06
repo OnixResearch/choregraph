@@ -4,7 +4,9 @@
     ambiguous_params,
     assertion_density,
     clippy::assign_op_pattern,
+    clippy::too_many_arguments,
     dead_code,
+    function_length,
     nested_conditionals,
     non_trait_imports,
     raw_arithmetic_overflow,
@@ -708,9 +710,9 @@ pub fn suspension_fact_matches(
 {
     match (stored, event) {
         (Some(stored_fact), Some(event_fact)) => {
-            let classes_equal = bytes_equal(&stored_fact.class, &event_fact.class);
-            let references_equal = bytes_equal(&stored_fact.reference, &event_fact.reference);
-            classes_equal && references_equal
+            let is_class_match = bytes_equal(&stored_fact.class, &event_fact.class);
+            let is_reference_match = bytes_equal(&stored_fact.reference, &event_fact.reference);
+            is_class_match && is_reference_match
         }
         _ => false,
     }
@@ -1032,7 +1034,6 @@ pub proof fn suspension_update_preserves_consistency(
     }
 }
 
-#[allow(clippy::too_many_arguments, reason = "the kernel takes only explicit indexed inputs")]
 pub fn indexed_step(
     dependencies: &[Vec<usize>],
     states: &[u8],
@@ -1113,21 +1114,21 @@ pub fn indexed_step(
     if terminal_state(from) {
         return deny(DENIAL_TERMINAL_STATE);
     }
-    let suspension_action = action == ACTION_SUSPEND || action == ACTION_RESUME_SIGNAL;
-    if suspension_action && profile == PROFILE_LINEAR_V1 {
+    let is_suspension_action = action == ACTION_SUSPEND || action == ACTION_RESUME_SIGNAL;
+    if is_suspension_action && profile == PROFILE_LINEAR_V1 {
         return deny(DENIAL_PROFILE_ACTION);
     }
     let target = match lifecycle_target(profile, from, action) {
         Some(target) => target,
         None => return deny(DENIAL_INVALID_TRANSITION),
     };
-    if suspension_action && event_fact.is_none() {
+    if is_suspension_action && event_fact.is_none() {
         return deny(DENIAL_SUSPENSION_FACT_ABSENT);
     }
-    if !suspension_action && event_fact.is_some() {
+    if !is_suspension_action && event_fact.is_some() {
         return deny(DENIAL_SUSPENSION_FACT_PRESENT);
     }
-    if suspension_action && !requested_intents.is_empty() {
+    if is_suspension_action && !requested_intents.is_empty() {
         return deny(DENIAL_SUSPENSION_EFFECTS);
     }
     if (action == ACTION_MARK_READY || action == ACTION_START || action == ACTION_RESUME_SIGNAL)

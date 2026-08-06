@@ -238,9 +238,9 @@ fn action_id(action: Action) -> &'static str {
 }
 
 fn row_guards(state: LocalState, action: Action) -> Vec<String> {
-    let dependency_gated = (state == LocalState::Pending && action == Action::MarkReady)
+    let is_dependency_gated = (state == LocalState::Pending && action == Action::MarkReady)
         || (state == LocalState::Suspended && action == Action::ResumeSignal);
-    if dependency_gated {
+    if is_dependency_gated {
         vec![String::from(DEPENDENCIES_COMPLETE_GUARD)]
     } else {
         Vec::new()
@@ -373,12 +373,12 @@ fn durable_descriptor(source_envelope_identity: Option<KamaciteIdentity>) -> Lif
         DURABLE_FSM_ID,
         source_envelope_identity,
     );
-    descriptor
-        .checked_laws
-        .push(String::from("suspension-transitions-emit-no-effect-intents"));
-    descriptor
-        .non_claims
-        .push(String::from("does not prove approval authority or signal truth"));
+    descriptor.checked_laws.push(String::from(
+        "suspension-transitions-emit-no-effect-intents",
+    ));
+    descriptor.non_claims.push(String::from(
+        "does not prove approval authority or signal truth",
+    ));
     descriptor
 }
 
@@ -421,7 +421,9 @@ pub fn build_durable_lifecycle_artifact(
     )
 }
 
-pub fn validate_durable_lifecycle_artifact(input: &[u8]) -> Result<LifecycleArtifact, LifecycleError> {
+pub fn validate_durable_lifecycle_artifact(
+    input: &[u8],
+) -> Result<LifecycleArtifact, LifecycleError> {
     let (decoded, canonical): (LifecycleDescriptor, CanonicalArtifact) =
         crate::codec::decode(input, FSM_SPEC_SCHEMA_VERSION, FSM_SPEC_ROOT_LABEL)?;
     if decoded.fsm_id != DURABLE_FSM_ID || decoded.schema_version != SUPPORTED_SCHEMA_VERSION {

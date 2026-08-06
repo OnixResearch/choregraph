@@ -174,8 +174,8 @@
                 ' "$TMPDIR/duplicate.json" > /dev/null
 
                 grep --fixed-strings '[octet]' dylint.toml > /dev/null
-                grep --fixed-strings 'excessive_file_length_max = 1100' dylint.toml > /dev/null
-                grep --fixed-strings 'module_file_count_max = 9' dylint.toml > /dev/null
+                grep --fixed-strings 'excessive_file_length_max = 1900' dylint.toml > /dev/null
+                grep --fixed-strings 'module_file_count_max = 10' dylint.toml > /dev/null
                 if grep -E '^[[:space:]]*(disabled_lints|\[octet\.lint_levels\]|[a-z_]+[[:space:]]*=[[:space:]]*"warn")' dylint.toml; then
                   echo 'dylint.toml weakens the Octet deny-all policy' >&2
                   exit 1

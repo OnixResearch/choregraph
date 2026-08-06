@@ -329,8 +329,8 @@ pub fn build_kamacite_corpus() -> Result<Vec<KamaciteCorpusEntry>, String> {
     if let Some(suspension) = durable_malformed.suspensions.first_mut() {
         suspension.class = String::from("bad class!");
     }
-    let durable_malformed = encode_durable_machine_descriptor(&durable_malformed)
-        .map_err(|error| error.to_string())?;
+    let durable_malformed =
+        encode_durable_machine_descriptor(&durable_malformed).map_err(|error| error.to_string())?;
 
     let entries = vec![
         KamaciteCorpusEntry {

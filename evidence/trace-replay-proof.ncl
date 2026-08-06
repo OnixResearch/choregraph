@@ -154,27 +154,27 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/concrete.rs",
-        blake3 = "dea59aed4710cdee14460206942c907f575e172685fa4e167cc45852e8ba8801",
+        blake3 = "46a856dd917648d909170f54f4fc70713cae7bb44dc621527609764c67fe9273",
         role = "production v2 replay event and intent boundary",
       },
       {
         path = "crates/choregraph-core/src/lib.rs",
-        blake3 = "1b009daaa9a4604be776c522cb5d626bdf7de6061deaeaed9d1bffd4b54ef021",
+        blake3 = "f5dfef4f2359c5a7e19e9e9e631613b3d8561295babbcf619e531025f51336aa",
         role = "production module and public replay linkage",
       },
       {
         path = "crates/choregraph-core/src/model.rs",
-        blake3 = "873b159c57c4a956730f52179948b1dce27bb12c8e19c72d714112d12a9ba71b",
+        blake3 = "7e379a958051bdf1d095da0d9ea4329a3b232f4825e5c1f1d96067ede3c0bf61",
         role = "bounded trace, binding, count, and failure types",
       },
       {
         path = "crates/choregraph-core/src/transition.rs",
-        blake3 = "d0e18f721280b48dfd88130ca86a3134588aa9cae52678962ce75165aab9cbd5",
+        blake3 = "8b579d153d92f6e8190fde79b1ad761285acfa1312a6e10bf02de8676e129f60",
         role = "public replay fold over the production step relation",
       },
       {
         path = "crates/choregraph-core/src/verified.rs",
-        blake3 = "49d30d9bb40c0b3554a0174bd6afffe819639d67b477845114de154982ef1894",
+        blake3 = "bede924b6dc3f47de9ad368bf28402e5381011b215c319ca15406a791c93c7f5",
         role = "production-called verified single-step kernel",
       },
       {
@@ -204,7 +204,7 @@ let ProofManifest = {
       },
       {
         path = "flake.nix",
-        blake3 = "f913942d1e4533d2b0fb98e0919a13370816cfd0e3ad64a0be49494462a58e80",
+        blake3 = "b31a1f6fbf95460f25d55b1e286339a67946dc837c5a76654c7d8efee25b8a9d",
         role = "maintained positive, negative, trust, and evidence gate",
       },
       {
@@ -214,22 +214,22 @@ let ProofManifest = {
       },
       {
         path = "verus/trace-failure-fixtures/empty_trace_mutation.rs",
-        blake3 = "35e898cbada2c06a7a01108222df2793efd6d5a22a6fd606e3f1635dff12cdf0",
+        blake3 = "cb7ff8a3ea6998a50de3d0ac3c9862b4aae549c1d32320bb242fdba9300790e5",
         role = "negative empty-trace mutation fixture",
       },
       {
         path = "verus/trace-failure-fixtures/failure_index_skips_denial.rs",
-        blake3 = "77796d593dfee1e40bd20146a32bc9cd171685529489f19e7f57e3b1e9cbd3d6",
+        blake3 = "a40f721d70aa116d1a3fd9c457a5fe1c8f14aa49358b3b781fc5e8ec51fa14dc",
         role = "negative first-failure index fixture",
       },
       {
         path = "verus/trace-failure-fixtures/preservation_without_initial_invariant.rs",
-        blake3 = "24451cc0d03045f756fa2041b8818fbcb3fe6feec60fd67d10b02bfed8c1867a",
+        blake3 = "7ef8e0a931eccdb12b8f681d77d6af8cc5d602accaaf38243ecd22f70f85752a",
         role = "negative missing initial-invariant fixture",
       },
       {
         path = "verus/trace-failure-fixtures/replay_with_dispatch_intent.rs",
-        blake3 = "9400608f314ef3a2316245b667f87848d199454e4ceeed9dcaed3431da5743e1",
+        blake3 = "57382585ce677378e989e276bc7d2fc1f361bc1ddf9e3e57e85b1ec16c80a0cf",
         role = "negative dispatch-authority fixture",
       },
       {

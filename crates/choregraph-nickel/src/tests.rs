@@ -119,7 +119,8 @@ fn lowers_durable_suspension_profile_with_explicit_selection() {
 
 #[test]
 fn rejects_suspension_inference_widening_and_product_fields() {
-    let mut linear_events: serde_json::Value = must(serde_json::from_slice(DURABLE_SUSPENSION_JSON));
+    let mut linear_events: serde_json::Value =
+        must(serde_json::from_slice(DURABLE_SUSPENSION_JSON));
     must_array(&mut linear_events["events"]).retain(|event| event != "suspend");
     let linear_events = must(serde_json::to_vec(&linear_events));
     let failure = lower_evaluated_json(&linear_events, &[], FrontendLimits::default());
@@ -131,7 +132,8 @@ fn rejects_suspension_inference_widening_and_product_fields() {
     let mut inferred: serde_json::Value = must(serde_json::from_slice(DURABLE_SUSPENSION_JSON));
     inferred["lifecycle_profile"] =
         serde_json::Value::String(String::from(choregraph_core::LINEAR_LIFECYCLE_V1));
-    must_array(&mut inferred["events"]).retain(|event| event != "suspend" && event != "resume-signal");
+    must_array(&mut inferred["events"])
+        .retain(|event| event != "suspend" && event != "resume-signal");
     let inferred = must(serde_json::to_vec(&inferred));
     let failure = lower_evaluated_json(&inferred, &[], FrontendLimits::default());
     assert_eq!(

@@ -1,15 +1,31 @@
+// The durable-suspension fixture corpus keeps explicit panic diagnostics and fixed test vectors.
+#![allow(
+    unknown_lints,
+    ambiguous_params,
+    assertion_density,
+    explicit_defaults,
+    function_length,
+    non_trait_imports,
+    no_panic,
+    numeric_units,
+    raw_arithmetic_overflow,
+    too_many_parameters,
+    unbounded_collection_growth,
+    reason = "the durable-suspension fixture corpus keeps explicit panic diagnostics and fixed test vectors"
+)]
+
 // r[verify choregraph.machine.suspension_profile]
 // r[verify choregraph.machine.suspension_transition]
 // r[verify choregraph.machine.resume_signal]
 // r[verify choregraph.machine.suspension_replay]
 // r[verify choregraph.machine.suspension_boundary]
 use choregraph_core::{
-    Action, AdmissionDiagnosticCode, AdmissionLimits, AdmittedMachine, BoundedTrace, Decision,
-    DenialReason, DURABLE_SUSPENSION_V1, EdgeSpec, EffectDeclarationSpec, Event, InvariantIssue,
-    LINEAR_LIFECYCLE_V1, LifecycleProfile, LocalState, MachineSpec, MachineState, NodeSpec,
-    ReplayBindings, ReplayDecision, ReplayFailureReason, ReplayInput, ReplayLimits, ResumeDecision,
-    SuspensionDeclarationSpec, TraceBinding, TransitionSelector, invariant, ready_nodes, replay,
-    resume_decision, step,
+    Action, AdmissionDiagnosticCode, AdmissionLimits, AdmittedMachine, BoundedTrace,
+    DURABLE_SUSPENSION_V1, Decision, DenialReason, EdgeSpec, EffectDeclarationSpec, Event,
+    InvariantIssue, LINEAR_LIFECYCLE_V1, LifecycleProfile, LocalState, MachineSpec, MachineState,
+    NodeSpec, ReplayBindings, ReplayDecision, ReplayFailureReason, ReplayInput, ReplayLimits,
+    ResumeDecision, SuspensionDeclarationSpec, TraceBinding, TransitionSelector, invariant,
+    ready_nodes, replay, resume_decision, step,
 };
 
 const NODE_GATE: &str = "gate";
@@ -56,7 +72,10 @@ fn durable_machine() -> AdmittedMachine {
 fn diagnostic_codes(spec: MachineSpec) -> Vec<AdmissionDiagnosticCode> {
     match AdmittedMachine::admit(spec, AdmissionLimits::default()) {
         Ok(_) => panic!("admission unexpectedly succeeded"),
-        Err(diagnostics) => diagnostics.into_iter().map(|diagnostic| diagnostic.code).collect(),
+        Err(diagnostics) => diagnostics
+            .into_iter()
+            .map(|diagnostic| diagnostic.code)
+            .collect(),
     }
 }
 
@@ -95,7 +114,11 @@ fn bindings() -> ReplayBindings {
     )
 }
 
-fn replay_events(machine: &AdmittedMachine, initial: &MachineState, events: &[Event]) -> ReplayDecision {
+fn replay_events(
+    machine: &AdmittedMachine,
+    initial: &MachineState,
+    events: &[Event],
+) -> ReplayDecision {
     let trace = BoundedTrace::new(bindings(), events);
     replay(ReplayInput::new(
         machine,
@@ -134,7 +157,10 @@ fn deny_reason(decision: Decision) -> DenialReason {
 #[test]
 fn durable_profile_admission_selects_explicit_profile() {
     let machine = durable_machine();
-    assert_eq!(machine.lifecycle_profile(), LifecycleProfile::DurableSuspensionV1);
+    assert_eq!(
+        machine.lifecycle_profile(),
+        LifecycleProfile::DurableSuspensionV1
+    );
     assert!(machine.suspension_declarations().is_empty());
 }
 
@@ -162,18 +188,26 @@ fn admission_rejects_unsupported_profile_and_profile_less_declarations() {
     let mut unsupported = durable_spec();
     unsupported.lifecycle_profile = String::from("choregraph.lifecycle.unknown.v9");
     assert!(
-        diagnostic_codes(unsupported).contains(&AdmissionDiagnosticCode::UnsupportedLifecycleProfile)
+        diagnostic_codes(unsupported)
+            .contains(&AdmissionDiagnosticCode::UnsupportedLifecycleProfile)
     );
 
     let mut linear_with_declaration = MachineSpec::new(vec![node(NODE_GATE)], Vec::new());
-    assert_eq!(linear_with_declaration.lifecycle_profile, LINEAR_LIFECYCLE_V1);
-    linear_with_declaration.suspensions.push(SuspensionDeclarationSpec {
-        node_id: String::from(NODE_GATE),
-        class: String::from(SUSPENSION_CLASS),
-        reference: String::from(REFERENCE),
-    });
-    assert!(diagnostic_codes(linear_with_declaration)
-        .contains(&AdmissionDiagnosticCode::SuspensionDeclarationWithoutProfile));
+    assert_eq!(
+        linear_with_declaration.lifecycle_profile,
+        LINEAR_LIFECYCLE_V1
+    );
+    linear_with_declaration
+        .suspensions
+        .push(SuspensionDeclarationSpec {
+            node_id: String::from(NODE_GATE),
+            class: String::from(SUSPENSION_CLASS),
+            reference: String::from(REFERENCE),
+        });
+    assert!(
+        diagnostic_codes(linear_with_declaration)
+            .contains(&AdmissionDiagnosticCode::SuspensionDeclarationWithoutProfile)
+    );
 }
 
 #[test]
@@ -186,8 +220,10 @@ fn admission_rejects_malformed_duplicate_and_missing_suspension_declarations() {
             reference: String::from(REFERENCE),
         });
     }
-    assert!(diagnostic_codes(duplicate)
-        .contains(&AdmissionDiagnosticCode::DuplicateSuspensionDeclaration));
+    assert!(
+        diagnostic_codes(duplicate)
+            .contains(&AdmissionDiagnosticCode::DuplicateSuspensionDeclaration)
+    );
 
     let mut missing_node = durable_spec();
     missing_node.suspensions.push(SuspensionDeclarationSpec {
@@ -195,8 +231,10 @@ fn admission_rejects_malformed_duplicate_and_missing_suspension_declarations() {
         class: String::from(SUSPENSION_CLASS),
         reference: String::from(REFERENCE),
     });
-    assert!(diagnostic_codes(missing_node)
-        .contains(&AdmissionDiagnosticCode::SuspensionDeclarationNodeMissing));
+    assert!(
+        diagnostic_codes(missing_node)
+            .contains(&AdmissionDiagnosticCode::SuspensionDeclarationNodeMissing)
+    );
 
     let mut bad_class = durable_spec();
     bad_class.suspensions.push(SuspensionDeclarationSpec {
@@ -214,8 +252,10 @@ fn admission_rejects_malformed_duplicate_and_missing_suspension_declarations() {
         class: String::from(SUSPENSION_CLASS),
         reference: String::from(MALFORMED_REFERENCE),
     });
-    assert!(diagnostic_codes(bad_reference)
-        .contains(&AdmissionDiagnosticCode::MalformedSuspensionReference));
+    assert!(
+        diagnostic_codes(bad_reference)
+            .contains(&AdmissionDiagnosticCode::MalformedSuspensionReference)
+    );
 }
 
 #[test]
@@ -233,8 +273,7 @@ fn admission_rejects_effect_declarations_on_suspension_transitions() {
         request: String::from("request/x"),
         payload: String::from(REFERENCE),
     });
-    assert!(diagnostic_codes(spec)
-        .contains(&AdmissionDiagnosticCode::SuspensionEffectTransition));
+    assert!(diagnostic_codes(spec).contains(&AdmissionDiagnosticCode::SuspensionEffectTransition));
 }
 
 #[test]
@@ -319,16 +358,28 @@ fn suspension_denial_classes_fail_closed() {
     ));
 
     assert!(matches!(
-        deny_reason(step(&machine, &ready, &resume_event(SUSPENSION_CLASS, REFERENCE))),
+        deny_reason(step(
+            &machine,
+            &ready,
+            &resume_event(SUSPENSION_CLASS, REFERENCE)
+        )),
         DenialReason::InvalidTransition { .. }
     ));
 
     assert_eq!(
-        deny_reason(step(&machine, &state, &resume_event(OTHER_CLASS, REFERENCE))),
+        deny_reason(step(
+            &machine,
+            &state,
+            &resume_event(OTHER_CLASS, REFERENCE)
+        )),
         DenialReason::SuspensionMismatch
     );
     assert_eq!(
-        deny_reason(step(&machine, &state, &resume_event(SUSPENSION_CLASS, OTHER_REFERENCE))),
+        deny_reason(step(
+            &machine,
+            &state,
+            &resume_event(SUSPENSION_CLASS, OTHER_REFERENCE)
+        )),
         DenialReason::SuspensionMismatch
     );
 
@@ -365,7 +416,12 @@ fn malformed_and_oversized_suspension_facts_are_denied() {
         deny_reason(step(&machine, &ready, &malformed)),
         DenialReason::MalformedSuspensionFact
     );
-    let malformed_reference = Event::suspension(NODE_GATE, Action::Suspend, SUSPENSION_CLASS, MALFORMED_REFERENCE);
+    let malformed_reference = Event::suspension(
+        NODE_GATE,
+        Action::Suspend,
+        SUSPENSION_CLASS,
+        MALFORMED_REFERENCE,
+    );
     assert_eq!(
         deny_reason(step(&machine, &ready, &malformed_reference)),
         DenialReason::MalformedSuspensionFact
@@ -402,7 +458,11 @@ fn duplicate_resume_after_accept_is_denied() {
         Decision::Deny { reason } => panic!("resume denied: {reason:?}"),
     };
     assert!(matches!(
-        deny_reason(step(&machine, &resumed, &resume_event(SUSPENSION_CLASS, REFERENCE))),
+        deny_reason(step(
+            &machine,
+            &resumed,
+            &resume_event(SUSPENSION_CLASS, REFERENCE)
+        )),
         DenialReason::InvalidTransition { .. }
     ));
 }
@@ -452,7 +512,10 @@ fn replay_reports_first_exact_suspension_denial() {
     ];
     match replay_events(&machine, &initial, &premature) {
         ReplayDecision::Failed(failure) => {
-            assert_eq!(failure.event_index.map(|index| index.get()), Some(SECOND_EVENT));
+            assert_eq!(
+                failure.event_index.map(|index| index.get()),
+                Some(SECOND_EVENT)
+            );
             assert!(matches!(
                 failure.reason,
                 ReplayFailureReason::TransitionDenied(DenialReason::InvalidTransition { .. })
@@ -472,7 +535,10 @@ fn replay_reports_first_exact_suspension_denial() {
     let last_event = stale.len() as u64 - 1;
     match replay_events(&machine, &initial, &stale) {
         ReplayDecision::Failed(failure) => {
-            assert_eq!(failure.event_index.map(|index| index.get()), Some(last_event));
+            assert_eq!(
+                failure.event_index.map(|index| index.get()),
+                Some(last_event)
+            );
             assert!(matches!(
                 failure.reason,
                 ReplayFailureReason::TransitionDenied(DenialReason::SuspensionMismatch)
@@ -483,15 +549,63 @@ fn replay_reports_first_exact_suspension_denial() {
 }
 
 #[test]
+fn declared_suspension_resume_requires_completed_dependencies() {
+    let mut spec = durable_spec();
+    spec.suspensions.push(SuspensionDeclarationSpec {
+        node_id: String::from(NODE_GATE),
+        class: String::from(SUSPENSION_CLASS),
+        reference: String::from(REFERENCE),
+    });
+    let machine = admit(spec);
+    let state = machine.declared_suspension_state();
+    let gate =
+        choregraph_core::NodeId::parse(NODE_GATE, AdmissionLimits::default().max_identifier_bytes);
+    let gate = match gate {
+        Ok(gate) => gate,
+        Err(error) => panic!("gate node id: {error:?}"),
+    };
+    assert_eq!(state.state(&gate), Some(LocalState::Suspended));
+    assert_eq!(
+        deny_reason(step(
+            &machine,
+            &state,
+            &resume_event(SUSPENSION_CLASS, REFERENCE)
+        )),
+        DenialReason::DependenciesIncomplete
+    );
+    assert_eq!(
+        resume_decision(&machine, &state, &gate),
+        ResumeDecision::AwaitSignal
+    );
+}
+
+#[test]
+fn reordered_suspension_inputs_admit_identically() {
+    let mut forward = durable_spec();
+    forward.suspensions.push(SuspensionDeclarationSpec {
+        node_id: String::from(NODE_GATE),
+        class: String::from(SUSPENSION_CLASS),
+        reference: String::from(REFERENCE),
+    });
+    let mut reversed = durable_spec();
+    reversed.nodes.reverse();
+    reversed.edges.reverse();
+    reversed.suspensions.push(SuspensionDeclarationSpec {
+        node_id: String::from(NODE_GATE),
+        class: String::from(SUSPENSION_CLASS),
+        reference: String::from(REFERENCE),
+    });
+    assert_eq!(admit(forward), admit(reversed));
+}
+
+#[test]
 fn state_invariant_flags_suspension_record_conflicts() {
     let machine = durable_machine();
     let state = suspended_gate_state(&machine);
     let gate = gate_id(&machine);
 
-    let missing_record = MachineState::with_suspensions(
-        state.entries().clone(),
-        std::collections::BTreeMap::new(),
-    );
+    let missing_record =
+        MachineState::with_suspensions(state.entries().clone(), std::collections::BTreeMap::new());
     let issues = choregraph_core::validate_invariant(&machine, &missing_record);
     assert!(issues.contains(&InvariantIssue::SuspensionRecordMissing(gate.clone())));
 
@@ -513,4 +627,3 @@ fn state_invariant_flags_suspension_record_conflicts() {
     assert!(issues.contains(&InvariantIssue::SuspensionWithoutProfile(gate.clone())));
     assert!(issues.contains(&InvariantIssue::SuspensionRecordMissing(gate.clone())));
 }
-

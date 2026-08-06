@@ -394,10 +394,9 @@ impl AdmittedMachine {
     pub fn declared_suspension_state(&self) -> MachineState {
         let mut state = self.initial_state();
         for declaration in &self.suspension_declarations {
-            state.entries.insert(
-                declaration.node_id.clone(),
-                LocalState::Suspended,
-            );
+            state
+                .entries
+                .insert(declaration.node_id.clone(), LocalState::Suspended);
             state.suspensions.insert(
                 declaration.node_id.clone(),
                 SuspensionRecord {

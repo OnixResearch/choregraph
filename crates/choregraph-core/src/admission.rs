@@ -370,8 +370,7 @@ fn parse_effect_declaration(
         ));
         return None;
     }
-    if lifecycle_target_for_profile(profile, raw.transition.from, raw.transition.action).is_err()
-    {
+    if lifecycle_target_for_profile(profile, raw.transition.from, raw.transition.action).is_err() {
         diagnostics.push(diagnostic(
             AdmissionDiagnosticCode::InvalidEffectTransition,
             Some(&raw.node_id),
@@ -399,8 +398,7 @@ fn admit_effects(
 ) -> AdmittedEffects {
     let mut unique = BTreeSet::new();
     for raw in &spec.effects {
-        let Some(declaration) = parse_effect_declaration(raw, limits, profile, diagnostics)
-        else {
+        let Some(declaration) = parse_effect_declaration(raw, limits, profile, diagnostics) else {
             continue;
         };
         let Some(node) = nodes.get(&declaration.node_id) else {
@@ -485,6 +483,65 @@ fn suspension_class_diagnostic(error: IdentifierError, subject: &str) -> Admissi
     }
 }
 
+fn parse_suspension_reference(
+    raw: &str,
+    limits: AdmissionLimits,
+    diagnostics: &mut Vec<AdmissionDiagnostic>,
+) -> Option<PayloadRef> {
+    match PayloadRef::parse(raw, limits.max_reference_bytes) {
+        Ok(reference) => Some(reference),
+        Err(PayloadRefError::TooLong { observed, maximum }) => {
+            diagnostics.push(AdmissionDiagnostic {
+                code: AdmissionDiagnosticCode::MalformedSuspensionReference,
+                subject: Some(String::from(raw)),
+                related: None,
+                limit: Some(LimitKind::ReferenceBytes),
+                observed: Some(observed),
+                maximum: Some(maximum),
+            });
+            None
+        }
+        Err(PayloadRefError::Malformed) => {
+            diagnostics.push(diagnostic(
+                AdmissionDiagnosticCode::MalformedSuspensionReference,
+                Some(raw),
+                None,
+            ));
+            None
+        }
+    }
+}
+
+fn parse_suspension_declaration(
+    raw: &crate::model::SuspensionDeclarationSpec,
+    limits: AdmissionLimits,
+    nodes: &BTreeMap<NodeId, AdmittedNode>,
+    diagnostics: &mut Vec<AdmissionDiagnostic>,
+) -> Option<SuspensionDeclaration> {
+    let node_id = parse_id::<crate::id::NodeDomain>(&raw.node_id, limits, diagnostics)?;
+    if !nodes.contains_key(&node_id) {
+        diagnostics.push(diagnostic(
+            AdmissionDiagnosticCode::SuspensionDeclarationNodeMissing,
+            Some(&raw.node_id),
+            None,
+        ));
+        return None;
+    }
+    let class = match SuspensionClass::parse(raw.class.clone(), limits.max_identifier_bytes) {
+        Ok(class) => class,
+        Err(error) => {
+            diagnostics.push(suspension_class_diagnostic(error, &raw.class));
+            return None;
+        }
+    };
+    let reference = parse_suspension_reference(&raw.reference, limits, diagnostics)?;
+    Some(SuspensionDeclaration {
+        node_id,
+        class,
+        reference,
+    })
+}
+
 fn admit_suspensions(
     spec: &MachineSpec,
     limits: AdmissionLimits,
@@ -502,51 +559,13 @@ fn admit_suspensions(
         return (declarations, BTreeMap::new());
     }
     for raw in &spec.suspensions {
-        let Some(node_id) = parse_id::<crate::id::NodeDomain>(&raw.node_id, limits, diagnostics)
+        let Some(declaration) = parse_suspension_declaration(raw, limits, nodes, diagnostics)
         else {
             continue;
         };
-        if !nodes.contains_key(&node_id) {
-            diagnostics.push(diagnostic(
-                AdmissionDiagnosticCode::SuspensionDeclarationNodeMissing,
-                Some(&raw.node_id),
-                None,
-            ));
-            continue;
-        }
-        let class =
-            match SuspensionClass::parse(raw.class.clone(), limits.max_identifier_bytes) {
-                Ok(class) => class,
-                Err(error) => {
-                    diagnostics.push(suspension_class_diagnostic(error, &raw.class));
-                    continue;
-                }
-            };
-        let reference = match PayloadRef::parse(&raw.reference, limits.max_reference_bytes) {
-            Ok(reference) => reference,
-            Err(PayloadRefError::TooLong { observed, maximum }) => {
-                diagnostics.push(AdmissionDiagnostic {
-                    code: AdmissionDiagnosticCode::MalformedSuspensionReference,
-                    subject: Some(raw.reference.clone()),
-                    related: None,
-                    limit: Some(LimitKind::ReferenceBytes),
-                    observed: Some(observed),
-                    maximum: Some(maximum),
-                });
-                continue;
-            }
-            Err(PayloadRefError::Malformed) => {
-                diagnostics.push(diagnostic(
-                    AdmissionDiagnosticCode::MalformedSuspensionReference,
-                    Some(&raw.reference),
-                    None,
-                ));
-                continue;
-            }
-        };
         if declarations
             .iter()
-            .any(|declaration: &SuspensionDeclaration| declaration.node_id == node_id)
+            .any(|existing: &SuspensionDeclaration| existing.node_id == declaration.node_id)
         {
             diagnostics.push(diagnostic(
                 AdmissionDiagnosticCode::DuplicateSuspensionDeclaration,
@@ -555,11 +574,7 @@ fn admit_suspensions(
             ));
             continue;
         }
-        declarations.push(SuspensionDeclaration {
-            node_id,
-            class,
-            reference,
-        });
+        declarations.push(declaration);
     }
     declarations.sort();
     let indices = declarations

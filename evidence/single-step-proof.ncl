@@ -128,37 +128,37 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/admission.rs",
-        blake3 = "347384983b7d59136791a5f3006974683b8bd7c51d838b585fc06fc8b332a43e",
+        blake3 = "ad29041fb5e778b985dd01751dd819f2ce40cf4a039c11776519329b48701e5b",
         role = "production indexed graph construction",
       },
       {
         path = "crates/choregraph-core/src/concrete.rs",
-        blake3 = "dea59aed4710cdee14460206942c907f575e172685fa4e167cc45852e8ba8801",
+        blake3 = "46a856dd917648d909170f54f4fc70713cae7bb44dc621527609764c67fe9273",
         role = "production concrete binding resolver and exact intent construction",
       },
       {
         path = "crates/choregraph-core/src/invariant.rs",
-        blake3 = "13078fde3e2b5c6c3227d211c36b52e60b29cc223e00c47da5b2f51867ee41c7",
+        blake3 = "d14a5cd9ce0f3e07ce7f0452771362f8de1046e6ce3e09e5dae4a6344fe67458",
         role = "production graph and post-step gates",
       },
       {
         path = "crates/choregraph-core/src/lib.rs",
-        blake3 = "1b009daaa9a4604be776c522cb5d626bdf7de6061deaeaed9d1bffd4b54ef021",
+        blake3 = "f5dfef4f2359c5a7e19e9e9e631613b3d8561295babbcf619e531025f51336aa",
         role = "production module linkage",
       },
       {
         path = "crates/choregraph-core/src/model.rs",
-        blake3 = "873b159c57c4a956730f52179948b1dce27bb12c8e19c72d714112d12a9ba71b",
+        blake3 = "7e379a958051bdf1d095da0d9ea4329a3b232f4825e5c1f1d96067ede3c0bf61",
         role = "production indexed machine fields",
       },
       {
         path = "crates/choregraph-core/src/transition.rs",
-        blake3 = "d0e18f721280b48dfd88130ca86a3134588aa9cae52678962ce75165aab9cbd5",
+        blake3 = "8b579d153d92f6e8190fde79b1ad761285acfa1312a6e10bf02de8676e129f60",
         role = "production transition shell and kernel delegation",
       },
       {
         path = "crates/choregraph-core/src/verified.rs",
-        blake3 = "49d30d9bb40c0b3554a0174bd6afffe819639d67b477845114de154982ef1894",
+        blake3 = "bede924b6dc3f47de9ad368bf28402e5381011b215c319ca15406a791c93c7f5",
         role = "production-called verified transition kernel",
       },
       {
@@ -178,7 +178,7 @@ let ProofManifest = {
       },
       {
         path = "flake.nix",
-        blake3 = "f913942d1e4533d2b0fb98e0919a13370816cfd0e3ad64a0be49494462a58e80",
+        blake3 = "b31a1f6fbf95460f25d55b1e286339a67946dc837c5a76654c7d8efee25b8a9d",
         role = "maintained proof and failure-fixture gate",
       },
       {

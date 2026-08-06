@@ -16,6 +16,7 @@ verus! {
 proof fn first_denial_is_reported_after_its_event(
     dependencies: Seq<Vec<usize>>,
     states: Seq<u8>,
+    suspensions: Seq<Option<verified::IndexedSuspensionFact>>,
     events: Seq<verified_trace::IndexedReplayEvent>,
 )
     requires
@@ -23,11 +24,15 @@ proof fn first_denial_is_reported_after_its_event(
         !verified_trace::replay_event_accepts_spec(
             dependencies,
             states,
+            suspensions,
+            verified::PROFILE_LINEAR_V1,
             events[0],
         ),
     ensures verified_trace::replay_failure_index_from_spec(
         dependencies,
         states,
+        suspensions,
+        verified::PROFILE_LINEAR_V1,
         events,
         0,
     ) == Some(1)
