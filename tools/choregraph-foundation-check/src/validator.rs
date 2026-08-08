@@ -13,6 +13,7 @@ const EXECUTION_GRAPH_VENDOR_PATH: &str = "vendor/execution-graph-core-selected"
 
 const PRODUCT_PACKAGES: &[&str] = &[
     CORE_PACKAGE,
+    EXECUTION_GRAPH_PACKAGE,
     "choregraph-kamacite",
     "choregraph-nickel",
     "choregraph-release",
@@ -22,6 +23,7 @@ const PRODUCT_PACKAGES: &[&str] = &[
 
 const CONSUMER_LIBRARY_PACKAGES: &[&str] = &[
     CORE_PACKAGE,
+    EXECUTION_GRAPH_PACKAGE,
     "choregraph-kamacite",
     "choregraph-nickel",
     "choregraph-release",
@@ -33,6 +35,7 @@ const SERDE_JSON_COMPATIBLE_REQUIREMENT: &str = "^1.0.149";
 
 const REQUIRED_PACKAGES: &[&str] = &[
     CORE_PACKAGE,
+    EXECUTION_GRAPH_PACKAGE,
     "choregraph-kamacite",
     "choregraph-nickel",
     "choregraph-release",
@@ -65,6 +68,7 @@ const CLI_DEPENDENCIES: &[&str] = &[
 ];
 
 const REQUIRED_INTERNAL_EDGES: &[(&str, &str)] = &[
+    (EXECUTION_GRAPH_PACKAGE, CORE_PACKAGE),
     ("choregraph-kamacite", CORE_PACKAGE),
     ("choregraph-nickel", CORE_PACKAGE),
     ("choregraph-seaglass", CORE_PACKAGE),
@@ -99,7 +103,7 @@ fn allowed_internal_dependencies(package: &str) -> Option<&'static [&'static str
         CORE_PACKAGE | "choregraph-release" | FOUNDATION_CHECK_PACKAGE => {
             Some(NO_INTERNAL_DEPENDENCIES)
         }
-        "choregraph-kamacite" | "choregraph-nickel" => Some(CORE_ONLY),
+        EXECUTION_GRAPH_PACKAGE | "choregraph-kamacite" | "choregraph-nickel" => Some(CORE_ONLY),
         "choregraph-seaglass" => Some(SEAGLASS_DEPENDENCIES),
         "choregraph-cli" => Some(CLI_DEPENDENCIES),
         _ => None,

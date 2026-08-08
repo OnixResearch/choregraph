@@ -27,6 +27,8 @@ A pinned Octet gate checks every workspace target. The gate treats every Octet l
 
 The conversion-only Seaglass adapter passes the selected behavior matrix. The reviewed Lattice runner passes all 21 tests with `choregraph-seaglass` substituted for the legacy package.
 
+Active `execution-graph-core` compatibility development now lives in this workspace. The original execution-graph repository remains a frozen compatibility and rollback source.
+
 The compiler-compatibility source has this identity:
 
 - RID: `rad:zL2ncTUeASVYwcoGkEXv9JKgGbAF`
@@ -94,6 +96,7 @@ crates/choregraph-kamacite/
 crates/choregraph-nickel/
 crates/choregraph-release/
 crates/choregraph-seaglass/
+crates/execution-graph-core/
 crates/choregraph-cli/
 tools/choregraph-foundation-check/
 fixtures/foundation/

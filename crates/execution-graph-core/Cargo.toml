@@ -1,0 +1,16 @@
+[package]
+name = "execution-graph-core"
+version = "0.2.0"
+description = "Conversion-only compatibility facade for Choregraph execution graphs."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+repository = "https://git.onix.computer/zL2ncTUeASVYwcoGkEXv9JKgGbAF.git"
+
+[lints]
+workspace = true
+
+[dependencies]
+choregraph-core.workspace = true
+serde = { version = "=1.0.228", default-features = false, features = ["alloc", "derive"] }

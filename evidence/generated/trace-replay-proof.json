@@ -68,7 +68,7 @@
     "solver_blake3": "42e48a26bf3b38ca33d84749f4317cc179791de0d578d4d98a67f51782b54331",
     "sources": [
       {
-        "blake3": "cfcb76953e7991d53b201b1fd660fc3f94ad792e8b7065a1f9d2a2a32783f114",
+        "blake3": "db81d325176639c6a5b9efb8272d3ef47f7bb660b833b6b412079d194428643b",
         "path": "Cargo.lock",
         "role": "resolved Rust dependency identity"
       },

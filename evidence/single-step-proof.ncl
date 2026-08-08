@@ -108,7 +108,7 @@ let ProofManifest = {
     sources = [
       {
         path = "Cargo.lock",
-        blake3 = "cfcb76953e7991d53b201b1fd660fc3f94ad792e8b7065a1f9d2a2a32783f114",
+        blake3 = "db81d325176639c6a5b9efb8272d3ef47f7bb660b833b6b412079d194428643b",
         role = "resolved Rust dependency identity",
       },
       {

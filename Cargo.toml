@@ -6,6 +6,7 @@ members = [
   "crates/choregraph-nickel",
   "crates/choregraph-release",
   "crates/choregraph-seaglass",
+  "crates/execution-graph-core",
   "tools/choregraph-foundation-check",
 ]
 exclude = [

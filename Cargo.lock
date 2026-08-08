@@ -248,7 +248,7 @@ dependencies = [
  "blake3",
  "choregraph-core",
  "choregraph-nickel",
- "execution-graph-core",
+ "execution-graph-core 0.1.0",
 ]
 
 [[package]]
@@ -286,6 +286,14 @@ dependencies = [
 name = "execution-graph-core"
 version = "0.1.0"
 dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "execution-graph-core"
+version = "0.2.0"
+dependencies = [
+ "choregraph-core",
  "serde",
 ]
 

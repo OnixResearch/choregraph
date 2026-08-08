@@ -70,6 +70,10 @@ fn allowed_model() -> crate::types::WorkspaceModel {
         packages: vec![
             package("choregraph-core", vec![]),
             package(
+                "execution-graph-core",
+                vec![workspace_dependency("choregraph-core")],
+            ),
+            package(
                 "choregraph-kamacite",
                 vec![workspace_dependency("choregraph-core")],
             ),
