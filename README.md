@@ -162,7 +162,10 @@ Choregraph preserves the source implementation license, `AGPL-3.0-or-later`. Thi
 - [`cap-std`](https://github.com/bytecodealliance/cap-std) — capability-oriented filesystem I/O for consumer shells.
 - [Swamp](https://github.com/swamp-club/swamp) — product reference for durable workflow suspension.
 - [Celld at `553ae73f83c8`](https://github.com/denoland/celld/tree/553ae73f83c87c3f7c7a5f73c32c2211d9d7341f) — Apache-2.0 reference for per-cell ownership epochs and shard-by-construction isolation.
+- [Wyzer](https://github.com/Wyzer-Lang/wyzer) at `7f6acf0f60cf34357e06de50112eb2b1ed833a0c` — MIT-licensed reference for role-located authoring, explicit transfer, external-role declarations, structured diagnostics, and negative choreography cases.
 
 Choregraph adapts only Swamp's clean-room lifecycle mechanism. It does not adopt Swamp runtime code, approval authority, YAML/CEL authoring, or TypeScript loading.
 
 Choregraph uses Celld only as a bounded mechanism reference. It does not adopt Celld code, storage, leases, routing, replication, runtime authority, or distributed-correctness claims.
+
+Wyzer projection, networking, Perceus, compile-time execution, and C ABI code are not Choregraph semantic or runtime authority.
