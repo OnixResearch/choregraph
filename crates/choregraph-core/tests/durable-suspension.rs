@@ -545,6 +545,56 @@ fn replay_reports_first_exact_suspension_denial() {
 }
 
 #[test]
+fn declared_suspension_resume_requires_completed_dependencies() {
+    let mut spec = durable_spec();
+    spec.suspensions.push(SuspensionDeclarationSpec {
+        node_id: String::from(NODE_GATE),
+        class: String::from(SUSPENSION_CLASS),
+        reference: String::from(REFERENCE),
+    });
+    let machine = admit(spec);
+    let state = machine.declared_suspension_state();
+    let gate =
+        choregraph_core::NodeId::parse(NODE_GATE, AdmissionLimits::default().max_identifier_bytes);
+    let gate = match gate {
+        Ok(gate) => gate,
+        Err(error) => panic!("gate node id: {error:?}"),
+    };
+    assert_eq!(state.state(&gate), Some(LocalState::Suspended));
+    assert_eq!(
+        deny_reason(step(
+            &machine,
+            &state,
+            &resume_event(SUSPENSION_CLASS, REFERENCE)
+        )),
+        DenialReason::DependenciesIncomplete
+    );
+    assert_eq!(
+        resume_decision(&machine, &state, &gate),
+        ResumeDecision::AwaitSignal
+    );
+}
+
+#[test]
+fn reordered_suspension_inputs_admit_identically() {
+    let mut forward = durable_spec();
+    forward.suspensions.push(SuspensionDeclarationSpec {
+        node_id: String::from(NODE_GATE),
+        class: String::from(SUSPENSION_CLASS),
+        reference: String::from(REFERENCE),
+    });
+    let mut reversed = durable_spec();
+    reversed.nodes.reverse();
+    reversed.edges.reverse();
+    reversed.suspensions.push(SuspensionDeclarationSpec {
+        node_id: String::from(NODE_GATE),
+        class: String::from(SUSPENSION_CLASS),
+        reference: String::from(REFERENCE),
+    });
+    assert_eq!(admit(forward), admit(reversed));
+}
+
+#[test]
 fn state_invariant_flags_suspension_record_conflicts() {
     let machine = durable_machine();
     let state = suspended_gate_state(&machine);
