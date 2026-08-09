@@ -37,7 +37,7 @@ const CONTRACT_LIBRARY_BYTES: &[u8] =
 const PROOF_SET_BYTES: &[u8] =
     include_bytes!("../../../evidence/generated/trace-replay-proof.json");
 const GENERATOR_BYTES: &[u8] = include_bytes!("capability.rs");
-const ADAPTER_BYTES: &[u8] = include_bytes!("../../choregraph-kamacite/src/aggregate.rs");
+const ADAPTER_BYTES: &[u8] = crate::corpus::KAMACITE_AGGREGATE_SOURCE;
 const TOOLCHAIN_BYTES: &[u8] = include_bytes!("../../../rust-toolchain.toml");
 const TEMP_FILE_SUFFIX: &str = ".choregraph-tmp";
 const EVALUATOR_TIMEOUT_MS: u64 = 10_000;

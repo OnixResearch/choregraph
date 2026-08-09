@@ -1,3 +1,16 @@
+// This adapter preserves the published compatibility API while delegating all decisions.
+#![allow(
+    unknown_lints,
+    ambiguous_params,
+    assertion_density,
+    explicit_defaults,
+    fragile_exhaustive_enum_match,
+    missing_const_fn,
+    non_trait_imports,
+    renamed_imports,
+    reason = "the compatibility adapter keeps published names and exact legacy mappings"
+)]
+
 use alloc::collections::BTreeMap;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
@@ -137,6 +150,7 @@ pub(crate) fn execution_groups(machine: &AdmittedMachine) -> Vec<ExecutionGroup>
         .collect()
 }
 
+// The explicit branch makes the fail-closed saturation boundary visible.
 #[allow(
     clippy::manual_unwrap_or,
     reason = "the explicit branch documents the fail-closed saturation boundary"

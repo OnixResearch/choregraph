@@ -684,7 +684,9 @@ pub fn durable_machine_descriptor(
             String::from("does not prove Nickel evaluation semantics"),
             String::from("does not authorize or execute runtime effects"),
             String::from("does not establish release eligibility"),
-            String::from("does not prove approval authority, signal truth, or persistence durability"),
+            String::from(
+                "does not prove approval authority, signal truth, or persistence durability",
+            ),
         ],
     })
 }
@@ -764,8 +766,11 @@ pub fn validate_durable_machine_artifact(
     lifecycle
         .project_identity
         .validate(ArtifactDomain::Lifecycle)?;
-    let (descriptor, canonical): (DurableMachineDescriptor, CanonicalArtifact) =
-        decode(input, MACHINE_SCHEMA_VERSION, crate::codec::DURABLE_MACHINE_ROOT_LABEL)?;
+    let (descriptor, canonical): (DurableMachineDescriptor, CanonicalArtifact) = decode(
+        input,
+        MACHINE_SCHEMA_VERSION,
+        crate::codec::DURABLE_MACHINE_ROOT_LABEL,
+    )?;
     if descriptor.schema_version != DURABLE_DESCRIPTOR_SCHEMA_VERSION
         || descriptor.lifecycle_profile_id != crate::lifecycle::DURABLE_FSM_ID
         || descriptor.compatibility.kamacite_revision != KAMACITE_REVISION

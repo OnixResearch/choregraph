@@ -4,12 +4,20 @@
 // revision c8d56ad83a57287064edb85f58808f53e4bf4536) converts through the
 // adapter vocabulary and observes Choregraph decisions. It proves conversion
 // and decision shape only, not Lattice approval behavior.
+#![allow(
+    unknown_lints,
+    explicit_defaults,
+    no_panic,
+    non_trait_imports,
+    numeric_units,
+    reason = "the pinned integration fixture keeps domain notation and exact boundary failures readable"
+)]
 
 // r[verify choregraph.machine.suspension_replay]
 // r[verify choregraph.machine.resume_signal]
 use choregraph_core::{
-    Action, AdmissionLimits, AdmittedMachine, BoundedTrace, Decision, DenialReason,
-    DURABLE_SUSPENSION_V1, EdgeSpec, Event, LocalState, MachineSpec, NodeSpec, ReplayBindings,
+    Action, AdmissionLimits, AdmittedMachine, BoundedTrace, DURABLE_SUSPENSION_V1, Decision,
+    DenialReason, EdgeSpec, Event, LocalState, MachineSpec, NodeSpec, ReplayBindings,
     ReplayDecision, ReplayInput, ReplayLimits, ResumeDecision, TraceBinding, replay,
     resume_decision, step,
 };
@@ -70,7 +78,12 @@ fn lattice_wait_node_observes_suspended_wait_resume_and_denial_decisions() {
     let gate = node_id(&machine, LATTICE_WAIT_NODE);
     let ready = drive_to_gate_ready(&machine);
 
-    let suspend = Event::suspension(LATTICE_WAIT_NODE, Action::Suspend, WAIT_CLASS, WAIT_REFERENCE);
+    let suspend = Event::suspension(
+        LATTICE_WAIT_NODE,
+        Action::Suspend,
+        WAIT_CLASS,
+        WAIT_REFERENCE,
+    );
     let suspended = match step(&machine, &ready, &suspend) {
         Decision::Accept { next, intents } => {
             assert!(intents.is_empty());
@@ -127,7 +140,12 @@ fn lattice_wait_trace_replays_suspended_and_resumes_deterministically() {
         Event::new(LATTICE_SOURCE_NODE, Action::Start),
         Event::new(LATTICE_SOURCE_NODE, Action::Complete),
         Event::new(LATTICE_WAIT_NODE, Action::MarkReady),
-        Event::suspension(LATTICE_WAIT_NODE, Action::Suspend, WAIT_CLASS, WAIT_REFERENCE),
+        Event::suspension(
+            LATTICE_WAIT_NODE,
+            Action::Suspend,
+            WAIT_CLASS,
+            WAIT_REFERENCE,
+        ),
     ];
     let bindings = ReplayBindings::new(
         TraceBinding::from_bytes([BINDING_BYTE; choregraph_core::TRACE_BINDING_BYTES]),

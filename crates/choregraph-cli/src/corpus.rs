@@ -41,9 +41,11 @@ const CONCRETE_DECLARATION: &str = "request/main";
 const SOURCE_ENVELOPE: &[u8] = b"canonical-source-envelope-v1";
 const PROOF_SET: &[u8] = b"proof-set-status-pending-v1";
 const MATERIAL_LENGTH_BYTES: usize = size_of::<u64>();
+pub(crate) const KAMACITE_AGGREGATE_SOURCE: &[u8] =
+    include_bytes!("../../choregraph-kamacite/src/aggregate.rs");
 const ADAPTER_SOURCES: &[&[u8]] = &[
     include_bytes!("../../choregraph-kamacite/src/lib.rs"),
-    include_bytes!("../../choregraph-kamacite/src/aggregate.rs"),
+    KAMACITE_AGGREGATE_SOURCE,
     include_bytes!("../../choregraph-kamacite/src/codec.rs"),
     include_bytes!("../../choregraph-kamacite/src/concrete.rs"),
     include_bytes!("../../choregraph-kamacite/src/identity.rs"),
@@ -329,8 +331,8 @@ pub fn build_kamacite_corpus() -> Result<Vec<KamaciteCorpusEntry>, String> {
     if let Some(suspension) = durable_malformed.suspensions.first_mut() {
         suspension.class = String::from("bad class!");
     }
-    let durable_malformed = encode_durable_machine_descriptor(&durable_malformed)
-        .map_err(|error| error.to_string())?;
+    let durable_malformed =
+        encode_durable_machine_descriptor(&durable_malformed).map_err(|error| error.to_string())?;
 
     let entries = vec![
         KamaciteCorpusEntry {

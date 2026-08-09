@@ -1,8 +1,9 @@
 // Evaluated-data DTOs keep explicit serde value imports for schema review.
 #![allow(
     unknown_lints,
+    explicit_defaults,
     non_trait_imports,
-    reason = "evaluated-data DTOs keep explicit serde value imports for schema review"
+    reason = "evaluated-data DTOs preserve schema compatibility defaults and explicit serde imports"
 )]
 
 // r[impl choregraph.nickel.contracts]

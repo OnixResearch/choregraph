@@ -1,3 +1,10 @@
+// The CLI embeds the complete reviewed adapter source set for deterministic identity receipts.
+#![allow(
+    unknown_lints,
+    module_file_count,
+    reason = "adapter identity includes each reviewed source file without granting runtime authority"
+)]
+
 mod capability;
 mod corpus;
 mod release;

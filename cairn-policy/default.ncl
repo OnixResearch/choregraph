@@ -1,31 +1,12 @@
 let Contracts = import "contracts.ncl" in
-let PolicySchemaVersion = "cairn.policy-schema.v1" in
-let PolicyFieldSetDigest = "cdbe3adf5778872343f8576e0304e3748dcaf7fb58f59c489599ea9dbac425ef" in
-{
-  name = "choregraph-default",
-  version = 1,
+let Base = import "upstream-default.ncl" in
+(Base & {
+  name | force = "choregraph-default",
+  version | force = 1,
 
-  policy_schema_compatibility = {
-    schema_version = PolicySchemaVersion,
-    producer = "cairn policy export",
-    field_set_digest = PolicyFieldSetDigest,
-    refresh_command = "nix run path:$CAIRN_SOURCE#cairn -- policy export --output cairn-policy/generated/cairn-policy.json",
-  },
+  lifecycle_stages | force = ["proposal", "design", "tasks", "implementation", "archive"],
 
-  schemas = [{
-    id = "spec-driven",
-    description = "Cairn proposal/spec/design/tasks lifecycle",
-    artifacts = [
-      { id = "proposal", generates = "proposal.md", requires = [] },
-      { id = "specs", generates = "specs/**/*.md", requires = ["proposal"] },
-      { id = "design", generates = "design.md", requires = ["proposal"] },
-      { id = "tasks", generates = "tasks.md", requires = ["specs", "design"] },
-    ],
-  }],
-
-  lifecycle_stages = ["proposal", "design", "tasks", "implementation", "archive"],
-
-  task_marker_policy = {
+  task_marker_policy | force = {
     enabled = true,
     stages = ["tasks"],
     strictness = "strict",
@@ -37,7 +18,7 @@ let PolicyFieldSetDigest = "cdbe3adf5778872343f8576e0304e3748dcaf7fb58f59c489599
     ],
   },
 
-  finding_defaults = {
+  finding_defaults | force = {
     severity = "high",
     class = "omission",
     scope = "tasks",
@@ -45,7 +26,7 @@ let PolicyFieldSetDigest = "cdbe3adf5778872343f8576e0304e3748dcaf7fb58f59c489599
     promoted = "no",
   },
 
-  gate_policy = {
+  gate_policy | force = {
     stages = ["proposal", "design", "tasks"],
     ignore_archives = true,
     finding = {
@@ -67,26 +48,26 @@ let PolicyFieldSetDigest = "cdbe3adf5778872343f8576e0304e3748dcaf7fb58f59c489599
     },
   },
 
-  report_contract = {
+  report_contract | force = {
     verdicts = ["PASS", "WARN", "FAIL"],
     sections = ["Findings", "Required Fixes", "OpenSpec Check", "Gaps", "Next Steps"],
     tagged_findings_required_fields = ["class", "scope", "route", "promoted"],
   },
 
-  registry_label_policy = {
+  registry_label_policy | force = {
     channels = ["dev", "nightly", "release", "stable"],
     platforms = ["aarch64-darwin", "aarch64-linux", "x86_64-darwin", "x86_64-linux"],
     compatibility_classes = ["current", "experimental", "legacy"],
     release_format = "YYYY-MM-DD",
   },
 
-  change_metadata_policy = {
+  change_metadata_policy | force = {
     allowed_groups = ["current", "future"],
     group_prefixes = ["feature:"],
     statuses = ["current", "planned", "blocked", "deferred"],
   },
 
-  cross_repo_dependency_policy = {
+  cross_repo_dependency_policy | force = {
     schema = "cairn.cross-repo-dependency.v1",
     supported_receipt_kinds = [
       "proposal_gate",
@@ -120,7 +101,7 @@ let PolicyFieldSetDigest = "cdbe3adf5778872343f8576e0304e3748dcaf7fb58f59c489599
     ],
   },
 
-  agent_completion_policy = {
+  agent_completion_policy | force = {
     schema = "cairn.agent-completion.v2",
     legacy_classification = "legacy_unscoped",
     passing_status = "passed",
@@ -158,7 +139,7 @@ let PolicyFieldSetDigest = "cdbe3adf5778872343f8576e0304e3748dcaf7fb58f59c489599
     ],
   },
 
-  global_registry_policy = {
+  global_registry_policy | force = {
     schema = "cairn.global-registry-snapshot.v1",
     storage_schema = "cairn.global-registry-storage.v1",
     max_artifact_bytes = 4194304,
@@ -193,7 +174,7 @@ let PolicyFieldSetDigest = "cdbe3adf5778872343f8576e0304e3748dcaf7fb58f59c489599
     ],
   },
 
-  steel_orchestration_policy = {
+  steel_orchestration_policy | force = {
     enabled = false,
     profiles = [{
       id = "disabled.lifecycle.default",
@@ -206,7 +187,7 @@ let PolicyFieldSetDigest = "cdbe3adf5778872343f8576e0304e3748dcaf7fb58f59c489599
     }],
   },
 
-  traceability_policy = {
+  traceability_policy | force = {
     default_profile = "cairn-default",
     profiles = [{
       id = "cairn-default",
@@ -230,14 +211,14 @@ let PolicyFieldSetDigest = "cdbe3adf5778872343f8576e0304e3748dcaf7fb58f59c489599
     }],
   },
 
-  stack_provenance_gate = {
+  stack_provenance_gate | force = {
     mode = "optional",
     allowed_claim_scopes = ["stack_provenance.v1.lifecycle_policy_conformance"],
     accepted_valence_policy_hashes = ["93993e99e87206d232b64efcc8631611aad3b5b0c4b81855e7e1a0cdcc391cff"],
     required_boundary = "Cairn consumed Valence and Mantle stack provenance receipts for lifecycle/release policy conformance only; it did not prove source-code correctness, Valence verifier soundness, Mantle build correctness, or Trellis/Octet proof validity",
   },
 
-  function_address_gate = {
+  function_address_gate | force = {
     mode = "optional",
     allowed_claim_scopes = ["function_address.v1.lifecycle_policy_conformance"],
     accepted_valence_policy_hashes = ["62c88a0263720dea4c37a48ef46921c46e5dd3e4924fff096b84a65d5738a412"],
@@ -254,7 +235,7 @@ let PolicyFieldSetDigest = "cdbe3adf5778872343f8576e0304e3748dcaf7fb58f59c489599
     required_boundary = "Cairn consumed Valence, Mantle, and Kamacite function-address evidence for lifecycle/release policy conformance only; it did not prove Rust semantic correctness, compiler correctness, whole-program safety, verifier soundness, or release eligibility",
   },
 
-  authenticated_evidence_policy = {
+  authenticated_evidence_policy | force = {
     schema_version = "cairn.authenticated-evidence.v1",
     release_profile = "diagnostic",
     accepted_canonicalization_profiles = ["valence.preserves-integrity.corrected.v1"],
@@ -277,13 +258,13 @@ let PolicyFieldSetDigest = "cdbe3adf5778872343f8576e0304e3748dcaf7fb58f59c489599
     trusted_producers = [],
   },
 
-  workspace_contract_matrix_gate = {
+  workspace_contract_matrix_gate | force = {
     mode = "disabled",
     accepted_matrix_hashes = [],
     required_boundary = "workspace contract matrix validation proves declared edge health only; it does not prove provider correctness, does not prove consumer behavioral correctness, does not prove verifier soundness, or does not prove release eligibility",
   },
 
-  runtime_evidence_policy = {
+  runtime_evidence_policy | force = {
     allowed_capture_origins = ["boundary_captured", "ingested_telemetry", "wrapper_asserted", "unknown"],
     allowed_hash_algorithms = ["BLAKE3"],
     max_summary_bytes = 256,
@@ -291,11 +272,11 @@ let PolicyFieldSetDigest = "cdbe3adf5778872343f8576e0304e3748dcaf7fb58f59c489599
     aggregation_profiles = [],
   },
 
-  structured_lifecycle = {
+  structured_lifecycle | force = {
     preserves_receipt_source_map = {},
   },
 
-  probe_policy = {
+  probe_policy | force = {
     enabled = true,
     inline_gate_execution_enabled = false,
     receipt_schema_version = "cairn.probe-receipt.v1",
@@ -308,7 +289,7 @@ let PolicyFieldSetDigest = "cdbe3adf5778872343f8576e0304e3748dcaf7fb58f59c489599
     redaction_classes = ["hash-stdout", "hash-stderr", "no-secret-fields"],
   },
 
-  receipt_schemas = [
+  receipt_schemas | force = [
     {
       command = "steel orchestration",
       top_level_keys = ["authorized_actions", "command", "fallback_reason", "issues", "mode", "profile_id", "receipt_hash", "schema_version", "script_hash", "valid", "verdict"],
@@ -553,7 +534,7 @@ let PolicyFieldSetDigest = "cdbe3adf5778872343f8576e0304e3748dcaf7fb58f59c489599
     },
   ],
 
-  receipt_contracts = [
+  receipt_contracts | force = [
     {
       family = "function-object",
       schema = "octet.function-object.v1",
@@ -611,7 +592,7 @@ let PolicyFieldSetDigest = "cdbe3adf5778872343f8576e0304e3748dcaf7fb58f59c489599
     },
   ],
 
-  determinism_replay_policy = {
+  determinism_replay_policy | force = {
     cases = [
       { id = "agent_receipt_preserves_hash", command_kind = "agent_receipt_preserves_hash", args = ["agent-receipt", "preserves-hash", "fixtures/agent-receipts/positive.json"], fixture_root = "<root>", expected_mutability = "read_only_or_dry_run", comparison_modes = ["repeated"], display_only_paths = ["path"], hash_fields = ["agent_receipt_preserves_hash", "input_hash", "preserves_content_hash", "receipt_hash"], normalization_rules = ["portable_root_paths", "canonical_json"], },
       { id = "agent_receipt_validate", command_kind = "agent_receipt_validate", args = ["agent-receipt", "validate", "fixtures/agent-receipts/positive.json"], fixture_root = "<root>", expected_mutability = "read_only_or_dry_run", comparison_modes = ["repeated"], display_only_paths = ["path"], hash_fields = ["agent_receipt_hash"], normalization_rules = ["portable_root_paths", "canonical_json"], },
@@ -658,7 +639,7 @@ let PolicyFieldSetDigest = "cdbe3adf5778872343f8576e0304e3748dcaf7fb58f59c489599
     ],
   },
 
-  determinism_surface_inventory = [
+  determinism_surface_inventory | force = [
     { id = "agent_completion_validate", command = "agent-receipt complete --contract fixtures/agent-completion/contract.json --results fixtures/agent-completion/results.json --subject-hash <hash>", surface_kind = "cli", receipt_command = "agent-receipt complete", required_replay_cases = ["agent_completion_validate"], required_replay_groups = ["agent", "full", "release"], determinism_claim = "authoritative_agent_completion_stability" },
     { id = "agent_receipt_preserves_hash", command = "agent-receipt preserves-hash fixtures/agent-receipts/positive.json", surface_kind = "cli", receipt_command = "agent-receipt preserves-hash", required_replay_cases = ["agent_receipt_preserves_hash"], required_replay_groups = ["full"], determinism_claim = "agent_receipt_preserves_hash_stability" },
     { id = "agent_receipt_validate", command = "agent-receipt validate fixtures/agent-receipts/positive.json", surface_kind = "cli", receipt_command = "agent-receipt validate", required_replay_cases = ["agent_receipt_validate"], required_replay_groups = ["agent", "full", "release"], determinism_claim = "agent_receipt_stability" },
@@ -686,29 +667,29 @@ let PolicyFieldSetDigest = "cdbe3adf5778872343f8576e0304e3748dcaf7fb58f59c489599
     { id = "view_mindmap", command = "view mindmap --root <root>", surface_kind = "cli", receipt_command = "view mindmap", required_replay_cases = ["view_mindmap"], required_replay_groups = ["full"], determinism_claim = "lifecycle_view_mindmap_stability" },
   ],
 
-  exemption_marker_policy = {
+  exemption_marker_policy | force = {
     required_fields = ["reason", "owner", "until"],
     date_fields = ["until"],
     optional_fields = ["scope"],
   },
 
-  sync_archive_policy = {
+  sync_archive_policy | force = {
     require_all_tasks_done = true,
     archive_date_prefix = true,
     default_archive_dir = "cairn/archive",
   },
 
-  mutation_policy = {
+  mutation_policy | force = {
     sync = { require_passing_gate = true },
     archive = { require_passing_gate = true },
     migrate = { require_manifest = true },
   },
 
-  receipt_hash_policy = {
+  receipt_hash_policy | force = {
     required = true,
     algorithm = "BLAKE3",
     canonicalization = "serde_json_compact_sorted_keys",
   },
 
-  exemptions = [],
-} | Contracts.Policy
+  exemptions | force = [],
+}) | Contracts.Policy

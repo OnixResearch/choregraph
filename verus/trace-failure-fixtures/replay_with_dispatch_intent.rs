@@ -16,11 +16,15 @@ verus! {
 proof fn replay_returns_dispatch_authority(
     dependencies: Seq<Vec<usize>>,
     states: Seq<u8>,
+    suspensions: Seq<Option<verified::IndexedSuspensionFact>>,
+    profile: u8,
     events: Seq<verified_trace::IndexedReplayEvent>,
 )
     ensures verified_trace::replay_dispatch_intents_spec(
         dependencies,
         states,
+        suspensions,
+        profile,
         events,
         0,
     ).len() > 0

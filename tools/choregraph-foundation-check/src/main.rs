@@ -258,40 +258,35 @@ fn main() -> std::process::ExitCode {
 
 #[cfg(test)]
 mod tests {
-    use super::dependency_source;
-    use choregraph_foundation_check::types::DependencySource;
-    use std::collections::BTreeSet;
-    use std::path::{Path, PathBuf};
-
     const WORKSPACE_ROOT: &str = "/workspace";
     const ACTIVE_PACKAGE_PATH: &str = "/workspace/crates/execution-graph-core";
     const VENDORED_PACKAGE_PATH: &str = "/workspace/vendor/execution-graph-core-selected";
 
-    fn internal_paths() -> BTreeSet<PathBuf> {
-        BTreeSet::from([PathBuf::from(ACTIVE_PACKAGE_PATH)])
+    fn internal_paths() -> std::collections::BTreeSet<std::path::PathBuf> {
+        std::collections::BTreeSet::from([std::path::PathBuf::from(ACTIVE_PACKAGE_PATH)])
     }
 
     #[test]
     fn classifies_the_exact_workspace_package_path_as_internal() {
         assert_eq!(
-            dependency_source(
-                Some(Path::new(ACTIVE_PACKAGE_PATH)),
-                Path::new(WORKSPACE_ROOT),
+            super::dependency_source(
+                Some(std::path::Path::new(ACTIVE_PACKAGE_PATH)),
+                std::path::Path::new(WORKSPACE_ROOT),
                 &internal_paths(),
             ),
-            DependencySource::Workspace
+            choregraph_foundation_check::types::DependencySource::Workspace
         );
     }
 
     #[test]
     fn does_not_classify_a_same_name_vendor_path_as_internal() {
         assert_eq!(
-            dependency_source(
-                Some(Path::new(VENDORED_PACKAGE_PATH)),
-                Path::new(WORKSPACE_ROOT),
+            super::dependency_source(
+                Some(std::path::Path::new(VENDORED_PACKAGE_PATH)),
+                std::path::Path::new(WORKSPACE_ROOT),
                 &internal_paths(),
             ),
-            DependencySource::LocalPath
+            choregraph_foundation_check::types::DependencySource::LocalPath
         );
     }
 }

@@ -268,36 +268,47 @@ fn denial_from_indexed(reason: u8, from: LocalState, action: Action) -> DenialRe
     }
 }
 
+struct PreparedContext<'a> {
+    machine: &'a AdmittedMachine,
+    state: &'a MachineState,
+    prepared: &'a PreparedStep,
+    action: Action,
+}
+
 fn public_decision_from_indexed(
-    machine: &AdmittedMachine,
-    state: &MachineState,
+    context: PreparedContext<'_>,
     event: &Event,
-    prepared: &PreparedStep,
     indexed: IndexedDecision,
     record: Option<SuspensionRecord>,
 ) -> Decision {
     if !indexed.accepted {
         return Decision::Deny {
-            reason: denial_from_indexed(indexed.reason, prepared.from, event.action),
+            reason: denial_from_indexed(indexed.reason, context.prepared.from, context.action),
         };
     }
-    let Some(mut next) = state_from_indexed(machine, &indexed.next_states) else {
+    let Some(mut next) = state_from_indexed(context.machine, &indexed.next_states) else {
         return Decision::Deny {
             reason: DenialReason::InvariantWouldBreak,
         };
     };
-    apply_suspension_delta(state, &mut next, event.action, &prepared.node_id, record);
-    if !invariant(machine, &next) || !terminal_states_preserved(state, &next) {
+    apply_suspension_delta(
+        context.state,
+        &mut next,
+        context.action,
+        &context.prepared.node_id,
+        record,
+    );
+    if !invariant(context.machine, &next) || !terminal_states_preserved(context.state, &next) {
         return Decision::Deny {
             reason: DenialReason::InvariantWouldBreak,
         };
-    };
-    let Some(intents) = intents_from_indices(machine, &indexed.intent_indices) else {
+    }
+    let Some(intents) = intents_from_indices(context.machine, &indexed.intent_indices) else {
         return Decision::Deny {
             reason: DenialReason::EffectsNotAllowed,
         };
     };
-    if !effects_allowed(machine, state, event, &intents) {
+    if !effects_allowed(context.machine, context.state, event, &intents) {
         return Decision::Deny {
             reason: DenialReason::EffectsNotAllowed,
         };
@@ -388,17 +399,17 @@ fn prepare_step(
     })
 }
 
-#[allow(
-    clippy::too_many_arguments,
-    reason = "the kernel boundary takes only explicit indexed inputs"
-)]
+struct IndexedStepInput<'a> {
+    action: Action,
+    event_fact: &'a Option<IndexedSuspensionFact>,
+    allowed_indices: &'a [usize],
+    requested_indices: &'a [usize],
+}
+
 fn run_indexed_step(
     machine: &AdmittedMachine,
     prepared: &PreparedStep,
-    action: Action,
-    event_fact: &Option<IndexedSuspensionFact>,
-    allowed_indices: &[usize],
-    requested_indices: &[usize],
+    input: IndexedStepInput<'_>,
 ) -> IndexedDecision {
     crate::verified::indexed_step(
         &machine.dependency_indices,
@@ -406,10 +417,10 @@ fn run_indexed_step(
         &prepared.suspensions,
         profile_code(machine.lifecycle_profile),
         prepared.node_index,
-        action_code(action),
-        event_fact,
-        allowed_indices,
-        requested_indices,
+        action_code(input.action),
+        input.event_fact,
+        input.allowed_indices,
+        input.requested_indices,
     )
 }
 
@@ -421,14 +432,11 @@ fn parse_suspension_fact(
     let Some(fact) = fact else {
         return Ok(None);
     };
-    let class = crate::id::SuspensionClass::parse(
-        fact.class.clone(),
-        machine.limits.max_identifier_bytes,
-    )
-    .map_err(|_| DenialReason::MalformedSuspensionFact)?;
-    let reference =
-        PayloadRef::parse(fact.reference.clone(), machine.limits.max_reference_bytes)
+    let class =
+        crate::id::SuspensionClass::parse(fact.class.clone(), machine.limits.max_identifier_bytes)
             .map_err(|_| DenialReason::MalformedSuspensionFact)?;
+    let reference = PayloadRef::parse(fact.reference.clone(), machine.limits.max_reference_bytes)
+        .map_err(|_| DenialReason::MalformedSuspensionFact)?;
     Ok(Some(SuspensionRecord { class, reference }))
 }
 
@@ -455,20 +463,27 @@ fn apply_suspension_delta(
 }
 
 fn accepted_next_state(
-    machine: &AdmittedMachine,
-    state: &MachineState,
-    action: Action,
-    prepared: &PreparedStep,
+    context: PreparedContext<'_>,
     indexed: &IndexedDecision,
     record: Option<SuspensionRecord>,
 ) -> Result<MachineState, DenialReason> {
     if !indexed.accepted {
-        return Err(denial_from_indexed(indexed.reason, prepared.from, action));
+        return Err(denial_from_indexed(
+            indexed.reason,
+            context.prepared.from,
+            context.action,
+        ));
     }
-    let mut next = state_from_indexed(machine, &indexed.next_states)
+    let mut next = state_from_indexed(context.machine, &indexed.next_states)
         .ok_or(DenialReason::InvariantWouldBreak)?;
-    apply_suspension_delta(state, &mut next, action, &prepared.node_id, record);
-    if !invariant(machine, &next) || !terminal_states_preserved(state, &next) {
+    apply_suspension_delta(
+        context.state,
+        &mut next,
+        context.action,
+        &context.prepared.node_id,
+        record,
+    );
+    if !invariant(context.machine, &next) || !terminal_states_preserved(context.state, &next) {
         return Err(DenialReason::InvariantWouldBreak);
     }
     Ok(next)
@@ -513,8 +528,7 @@ pub fn step(machine: &AdmittedMachine, state: &MachineState, event: &Event) -> D
         Ok(record) => record,
         Err(reason) => return Decision::Deny { reason },
     };
-    if matches!(event.action, Action::Suspend | Action::ResumeSignal) && !event.effects.is_empty()
-    {
+    if matches!(event.action, Action::Suspend | Action::ResumeSignal) && !event.effects.is_empty() {
         return Decision::Deny {
             reason: DenialReason::SuspensionEffectsForbidden,
         };
@@ -539,12 +553,24 @@ pub fn step(machine: &AdmittedMachine, state: &MachineState, event: &Event) -> D
     let indexed = run_indexed_step(
         machine,
         &prepared,
-        event.action,
-        &event_fact,
-        allowed_indices,
-        &requested_indices,
+        IndexedStepInput {
+            action: event.action,
+            event_fact: &event_fact,
+            allowed_indices,
+            requested_indices: &requested_indices,
+        },
     );
-    public_decision_from_indexed(machine, state, event, &prepared, indexed, record)
+    public_decision_from_indexed(
+        PreparedContext {
+            machine,
+            state,
+            prepared: &prepared,
+            action: event.action,
+        },
+        event,
+        indexed,
+        record,
+    )
 }
 
 /// Applies one deterministic aggregate v2 machine transition through the same indexed kernel.
@@ -590,8 +616,7 @@ pub fn step_concrete(
         Ok(record) => record,
         Err(reason) => return ConcreteDecision::Deny { reason },
     };
-    if matches!(event.action, Action::Suspend | Action::ResumeSignal) && !event.effects.is_empty()
-    {
+    if matches!(event.action, Action::Suspend | Action::ResumeSignal) && !event.effects.is_empty() {
         return ConcreteDecision::Deny {
             reason: DenialReason::SuspensionEffectsForbidden,
         };
@@ -617,13 +642,23 @@ pub fn step_concrete(
     let indexed = run_indexed_step(
         machine,
         &prepared,
-        event.action,
-        &event_fact,
-        allowed_indices,
-        &requested_indices,
+        IndexedStepInput {
+            action: event.action,
+            event_fact: &event_fact,
+            allowed_indices,
+            requested_indices: &requested_indices,
+        },
     );
-    let next = match accepted_next_state(machine, state, event.action, &prepared, &indexed, record)
-    {
+    let next = match accepted_next_state(
+        PreparedContext {
+            machine,
+            state,
+            prepared: &prepared,
+            action: event.action,
+        },
+        &indexed,
+        record,
+    ) {
         Ok(next) => next,
         Err(reason) => return ConcreteDecision::Deny { reason },
     };

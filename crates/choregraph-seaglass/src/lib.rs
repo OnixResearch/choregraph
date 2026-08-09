@@ -591,7 +591,7 @@ const fn compatibility_state(state: choregraph_core::LocalState) -> StepState {
         choregraph_core::LocalState::Cancelled => StepState::Cancelled,
         // Unreachable: this closed adapter admits only linear-profile machines and
         // constructs states from `StepState` inputs, so no suspended state can occur.
-        choregraph_core::LocalState::Suspended => unreachable!()
+        choregraph_core::LocalState::Suspended => unreachable!(),
     }
 }
 
@@ -604,7 +604,7 @@ const fn compatibility_action(action: choregraph_core::Action) -> StepAction {
         choregraph_core::Action::Cancel => StepAction::Cancel,
         // Unreachable: admission rejects suspension actions on effect declarations,
         // so no admitted intent can carry them into this conversion.
-        choregraph_core::Action::Suspend | choregraph_core::Action::ResumeSignal => unreachable!()
+        choregraph_core::Action::Suspend | choregraph_core::Action::ResumeSignal => unreachable!(),
     }
 }
 

@@ -10,8 +10,7 @@ mod lifecycle;
 mod receipt;
 
 #[cfg(test)]
-mod concrete_tests;
-#[cfg(test)]
+#[path = "../test-support/internal.rs"]
 mod tests;
 
 // The complete reviewed codec stays source-identical for reproducible canonical compatibility.
