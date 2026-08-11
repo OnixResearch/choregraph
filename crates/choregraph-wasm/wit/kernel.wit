@@ -1,0 +1,5 @@
+package onix:choregraph@1.0.0;
+
+world kernel {
+  export call: func(request: list<u8>) -> list<u8>;
+}

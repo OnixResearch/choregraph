@@ -5,7 +5,7 @@ let Contracts = import "../contracts.ncl" in
     profiles = [{
     id = "cairn-default",
     requirement_sources = [
-      { root = "cairn/specs", source_kind = "accepted_specs", extensions = ["md"] },
+      { root = ".cairn/specs", source_kind = "accepted_specs", extensions = ["md"] },
     ],
     evidence_sources = [
       { root = "cairn-policy/generated", source_kind = "tool_source", extensions = ["json"] },

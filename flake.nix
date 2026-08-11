@@ -38,6 +38,7 @@
           filter =
             path: type:
             craneLib.filterCargoSources path type
+            || pkgs.lib.hasSuffix ".wit" (toString path)
             || pkgs.lib.hasInfix "/contracts/nickel/" (toString path)
             || pkgs.lib.hasInfix "/evidence/generated/" (toString path)
             || pkgs.lib.hasInfix "/fixtures/kamacite/" (toString path)
@@ -75,6 +76,170 @@
             doCheck = true;
           }
         );
+        wasmConformanceCargoArtifacts = craneLib.buildDepsOnly (
+          commonCargoArgs
+          // {
+            pname = "choregraph-wasm-conformance-dependencies";
+            cargoExtraArgs = "--locked -p choregraph-wasm-conformance";
+            doCheck = false;
+          }
+        );
+        wasmConformanceChecker = craneLib.buildPackage (
+          commonCargoArgs
+          // {
+            cargoArtifacts = wasmConformanceCargoArtifacts;
+            pname = "choregraph-wasm-conformance";
+            cargoExtraArgs = "-p choregraph-wasm-conformance";
+            doCheck = true;
+          }
+        );
+        wasmCargoArtifacts = craneLib.buildDepsOnly (
+          commonCargoArgs
+          // {
+            pname = "choregraph-wasm-dependencies";
+            cargoExtraArgs = "--locked -p choregraph-wasm --target wasm32-unknown-unknown";
+            doCheck = false;
+          }
+        );
+        # r[impl choregraph.wasm.module]
+        # r[impl choregraph.wasm.identity]
+        wasmKernelCore = craneLib.cargoBuild (
+          commonCargoArgs
+          // {
+            cargoArtifacts = wasmCargoArtifacts;
+            pname = "choregraph-wasm-core";
+            cargoExtraArgs = "--locked -p choregraph-wasm --target wasm32-unknown-unknown";
+            installPhaseCommand = ''
+              mkdir -p "$out/lib"
+              cp target/wasm32-unknown-unknown/release/choregraph_wasm.wasm \
+                "$out/lib/choregraph-wasm-core.wasm"
+            '';
+          }
+        );
+        # r[verify choregraph.wasm.boundary]
+        # r[verify choregraph.wasm.identity]
+        wasmKernelComponent =
+          pkgs.runCommand "choregraph-wasm-component-${workspaceVersion}"
+            {
+              nativeBuildInputs = [
+                pkgs.b3sum
+                pkgs.coreutils
+                pkgs.gnugrep
+                pkgs.wasm-tools
+              ];
+            }
+            ''
+              set -eu
+              mkdir -p "$out/lib" "$out/share/choregraph"
+              wasm-tools component new \
+                ${wasmKernelCore}/lib/choregraph-wasm-core.wasm \
+                -o "$TMPDIR/component-a.wasm"
+              wasm-tools component new \
+                ${wasmKernelCore}/lib/choregraph-wasm-core.wasm \
+                -o "$TMPDIR/component-b.wasm"
+              cmp "$TMPDIR/component-a.wasm" "$TMPDIR/component-b.wasm"
+              wasm-tools validate "$TMPDIR/component-a.wasm"
+              wasm-tools component wit "$TMPDIR/component-a.wasm" \
+                > "$TMPDIR/component.wit"
+              wasm-tools print "$TMPDIR/component-a.wasm" \
+                > "$TMPDIR/component.wat"
+              if grep -F '(import ' "$TMPDIR/component.wat"; then
+                echo 'WASM component gained a host import' >&2
+                exit 1
+              fi
+              test "$(grep -c 'export call:' "$TMPDIR/component.wit")" -eq 1
+              test "$(grep -c '^[[:space:]]*export ' "$TMPDIR/component.wit")" -eq 1
+              cp "$TMPDIR/component-a.wasm" "$out/lib/choregraph-wasm-component.wasm"
+              cp "$TMPDIR/component.wit" "$out/share/choregraph/component.wit"
+              b3sum --derive-key 'choregraph wasm component bytes v1' \
+                "$out/lib/choregraph-wasm-component.wasm" \
+                | cut -d ' ' -f 1 > "$out/share/choregraph/component.blake3"
+              printf '%s\n' \
+                'non-claim=no-compiler-engine-sandbox-effect-or-release-correctness' \
+                > "$out/share/choregraph/non-claim.txt"
+            '';
+        # r[verify choregraph.wasm.parity]
+        # r[verify choregraph.wasm.bounds]
+        wasmConformanceCheck =
+          pkgs.runCommand "choregraph-wasm-conformance-check"
+            {
+              nativeBuildInputs = [ wasmConformanceChecker ];
+            }
+            ''
+              set -eu
+              mkdir -p "$out"
+              choregraph-wasm-conformance \
+                ${wasmKernelComponent}/lib/choregraph-wasm-component.wasm \
+                | tee "$out/report.txt"
+              grep -F 'imports=none exports=call verdict=pass' "$out/report.txt" > /dev/null
+              grep -F 'non-claim=engine-compiler-sandbox-effect-and-release-correctness' \
+                "$out/report.txt" > /dev/null
+            '';
+        # r[verify choregraph.wasm.identity]
+        wasmEvidenceCheck =
+          pkgs.runCommand "choregraph-wasm-evidence-check"
+            {
+              nativeBuildInputs = [
+                pkgs.b3sum
+                pkgs.coreutils
+                pkgs.jq
+                pkgs.nickel
+              ];
+              src = self;
+            }
+            ''
+              set -eu
+              cd "$src"
+              nickel export evidence/wasm-kernel-adapter.ncl --format json \
+                > "$TMPDIR/manifest.json"
+              cmp evidence/generated/wasm-kernel-adapter.json "$TMPDIR/manifest.json"
+
+              expected_component="$(jq --raw-output '.evidence.component.blake3' \
+                "$TMPDIR/manifest.json")"
+              observed_component="$(cat \
+                ${wasmKernelComponent}/share/choregraph/component.blake3)"
+              test "$observed_component" = "$expected_component"
+
+              expected_corpus="$(jq --raw-output '.evidence.conformance.corpus_blake3' \
+                "$TMPDIR/manifest.json")"
+              observed_corpus="$(sed -n 's/^corpus-identity=//p' \
+                ${wasmConformanceCheck}/report.txt)"
+              test "$observed_corpus" = "$expected_corpus"
+              expected_fixtures="$(jq --raw-output '.evidence.conformance.fixture_count' \
+                "$TMPDIR/manifest.json")"
+              observed_fixtures="$(grep -c '^fixture=' \
+                ${wasmConformanceCheck}/report.txt)"
+              test "$observed_fixtures" = "$expected_fixtures"
+
+              jq --raw-output \
+                '.evidence.sources[] | [.path, .context, .blake3] | @tsv' \
+                "$TMPDIR/manifest.json" \
+                | while IFS=$'\t' read -r path context expected; do
+                    observed="$(b3sum --derive-key "$context" "$path")"
+                    test "''${observed%% *}" = "$expected"
+                  done
+
+              jq --raw-output \
+                '.evidence.proof_references[] | [.manifest_path, .manifest_blake3, .exported_path, .exported_blake3] | @tsv' \
+                "$TMPDIR/manifest.json" \
+                | while IFS=$'\t' read -r manifest manifest_expected exported exported_expected; do
+                    manifest_observed="$(b3sum \
+                      --derive-key "choregraph wasm source file v1:$manifest" \
+                      "$manifest")"
+                    exported_observed="$(b3sum \
+                      --derive-key "choregraph wasm source file v1:$exported" \
+                      "$exported")"
+                    test "''${manifest_observed%% *}" = "$manifest_expected"
+                    test "''${exported_observed%% *}" = "$exported_expected"
+                  done
+
+              mkdir -p "$out"
+              cp "$TMPDIR/manifest.json" "$out/manifest.json"
+              cp ${wasmConformanceCheck}/report.txt "$out/conformance-report.txt"
+              printf '%s\n' \
+                'non-claim=identity-linkage-and-bounded-parity-observations-only' \
+                > "$out/non-claim.txt"
+            '';
         octetPackages = octet.packages.${system};
         octetDenyConfig = (builtins.fromJSON (builtins.readFile ./config/octet-deny-all.json)).config;
         octetDenyFlags = builtins.concatStringsSep " " (map (lint: "-D ${lint}") octetDenyConfig.lints);
@@ -105,11 +270,16 @@
           default = choregraphPackage;
           choregraph = choregraphPackage;
           foundation-check = foundationChecker;
+          choregraph-wasm-component = wasmKernelComponent;
+          choregraph-wasm-conformance = wasmConformanceChecker;
           octet-deny-all = octetDenyAllRunner;
         };
 
         checks = {
           octet-deny-all = octetDenyAllCheck;
+          wasm-kernel-component = wasmKernelComponent;
+          wasm-kernel-conformance = wasmConformanceCheck;
+          wasm-kernel-evidence = wasmEvidenceCheck;
 
           # r[impl choregraph.quality.octet.severity]
           octet-deny-all-policy =
@@ -868,6 +1038,7 @@
             pkgs.jq
             pkgs.nickel
             pkgs.nixfmt
+            pkgs.wasm-tools
             octetDenyAllRunner
             productionVerus
             rustToolchain

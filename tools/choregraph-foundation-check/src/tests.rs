@@ -65,48 +65,86 @@ fn reviewed_execution_graph_oracle() -> crate::types::DependencyModel {
     }
 }
 
+fn allowed_packages() -> Vec<crate::types::PackageModel> {
+    vec![
+        package("choregraph-core", vec![]),
+        package(
+            "execution-graph-core",
+            vec![workspace_dependency("choregraph-core")],
+        ),
+        package(
+            "choregraph-kamacite",
+            vec![workspace_dependency("choregraph-core")],
+        ),
+        package(
+            "choregraph-nickel",
+            vec![workspace_dependency("choregraph-core")],
+        ),
+        package("choregraph-release", vec![]),
+        package(
+            "choregraph-seaglass",
+            vec![
+                workspace_dependency("choregraph-core"),
+                workspace_dependency("choregraph-nickel"),
+                reviewed_execution_graph_oracle(),
+            ],
+        ),
+        package(
+            "choregraph-wasm",
+            vec![
+                workspace_dependency("choregraph-core"),
+                workspace_dependency("choregraph-kamacite"),
+            ],
+        ),
+        package(
+            "choregraph-cli",
+            vec![
+                workspace_dependency("choregraph-core"),
+                workspace_dependency("choregraph-kamacite"),
+                workspace_dependency("choregraph-nickel"),
+                workspace_dependency("choregraph-release"),
+                workspace_dependency("choregraph-seaglass"),
+                reviewed_bounded_exec_dependency(),
+                reviewed_cap_root_dependency(),
+            ],
+        ),
+        package("choregraph-foundation-check", vec![]),
+        package(
+            "choregraph-wasm-conformance",
+            vec![
+                workspace_dependency("choregraph-core"),
+                workspace_dependency("choregraph-kamacite"),
+                workspace_dependency("choregraph-wasm"),
+            ],
+        ),
+    ]
+}
+
 fn allowed_model() -> crate::types::WorkspaceModel {
     crate::types::WorkspaceModel {
-        packages: vec![
-            package("choregraph-core", vec![]),
-            package(
-                "execution-graph-core",
-                vec![workspace_dependency("choregraph-core")],
-            ),
-            package(
-                "choregraph-kamacite",
-                vec![workspace_dependency("choregraph-core")],
-            ),
-            package(
-                "choregraph-nickel",
-                vec![workspace_dependency("choregraph-core")],
-            ),
-            package("choregraph-release", vec![]),
-            package(
-                "choregraph-seaglass",
-                vec![
-                    workspace_dependency("choregraph-core"),
-                    workspace_dependency("choregraph-nickel"),
-                    reviewed_execution_graph_oracle(),
-                ],
-            ),
-            package(
-                "choregraph-cli",
-                vec![
-                    workspace_dependency("choregraph-core"),
-                    workspace_dependency("choregraph-kamacite"),
-                    workspace_dependency("choregraph-nickel"),
-                    workspace_dependency("choregraph-release"),
-                    workspace_dependency("choregraph-seaglass"),
-                    reviewed_bounded_exec_dependency(),
-                    reviewed_cap_root_dependency(),
-                ],
-            ),
-            package("choregraph-foundation-check", vec![]),
-        ],
+        packages: allowed_packages(),
         core_sources: vec![crate::types::SourceUnit {
             path: String::from("crates/choregraph-core/src/lib.rs"),
             text: String::from("#![no_std]\nextern crate alloc;\n"),
+        }],
+        wasm_adapter_sources: vec![crate::types::SourceUnit {
+            path: String::from("dispatch.rs"),
+            text: [
+                "validate_machine_artifact(",
+                "validate_durable_machine_artifact(",
+                "validate_concrete_machine_artifact(",
+                "step(&context.machine",
+                "step_concrete(&context.machine",
+                "replay(input)",
+                "replay_concrete(input)",
+            ]
+            .join("\n"),
+        }],
+        wasm_wit_sources: vec![crate::types::SourceUnit {
+            path: String::from("kernel.wit"),
+            text: String::from(
+                "package onix:choregraph@1.0.0;\nworld kernel {\n  export call: func(request: list<u8>) -> list<u8>;\n}\n",
+            ),
         }],
     }
 }
@@ -327,4 +365,47 @@ fn rejects_license_drift() {
     }
     assert!(is_changed);
     assert!(contains_code(&model, "foundation.license"));
+}
+
+#[test]
+fn accepts_legacy_models_without_a_selected_wasm_adapter() {
+    let mut model = allowed_model();
+    model
+        .packages
+        .retain(|package| package.name != "choregraph-wasm");
+    model.wasm_adapter_sources.clear();
+    model.wasm_wit_sources.clear();
+    let issues = crate::validator::validate_workspace(&model);
+    assert!(
+        !issues
+            .iter()
+            .any(|issue| issue.code.starts_with("foundation.wasm-"))
+    );
+}
+
+#[test]
+fn rejects_missing_wasm_production_delegation() {
+    let mut model = allowed_model();
+    model.wasm_adapter_sources[0].text = String::from("fn call() {}");
+    assert!(contains_code(&model, "foundation.wasm-missing-delegation"));
+}
+
+#[test]
+fn rejects_wasm_persistent_handles_and_graph_specific_generation() {
+    let mut model = allowed_model();
+    model.wasm_adapter_sources.push(crate::types::SourceUnit {
+        path: String::from("bad.rs"),
+        text: String::from("static CACHE: OnceLock<()>; MachineSpec::new(Vec::new(), Vec::new());"),
+    });
+    assert!(contains_code(&model, "foundation.forbidden-wasm-source"));
+}
+
+#[test]
+fn rejects_wasm_host_imports_and_extra_exports() {
+    let mut model = allowed_model();
+    model.wasm_wit_sources[0].text = String::from(
+        "package onix:choregraph@1.0.0;\nworld kernel {\n  import clock: func();\n  export call: func(request: list<u8>) -> list<u8>;\n  export extra: func();\n}\n",
+    );
+    assert!(contains_code(&model, "foundation.wasm-host-import"));
+    assert!(contains_code(&model, "foundation.wasm-export-surface"));
 }

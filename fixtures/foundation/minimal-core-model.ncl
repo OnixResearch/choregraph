@@ -16,4 +16,6 @@ fun model_dependencies source_text =>
         text = source_text,
       },
     ],
+    wasm_adapter_sources = [],
+    wasm_wit_sources = [],
   } | WorkspaceModel

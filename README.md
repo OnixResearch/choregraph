@@ -21,6 +21,8 @@ The frontend runs the selected evaluator through pinned Bounded Exec. Then it lo
 
 Production-linked Verus rails prove named single-step and finite-trace properties of the indexed kernel. Replay uses the production `step` relation.
 
+The export-only WASM component accepts canonical packed Preserves calls. It re-admits artifacts and delegates to the same production entrypoints on every call.
+
 If replay finds a denial, it reports the first denial and returns no dispatchable intents.
 
 A pinned Octet gate checks every workspace target. The gate treats every Octet lint as an error.
@@ -47,6 +49,7 @@ Choregraph owns these functions:
 - Kamacite artifact and receipt adapters
 - restricted Nickel evaluation and canonical lowering
 - Seaglass and Lattice compatibility adapters
+- a stateless WASM component over the production kernel
 
 The production transition relation has one implementation. Compatibility crates must delegate to that implementation.
 
@@ -96,6 +99,7 @@ crates/choregraph-kamacite/
 crates/choregraph-nickel/
 crates/choregraph-release/
 crates/choregraph-seaglass/
+crates/choregraph-wasm/
 crates/execution-graph-core/
 crates/choregraph-cli/
 tools/choregraph-foundation-check/
@@ -115,6 +119,7 @@ evidence/
 - [`docs/lattice-cutover-readiness.md`](docs/lattice-cutover-readiness.md): source order, duplicate removal, and rollback gates.
 - [`docs/lattice-authority-boundary.md`](docs/lattice-authority-boundary.md): intent handoff and retained Lattice authority.
 - [`docs/release-evidence.md`](docs/release-evidence.md): bundle roles, Valence projection, and publication checks.
+- [`docs/wasm-kernel-adapter.md`](docs/wasm-kernel-adapter.md): WIT, Preserves envelopes, limits, identities, host duties, and non-claims.
 
 ## Checks
 
@@ -124,6 +129,9 @@ Run all commands from the repository root:
 nix develop -c cargo test --workspace --all-targets
 nix develop -c cargo clippy --workspace --all-targets -- --deny warnings
 nix develop -c cargo run -p choregraph-foundation-check -- --root .
+nix build .#choregraph-wasm-component --no-link -L
+nix build .#checks.x86_64-linux.wasm-kernel-conformance --no-link -L
+nix build .#checks.x86_64-linux.wasm-kernel-evidence --no-link -L
 nix build .#checks.x86_64-linux.octet-deny-all --no-link -L
 ./tools/check-lattice-downstream.rs --self-test
 ./tools/check-lattice-downstream.rs ../lattice .

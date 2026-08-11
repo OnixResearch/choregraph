@@ -1,0 +1,226 @@
+{
+  "evidence": {
+    "abi": "onix:choregraph/kernel@1.0.0 call(list<u8>) -> list<u8>",
+    "component": {
+      "blake3": "9517ef85648b765359807a8fdfc5643c3c5460ed4dbb238710718d07dc206289",
+      "blake3_context": "choregraph wasm component bytes v1",
+      "export": "call",
+      "imports": "none",
+      "nix_nar_hash": "sha256-NsEz709Wqi7bLDo6xE7TG9iKRdjMsvq5m8ml0E7Vsjc=",
+      "nix_nar_hash_algorithm": "sha256 required by the Nix store protocol"
+    },
+    "conformance": {
+      "corpus_blake3": "860ef15ce5e4ef5a2859476321456ce85a4a16fa1eea7039cdaa9af142936a11",
+      "corpus_blake3_context": "choregraph wasm conformance corpus v1",
+      "fixture_count": 22,
+      "fresh_instance_parity": true,
+      "reused_instance_parity": true
+    },
+    "limits": {
+      "edges": 16384,
+      "effect_declarations": 16384,
+      "effects": 64,
+      "nodes": 4096,
+      "request_bytes": 1048576,
+      "result_bytes": 2097152,
+      "state_entries": 4096,
+      "trace_events": 65536
+    },
+    "non_claims": [
+      "Component parity does not prove compiler or engine correctness.",
+      "The adapter does not execute, authorize, schedule, persist, or attest effects.",
+      "Import denial does not prove host sandbox correctness.",
+      "Proof references retain their original bounded theorem and trust boundaries.",
+      "This evidence does not establish release eligibility by itself."
+    ],
+    "proof_references": [
+      {
+        "claim_boundary": "production-called single-step transition obligations only",
+        "exported_blake3": "0bbffe7af30d884459ccfaf64cc4c6034cde3b57b0d11d3023a6efdfd71e405c",
+        "exported_path": "evidence/generated/single-step-proof.json",
+        "manifest_blake3": "24f63be21123b2db0c5cdb2b528592be3123882a852ec0229a479b4f90b7fbd0",
+        "manifest_path": "evidence/single-step-proof.ncl"
+      },
+      {
+        "claim_boundary": "bounded replay refinement and first-denial obligations only",
+        "exported_blake3": "7e825c85644d364c06e8d3ec71056c3b0ba0fc812710ee57b472d9cd04bc4edc",
+        "exported_path": "evidence/generated/trace-replay-proof.json",
+        "manifest_blake3": "008dbf90d01dd4c157f70a5560f4b4959ac4fe247f2e9b111e65b88450aefdfd",
+        "manifest_path": "evidence/trace-replay-proof.ncl"
+      }
+    ],
+    "schema": "choregraph.wasm-kernel-adapter-evidence.v1",
+    "sources": [
+      {
+        "blake3": "9d77f1e7368d56e2ce4f04ad7021acce861a230b37c3a8fc06f039cf093a9a86",
+        "context": "choregraph wasm source file v1:Cargo.toml",
+        "path": "Cargo.toml",
+        "role": "workspace membership and dependency policy"
+      },
+      {
+        "blake3": "f125a6e0bb51d8940878627f9b1b232ac6ee1479480782a3fed84d0b59e8060c",
+        "context": "choregraph wasm source file v1:Cargo.lock",
+        "path": "Cargo.lock",
+        "role": "resolved Rust dependency identity"
+      },
+      {
+        "blake3": "7521ae53aea3a381bc60d7f68287e91ae99e8d5f49bcb5b19550dc181ef12223",
+        "context": "choregraph wasm source file v1:rust-toolchain.toml",
+        "path": "rust-toolchain.toml",
+        "role": "Rust channel and WASM target identity"
+      },
+      {
+        "blake3": "e0e748538b77a1f3449aed226ff0d2681a6b0efccc6bd0fb6baa5fa83510c1a4",
+        "context": "choregraph wasm source file v1:flake.nix",
+        "path": "flake.nix",
+        "role": "reproducible component, conformance, and evidence build graph"
+      },
+      {
+        "blake3": "957db0f74b4930e4f1288e4e4d5cbdce4d7f5f660ba5d4bf2aa2386557b5ec57",
+        "context": "choregraph wasm source file v1:crates/choregraph-core/src/lib.rs",
+        "path": "crates/choregraph-core/src/lib.rs",
+        "role": "production kernel public entrypoints"
+      },
+      {
+        "blake3": "986dbd0f2e4b8ae550899dc0ce4cd188e6ac44dcf2f2d6588c8abdec7e1e0584",
+        "context": "choregraph wasm source file v1:crates/choregraph-core/src/admission.rs",
+        "path": "crates/choregraph-core/src/admission.rs",
+        "role": "production machine admission"
+      },
+      {
+        "blake3": "9297582305e61faff177967a1ce87ecc51b76499a78ddea488b6838ee575b310",
+        "context": "choregraph wasm source file v1:crates/choregraph-core/src/transition.rs",
+        "path": "crates/choregraph-core/src/transition.rs",
+        "role": "production abstract transition and replay entrypoints"
+      },
+      {
+        "blake3": "9100c3c745921a3288e51b98803c5709f63a27d141bd8687a94051357c46b63c",
+        "context": "choregraph wasm source file v1:crates/choregraph-core/src/concrete.rs",
+        "path": "crates/choregraph-core/src/concrete.rs",
+        "role": "production concrete transition and replay entrypoints"
+      },
+      {
+        "blake3": "39315879460257152f29943db8fcf77b78cc81493a8208d2f7d56e4613cecfb7",
+        "context": "choregraph wasm source file v1:crates/choregraph-kamacite/src/lib.rs",
+        "path": "crates/choregraph-kamacite/src/lib.rs",
+        "role": "canonical artifact API boundary"
+      },
+      {
+        "blake3": "3451a5b9e557b778a6ee5565e4052250a739eaafc71d6d7ef49a7cb661c42569",
+        "context": "choregraph wasm source file v1:crates/choregraph-kamacite/src/aggregate.rs",
+        "path": "crates/choregraph-kamacite/src/aggregate.rs",
+        "role": "canonical machine artifact validation"
+      },
+      {
+        "blake3": "dc0436e2f5fa48fd9c459ca20b9485786b6a397235b7cb4ff878a2a223d3d659",
+        "context": "choregraph wasm source file v1:crates/choregraph-kamacite/src/codec.rs",
+        "path": "crates/choregraph-kamacite/src/codec.rs",
+        "role": "canonical packed Preserves implementation"
+      },
+      {
+        "blake3": "6ba121aeeed33ff658a5e9bcb682c9545815f38d860b8ca318cbac4018d7a16a",
+        "context": "choregraph wasm source file v1:crates/choregraph-kamacite/src/identity.rs",
+        "path": "crates/choregraph-kamacite/src/identity.rs",
+        "role": "domain-separated artifact identities"
+      },
+      {
+        "blake3": "fecfb93f27c5d537ca2f1dbcd41e6b7d2fbfaf1bd268dc60c57477ff490d1bc0",
+        "context": "choregraph wasm source file v1:crates/choregraph-wasm/Cargo.toml",
+        "path": "crates/choregraph-wasm/Cargo.toml",
+        "role": "adapter dependency and component build boundary"
+      },
+      {
+        "blake3": "4a3164631c392002c91bc560cf61cbcd9bad9fa19db25bc5157c67d45cc41be5",
+        "context": "choregraph wasm source file v1:crates/choregraph-wasm/wit/kernel.wit",
+        "path": "crates/choregraph-wasm/wit/kernel.wit",
+        "role": "versioned export-only WIT contract"
+      },
+      {
+        "blake3": "83d28a06e6126cb150d73ae00923b5e118005ce7dd1a0cef85f71e66b3955bba",
+        "context": "choregraph wasm source file v1:crates/choregraph-wasm/src/lib.rs",
+        "path": "crates/choregraph-wasm/src/lib.rs",
+        "role": "component shell and generated ABI export"
+      },
+      {
+        "blake3": "d661820bafada04552ed453c9f5c182c3fc6a246b20ad4d9857bdded4e434f51",
+        "context": "choregraph wasm source file v1:crates/choregraph-wasm/src/schema.rs",
+        "path": "crates/choregraph-wasm/src/schema.rs",
+        "role": "bounded versioned request and response schema"
+      },
+      {
+        "blake3": "9ebd2a8e969c918179245b6d98ae3f20aadae2925868cd684555c412b7b9ef31",
+        "context": "choregraph wasm source file v1:crates/choregraph-wasm/src/codec.rs",
+        "path": "crates/choregraph-wasm/src/codec.rs",
+        "role": "canonical packed Preserves codec wrapper"
+      },
+      {
+        "blake3": "4498fd0d20da9be17ef1f3552f2dc4e88036831879ef4b0c578094321529244f",
+        "context": "choregraph wasm source file v1:crates/choregraph-wasm/src/dispatch.rs",
+        "path": "crates/choregraph-wasm/src/dispatch.rs",
+        "role": "pure dispatcher and production-kernel delegation"
+      },
+      {
+        "blake3": "0f0203a5313b6c2e834677e91ed3621bcdee35bbc669ed101478d32f19145584",
+        "context": "choregraph wasm source file v1:crates/choregraph-wasm/tests/dispatcher.rs",
+        "path": "crates/choregraph-wasm/tests/dispatcher.rs",
+        "role": "positive and negative native adapter tests"
+      },
+      {
+        "blake3": "4134ae42e399361447b293c033ce7a785ef21995e2026fddd8e7a398d2c04391",
+        "context": "choregraph wasm source file v1:vendor/kamacite-core-selected/preserves/codec.rs",
+        "path": "vendor/kamacite-core-selected/preserves/codec.rs",
+        "role": "selected canonical Kamacite codec reference"
+      },
+      {
+        "blake3": "138417eff7a94ae57a598ec731f53934e21727ae27a02f96d76a6d1f100b8df1",
+        "context": "choregraph wasm source file v1:tools/choregraph-wasm-conformance/Cargo.toml",
+        "path": "tools/choregraph-wasm-conformance/Cargo.toml",
+        "role": "pinned conformance engine dependency"
+      },
+      {
+        "blake3": "c0c9b2b73903677c123753c6b2f8a0f24ed5c53250ccafb012c6f8db0d49ac4b",
+        "context": "choregraph wasm source file v1:tools/choregraph-wasm-conformance/src/main.rs",
+        "path": "tools/choregraph-wasm-conformance/src/main.rs",
+        "role": "native and component byte-parity corpus"
+      },
+      {
+        "blake3": "5304addd57b4662248b992408d97fc4d4fa0d1ccc45165ee1b22355a13125e91",
+        "context": "choregraph wasm source file v1:tools/choregraph-foundation-check/src/main.rs",
+        "path": "tools/choregraph-foundation-check/src/main.rs",
+        "role": "foundation-check command shell"
+      },
+      {
+        "blake3": "5c2905e9ed3b7380bff3777bbea98edb84658d3b2b60c990e9ad9bac6defc2b1",
+        "context": "choregraph wasm source file v1:tools/choregraph-foundation-check/src/source.rs",
+        "path": "tools/choregraph-foundation-check/src/source.rs",
+        "role": "repository source loader"
+      },
+      {
+        "blake3": "43dc5b134e2f45bc042d8f9bc79cbb68cd535b62df1552d598409dc02214c614",
+        "context": "choregraph wasm source file v1:tools/choregraph-foundation-check/src/tests.rs",
+        "path": "tools/choregraph-foundation-check/src/tests.rs",
+        "role": "positive and negative boundary check fixtures"
+      },
+      {
+        "blake3": "4d8b81f6fb0e2322ab3d42bec59ffcf10a6fc88d986511827e5d1d3ec46c3b54",
+        "context": "choregraph wasm source file v1:tools/choregraph-foundation-check/src/types.rs",
+        "path": "tools/choregraph-foundation-check/src/types.rs",
+        "role": "bounded finding model"
+      },
+      {
+        "blake3": "532f2af88747dd8116282ffdb0d11b21e79364b4da8180e295c556b0c41e2aa6",
+        "context": "choregraph wasm source file v1:tools/choregraph-foundation-check/src/validator.rs",
+        "path": "tools/choregraph-foundation-check/src/validator.rs",
+        "role": "static boundary and delegation checks"
+      }
+    ],
+    "status": "verified",
+    "toolchain": {
+      "conformance_engine": "wasmtime 45.0.0",
+      "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+      "target": "wasm32-unknown-unknown",
+      "wasm_tools": "1.253.0",
+      "wit_bindgen": "0.57.1"
+    }
+  }
+}

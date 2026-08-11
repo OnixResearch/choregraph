@@ -18,6 +18,7 @@ const PRODUCT_PACKAGES: &[&str] = &[
     "choregraph-nickel",
     "choregraph-release",
     "choregraph-seaglass",
+    "choregraph-wasm",
     "choregraph-cli",
 ];
 
@@ -28,6 +29,7 @@ const CONSUMER_LIBRARY_PACKAGES: &[&str] = &[
     "choregraph-nickel",
     "choregraph-release",
     "choregraph-seaglass",
+    "choregraph-wasm",
 ];
 
 const BLAKE3_COMPATIBLE_REQUIREMENT: &str = "^1.8.2";
@@ -41,7 +43,9 @@ const REQUIRED_PACKAGES: &[&str] = &[
     "choregraph-release",
     "choregraph-seaglass",
     "choregraph-cli",
+    "choregraph-wasm",
     FOUNDATION_CHECK_PACKAGE,
+    "choregraph-wasm-conformance",
 ];
 
 const CORE_FORBIDDEN_DEPENDENCIES: &[&str] = &[
@@ -59,6 +63,9 @@ const CORE_FORBIDDEN_DEPENDENCIES: &[&str] = &[
 const NO_INTERNAL_DEPENDENCIES: &[&str] = &[];
 const CORE_ONLY: &[&str] = &[CORE_PACKAGE];
 const SEAGLASS_DEPENDENCIES: &[&str] = &[CORE_PACKAGE, "choregraph-nickel"];
+const WASM_DEPENDENCIES: &[&str] = &[CORE_PACKAGE, "choregraph-kamacite"];
+const WASM_CONFORMANCE_DEPENDENCIES: &[&str] =
+    &[CORE_PACKAGE, "choregraph-kamacite", "choregraph-wasm"];
 const CLI_DEPENDENCIES: &[&str] = &[
     CORE_PACKAGE,
     "choregraph-kamacite",
@@ -72,6 +79,11 @@ const REQUIRED_INTERNAL_EDGES: &[(&str, &str)] = &[
     ("choregraph-kamacite", CORE_PACKAGE),
     ("choregraph-nickel", CORE_PACKAGE),
     ("choregraph-seaglass", CORE_PACKAGE),
+    ("choregraph-wasm", CORE_PACKAGE),
+    ("choregraph-wasm", "choregraph-kamacite"),
+    ("choregraph-wasm-conformance", CORE_PACKAGE),
+    ("choregraph-wasm-conformance", "choregraph-kamacite"),
+    ("choregraph-wasm-conformance", "choregraph-wasm"),
     ("choregraph-cli", CORE_PACKAGE),
     ("choregraph-cli", "choregraph-kamacite"),
     ("choregraph-cli", "choregraph-nickel"),
@@ -105,6 +117,8 @@ fn allowed_internal_dependencies(package: &str) -> Option<&'static [&'static str
         }
         EXECUTION_GRAPH_PACKAGE | "choregraph-kamacite" | "choregraph-nickel" => Some(CORE_ONLY),
         "choregraph-seaglass" => Some(SEAGLASS_DEPENDENCIES),
+        "choregraph-wasm" => Some(WASM_DEPENDENCIES),
+        "choregraph-wasm-conformance" => Some(WASM_CONFORMANCE_DEPENDENCIES),
         "choregraph-cli" => Some(CLI_DEPENDENCIES),
         _ => None,
     }

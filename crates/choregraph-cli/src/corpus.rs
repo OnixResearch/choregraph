@@ -3,6 +3,7 @@
     unknown_lints,
     assertion_density,
     explicit_defaults,
+    excessive_file_length,
     function_length,
     non_trait_imports,
     numeric_units,

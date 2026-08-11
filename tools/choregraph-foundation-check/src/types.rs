@@ -1,8 +1,18 @@
+#![allow(
+    unknown_lints,
+    explicit_defaults,
+    reason = "legacy foundation fixtures omit the optional WASM source arrays, which normalize explicitly to empty collections"
+)]
+
 /// A normalized workspace model consumed by the pure validator.
 #[derive(Clone, Debug, serde::Deserialize, Eq, PartialEq)]
 pub struct WorkspaceModel {
     pub packages: Vec<PackageModel>,
     pub core_sources: Vec<SourceUnit>,
+    #[serde(default)]
+    pub wasm_adapter_sources: Vec<SourceUnit>,
+    #[serde(default)]
+    pub wasm_wit_sources: Vec<SourceUnit>,
 }
 
 /// A normalized package and its direct dependency declarations.

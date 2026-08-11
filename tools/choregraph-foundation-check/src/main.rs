@@ -1,4 +1,6 @@
 const CORE_SOURCE_PATH: &str = "crates/choregraph-core/src";
+const WASM_ADAPTER_SOURCE_PATH: &str = "crates/choregraph-wasm/src";
+const WASM_WIT_SOURCE_PATH: &str = "crates/choregraph-wasm/wit";
 const MAX_CORE_SOURCE_ENTRIES: usize = 4_096;
 const INITIAL_DIRECTORY_CAPACITY: usize = 32;
 const ADJACENT_ENTRY_COUNT: usize = 2;
@@ -203,12 +205,20 @@ fn load_workspace(
     packages.sort_by(|left, right| left.name.cmp(&right.name));
 
     let source_root = workspace_root.join(CORE_SOURCE_PATH);
+    let wasm_adapter_source_root = workspace_root.join(WASM_ADAPTER_SOURCE_PATH);
+    let wasm_wit_source_root = workspace_root.join(WASM_WIT_SOURCE_PATH);
     let core_sources = collect_source_units(&source_root)?;
+    let wasm_adapter_sources = collect_source_units(&wasm_adapter_source_root)?;
+    let wasm_wit_sources = collect_source_units(&wasm_wit_source_root)?;
     debug_assert!(packages.len() <= metadata.packages.len());
     debug_assert!(core_sources.len() <= MAX_CORE_SOURCE_ENTRIES);
+    debug_assert!(wasm_adapter_sources.len() <= MAX_CORE_SOURCE_ENTRIES);
+    debug_assert!(wasm_wit_sources.len() <= MAX_CORE_SOURCE_ENTRIES);
     Ok(choregraph_foundation_check::types::WorkspaceModel {
         packages,
         core_sources,
+        wasm_adapter_sources,
+        wasm_wit_sources,
     })
 }
 

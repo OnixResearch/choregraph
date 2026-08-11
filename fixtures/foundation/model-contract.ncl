@@ -27,4 +27,6 @@ let SourceUnit = {
 {
   packages | Array Package,
   core_sources | Array SourceUnit,
+  wasm_adapter_sources | Array SourceUnit,
+  wasm_wit_sources | Array SourceUnit,
 }

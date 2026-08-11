@@ -1,8 +1,9 @@
 // The CLI embeds the complete reviewed adapter source set for deterministic identity receipts.
 #![allow(
     unknown_lints,
+    excessive_file_length,
     module_file_count,
-    reason = "adapter identity includes each reviewed source file without granting runtime authority"
+    reason = "adapter identity includes the generated Cargo lock and each reviewed source file without granting runtime authority"
 )]
 
 mod capability;

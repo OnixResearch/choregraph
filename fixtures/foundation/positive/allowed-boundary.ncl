@@ -42,6 +42,10 @@ let reviewed_execution_graph_oracle = {
       workspace "choregraph-nickel",
       reviewed_execution_graph_oracle,
     ],
+    package "choregraph-wasm" [
+      workspace "choregraph-core",
+      workspace "choregraph-kamacite",
+    ],
     package "choregraph-cli" [
       workspace "choregraph-core",
       workspace "choregraph-kamacite",
@@ -52,11 +56,28 @@ let reviewed_execution_graph_oracle = {
       reviewed_cap_root,
     ],
     package "choregraph-foundation-check" [],
+    package "choregraph-wasm-conformance" [
+      workspace "choregraph-core",
+      workspace "choregraph-kamacite",
+      workspace "choregraph-wasm",
+    ],
   ],
   core_sources = [
     {
       path = "crates/choregraph-core/src/lib.rs",
       text = "#![no_std]\nextern crate alloc;\n",
+    },
+  ],
+  wasm_adapter_sources = [
+    {
+      path = "dispatch.rs",
+      text = "validate_machine_artifact(\nvalidate_durable_machine_artifact(\nvalidate_concrete_machine_artifact(\nstep(&context.machine\nstep_concrete(&context.machine\nreplay(input)\nreplay_concrete(input)\n",
+    },
+  ],
+  wasm_wit_sources = [
+    {
+      path = "kernel.wit",
+      text = "package onix:choregraph@1.0.0;\nworld kernel {\n  export call: func(request: list<u8>) -> list<u8>;\n}\n",
     },
   ],
 } | WorkspaceModel

@@ -192,7 +192,7 @@ let Base = import "upstream-default.ncl" in
     profiles = [{
       id = "cairn-default",
       requirement_sources = [
-        { root = "cairn/specs", source_kind = "accepted_specs", extensions = ["md"] },
+        { root = ".cairn/specs", source_kind = "accepted_specs", extensions = ["md"] },
       ],
       evidence_sources = [
         { root = "crates", source_kind = "rust_source", extensions = ["rs"] },

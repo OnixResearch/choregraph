@@ -56,5 +56,67 @@
     { requirement = "choregraph.release.compatibility_publication", evidence = "evidence/release/compatibility-publication-receipt.ncl" },
     # r[verify choregraph.release.compatibility_acquisition]
     { requirement = "choregraph.release.compatibility_acquisition", evidence = "record-compatibility-publication evidence" },
+    # r[verify choregraph.execution_graph_compatibility.source]
+    { requirement = "choregraph.execution_graph_compatibility.source", evidence = "Cargo.toml and crates/execution-graph-core" },
+    # r[verify choregraph.machine.suspension_profile.valid]
+    { requirement = "choregraph.machine.suspension_profile.valid", evidence = "crates/choregraph-core/tests/durable-suspension.rs" },
+    # r[verify choregraph.machine.suspension_profile.invalid]
+    { requirement = "choregraph.machine.suspension_profile.invalid", evidence = "crates/choregraph-core/tests/durable-suspension.rs" },
+    # r[verify choregraph.machine.suspension_transition.suspend]
+    { requirement = "choregraph.machine.suspension_transition.suspend", evidence = "crates/choregraph-core/tests/durable-suspension.rs" },
+    # r[verify choregraph.machine.suspension_transition.resume]
+    { requirement = "choregraph.machine.suspension_transition.resume", evidence = "crates/choregraph-core/tests/durable-suspension.rs" },
+    # r[verify choregraph.machine.suspension_transition.denied]
+    { requirement = "choregraph.machine.suspension_transition.denied", evidence = "crates/choregraph-core/tests/durable-suspension.rs" },
+    # r[verify choregraph.machine.resume_signal.wait]
+    { requirement = "choregraph.machine.resume_signal.wait", evidence = "crates/choregraph-core/tests/durable-suspension.rs" },
+    # r[verify choregraph.machine.resume_signal.mismatch]
+    { requirement = "choregraph.machine.resume_signal.mismatch", evidence = "crates/choregraph-core/tests/durable-suspension.rs" },
+    # r[verify choregraph.machine.suspension_replay.valid]
+    { requirement = "choregraph.machine.suspension_replay.valid", evidence = "crates/choregraph-core/tests/durable-suspension.rs and proofs/trace-replay" },
+    # r[verify choregraph.machine.suspension_replay.invalid]
+    { requirement = "choregraph.machine.suspension_replay.invalid", evidence = "crates/choregraph-core/tests/durable-suspension.rs and proofs/trace-replay" },
+    # r[verify choregraph.machine.suspension_proof.valid]
+    { requirement = "choregraph.machine.suspension_proof.valid", evidence = "proofs and Verus Nix checks" },
+    # r[verify choregraph.machine.suspension_proof.invalid]
+    { requirement = "choregraph.machine.suspension_proof.invalid", evidence = "proofs/negative and Verus Nix checks" },
+    # r[verify choregraph.machine.suspension_boundary.valid]
+    { requirement = "choregraph.machine.suspension_boundary.valid", evidence = "crates/choregraph-core/src/boundary.rs and durable-suspension tests" },
+    # r[verify choregraph.machine.suspension_boundary.overclaim]
+    { requirement = "choregraph.machine.suspension_boundary.overclaim", evidence = "crates/choregraph-core/src/boundary.rs and evidence non-claims" },
+    # r[verify choregraph.validation_baselines.trace_fixtures]
+    { requirement = "choregraph.validation_baselines.trace_fixtures", evidence = "proofs/negative and trace-replay-verus Nix check" },
+    # r[verify choregraph.validation_baselines.cairn_policy]
+    { requirement = "choregraph.validation_baselines.cairn_policy", evidence = "cairn-policy/default.ncl and generated/cairn-policy.json" },
+    # r[verify choregraph.validation_baselines.policy_overrides]
+    { requirement = "choregraph.validation_baselines.policy_overrides", evidence = "cairn-policy/default.ncl and upstream-default.ncl" },
+    # r[verify choregraph.validation_baselines.negative_policy]
+    { requirement = "choregraph.validation_baselines.negative_policy", evidence = "cairn-policy/fixtures and cairn-policy Nix check" },
+    # r[verify choregraph.validation_baselines.source_quality]
+    { requirement = "choregraph.validation_baselines.source_quality", evidence = "workspace format, Clippy, and Octet Nix checks" },
+    # r[verify choregraph.wasm.module.valid]
+    { requirement = "choregraph.wasm.module.valid", evidence = "crates/choregraph-wasm and wasm-kernel-conformance Nix check" },
+    # r[verify choregraph.wasm.module.duplicate]
+    { requirement = "choregraph.wasm.module.duplicate", evidence = "choregraph-foundation-check source-link failures" },
+    # r[verify choregraph.wasm.abi.valid]
+    { requirement = "choregraph.wasm.abi.valid", evidence = "crates/choregraph-wasm/tests/dispatcher.rs and WIT inspection" },
+    # r[verify choregraph.wasm.abi.invalid]
+    { requirement = "choregraph.wasm.abi.invalid", evidence = "crates/choregraph-wasm/tests/dispatcher.rs malformed and unsupported fixtures" },
+    # r[verify choregraph.wasm.bounds.valid]
+    { requirement = "choregraph.wasm.bounds.valid", evidence = "dispatcher boundary tests and conformance maximum-bound fixture" },
+    # r[verify choregraph.wasm.bounds.invalid]
+    { requirement = "choregraph.wasm.bounds.invalid", evidence = "dispatcher over-bound tests and replay-limit-rejected fixture" },
+    # r[verify choregraph.wasm.parity.valid]
+    { requirement = "choregraph.wasm.parity.valid", evidence = "wasm-kernel-conformance exact-byte corpus" },
+    # r[verify choregraph.wasm.parity.mismatch]
+    { requirement = "choregraph.wasm.parity.mismatch", evidence = "wasm-kernel-conformance mismatch failure path" },
+    # r[verify choregraph.wasm.identity.valid]
+    { requirement = "choregraph.wasm.identity.valid", evidence = "evidence/wasm-kernel-adapter.ncl and wasm-kernel-evidence Nix check" },
+    # r[verify choregraph.wasm.identity.invalid]
+    { requirement = "choregraph.wasm.identity.invalid", evidence = "wasm-kernel-evidence stale identity and duplicate-build failures" },
+    # r[verify choregraph.wasm.boundary.valid]
+    { requirement = "choregraph.wasm.boundary.valid", evidence = "foundation import/export checks and adapter non-claims" },
+    # r[verify choregraph.wasm.boundary.invalid]
+    { requirement = "choregraph.wasm.boundary.invalid", evidence = "foundation host-import and overclaim failures" },
   ],
 }
