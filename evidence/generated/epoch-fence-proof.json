@@ -1,0 +1,78 @@
+{
+  "contract_identity": "blake3:791e39edd60b0ae0520bc57b08cc13e1b6d36fe0679faf798d8f939995afe63c",
+  "implementation_identity": "blake3:208455a5a682f658e7a0c4fa0cdd3224a2cc0e44d11ca5615450224c972717c7",
+  "negative_fixtures": [
+    "verus/epoch-fence-failure-fixtures/cross_entity_admits.rs",
+    "verus/epoch-fence-failure-fixtures/stale_epoch_admits.rs",
+    "verus/epoch-fence-failure-fixtures/terminal_mutation_admits.rs"
+  ],
+  "non_claims": [
+    "the supplied current epoch is not independently observed or authorized",
+    "epoch equality does not acquire or renew a lease",
+    "the decision does not provide storage atomicity or durability",
+    "the decision does not provide consensus or membership",
+    "the decision does not prove a runtime has exactly one writer",
+    "one-entity isolation does not prove cross-entity transaction safety",
+    "the Celld reference does not establish parity or equivalence",
+    "passing evidence does not establish release eligibility"
+  ],
+  "positive_proof": "verus/proofs/epoch_fence.rs",
+  "proof_tool": "octet-production-verus@0.2026.05.17.e479cce",
+  "reference": {
+    "claim_boundary": "bounded mechanism comparison only; no code, parity, equivalence, interoperability, or correctness transfer",
+    "decision_source": "crates/logic/lib.rs blob 3b7a469639cc979bb56655a7d8af227e6b8ac382",
+    "license": "Apache-2.0",
+    "ownership_source": "crates/celld/ownership_store.rs blob 63f1fa367876003f442fa06959fb73965e1a78ce",
+    "repository": "https://github.com/denoland/celld",
+    "revision": "553ae73f83c87c3f7c7a5f73c32c2211d9d7341f"
+  },
+  "schema": "choregraph.epoch-fence-proof.v1",
+  "sources": [
+    {
+      "blake3": "f7c1d682962d757b0919893ff1f96b56475adff09cd200232886cb4fdbe4beea",
+      "path": "crates/choregraph-core/src/ownership/mod.rs",
+      "role": "typed pure gate and production transition wrapper"
+    },
+    {
+      "blake3": "ea5716274215e5b55d63132e532b27bd92a658d56b002ae91391d15232dae5a4",
+      "path": "crates/choregraph-core/src/verified.rs",
+      "role": "production-linked Verus decision"
+    },
+    {
+      "blake3": "bc1fa42d2d80e13fd189758797894efd995404e8c150ea1e374bc42aa61f3aa7",
+      "path": "crates/choregraph-core/tests/epoch-fence.rs",
+      "role": "positive, negative, terminal, and cross-entity tests"
+    },
+    {
+      "blake3": "48558d89808eb179c4b26efac62ecb6f3dad64799e7f71cefafe4e6991f61fa9",
+      "path": "verus/proofs/epoch_fence.rs",
+      "role": "positive formal obligations"
+    },
+    {
+      "blake3": "ecc2a83316e229734126c275dd5af81067ac5aaa16f014e757f395f183ea0d09",
+      "path": "verus/epoch-fence-failure-fixtures/cross_entity_admits.rs",
+      "role": "cross-entity false-claim fixture"
+    },
+    {
+      "blake3": "687399285d7c094dc6e5397e29733c27a2dd8f6ab3a882de90857bbae1b59117",
+      "path": "verus/epoch-fence-failure-fixtures/stale_epoch_admits.rs",
+      "role": "stale-epoch false-claim fixture"
+    },
+    {
+      "blake3": "414de55f22b94720e040097b4e3d1482f04d49258e6c668ccfd9433cc9f2a624",
+      "path": "verus/epoch-fence-failure-fixtures/terminal_mutation_admits.rs",
+      "role": "terminal-mutation false-claim fixture"
+    },
+    {
+      "blake3": "4a6ed2c8f95639b3b8cfd1bb52356365e26819fa85ddf22838db689e84994af3",
+      "path": "docs/epoch-fenced-single-writer.md",
+      "role": "API, reference, and claim boundary"
+    },
+    {
+      "blake3": "c2512d9826e71237b5c045ce9a5f1563bff7ec8353b39965d54099774deaf8de",
+      "path": "fixtures/epoch-fence/negative/shared-store-coupling.rs",
+      "role": "shared-mutable-store negative boundary fixture"
+    }
+  ],
+  "status": "verified"
+}

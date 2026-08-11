@@ -23,6 +23,8 @@ Production-linked Verus rails prove named single-step and finite-trace propertie
 
 The export-only WASM component accepts canonical packed Preserves calls. It re-admits artifacts and delegates to the same production entrypoints on every call.
 
+The epoch-fenced transition wrapper admits supplied ownership facts only for the same entity, equal epoch, and non-terminal state. Choregraph does not discover or authorize the current epoch.
+
 If replay finds a denial, it reports the first denial and returns no dispatchable intents.
 
 A pinned Octet gate checks every workspace target. The gate treats every Octet lint as an error.
@@ -50,6 +52,7 @@ Choregraph owns these functions:
 - restricted Nickel evaluation and canonical lowering
 - Seaglass and Lattice compatibility adapters
 - a stateless WASM component over the production kernel
+- a proof-linked epoch-fence decision over caller-supplied entity facts
 
 The production transition relation has one implementation. Compatibility crates must delegate to that implementation.
 
@@ -120,6 +123,7 @@ evidence/
 - [`docs/lattice-authority-boundary.md`](docs/lattice-authority-boundary.md): intent handoff and retained Lattice authority.
 - [`docs/release-evidence.md`](docs/release-evidence.md): bundle roles, Valence projection, and publication checks.
 - [`docs/wasm-kernel-adapter.md`](docs/wasm-kernel-adapter.md): WIT, Preserves envelopes, limits, identities, host duties, and non-claims.
+- [`docs/epoch-fenced-single-writer.md`](docs/epoch-fenced-single-writer.md): supplied epoch facts, the proof-linked gate, Celld reference scope, and non-claims.
 
 ## Checks
 
@@ -132,6 +136,7 @@ nix develop -c cargo run -p choregraph-foundation-check -- --root .
 nix build .#choregraph-wasm-component --no-link -L
 nix build .#checks.x86_64-linux.wasm-kernel-conformance --no-link -L
 nix build .#checks.x86_64-linux.wasm-kernel-evidence --no-link -L
+nix build .#checks.x86_64-linux.epoch-fence-verus --no-link -L
 nix build .#checks.x86_64-linux.octet-deny-all --no-link -L
 ./tools/check-lattice-downstream.rs --self-test
 ./tools/check-lattice-downstream.rs ../lattice .
@@ -156,5 +161,8 @@ Choregraph preserves the source implementation license, `AGPL-3.0-or-later`. Thi
 - [cap-root](rad://z3cWBCK7VPbEmbL5MAvKJWKjCE745) — lexical path admission before capability-relative I/O.
 - [`cap-std`](https://github.com/bytecodealliance/cap-std) — capability-oriented filesystem I/O for consumer shells.
 - [Swamp](https://github.com/swamp-club/swamp) — product reference for durable workflow suspension.
+- [Celld at `553ae73f83c8`](https://github.com/denoland/celld/tree/553ae73f83c87c3f7c7a5f73c32c2211d9d7341f) — Apache-2.0 reference for per-cell ownership epochs and shard-by-construction isolation.
 
 Choregraph adapts only Swamp's clean-room lifecycle mechanism. It does not adopt Swamp runtime code, approval authority, YAML/CEL authoring, or TypeScript loading.
+
+Choregraph uses Celld only as a bounded mechanism reference. It does not adopt Celld code, storage, leases, routing, replication, runtime authority, or distributed-correctness claims.

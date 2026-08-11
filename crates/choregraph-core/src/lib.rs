@@ -9,6 +9,7 @@ mod concrete;
 mod id;
 mod invariant;
 mod model;
+mod ownership;
 mod transition;
 mod verified;
 #[path = "verified/topology.rs"]
@@ -52,6 +53,11 @@ pub use model::{
     ReplayBindings, ReplayDecision, ReplayFailure, ReplayFailureReason, ReplayInput, ReplayLimits,
     ResumeDecision, SuspensionDeclaration, SuspensionDeclarationSpec, SuspensionFactSpec,
     SuspensionRecord, TRACE_BINDING_BYTES, TraceBinding, TransitionSelector,
+};
+pub use ownership::{
+    EPOCH_FENCE_CONTRACT_IDENTITY, EPOCH_FENCE_IMPLEMENTATION_IDENTITY, EPOCH_FENCE_NON_CLAIMS,
+    EntityEpoch, EpochFence, EpochFenceDecision, EpochFenceDisposition, EpochFenceRejection,
+    EpochFencedTransition, decide_epoch_fence, step_epoch_fenced,
 };
 pub use transition::{
     lifecycle_target, lifecycle_target_for_profile, replay, replay_concrete, step, step_concrete,

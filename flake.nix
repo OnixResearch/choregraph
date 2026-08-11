@@ -396,6 +396,113 @@
             }
           );
 
+          # r[verify choregraph.epoch_fence.invariant]
+          # r[verify choregraph.epoch_fence.decision]
+          # r[verify choregraph.epoch_fence.proof]
+          # r[verify choregraph.epoch_fence.verification]
+          epoch-fence-verus =
+            pkgs.runCommand "choregraph-epoch-fence-verus"
+              {
+                nativeBuildInputs = [
+                  pkgs.b3sum
+                  pkgs.coreutils
+                  pkgs.diffutils
+                  pkgs.gnugrep
+                  pkgs.jq
+                  pkgs.nickel
+                  productionVerus
+                ];
+                src = self;
+              }
+              ''
+                set -eu
+                cd "$src"
+
+                octet-production-verus --crate-type=lib verus/proofs/epoch_fence.rs \
+                  -o "$TMPDIR/epoch-fence.rlib" \
+                  > "$TMPDIR/positive.stdout" 2> "$TMPDIR/positive.stderr"
+                grep -E 'verification results:: [1-9][0-9]* verified, 0 errors' \
+                  "$TMPDIR/positive.stdout" > /dev/null
+
+                expected_negative_count=3
+                observed_negative_count="$(find verus/epoch-fence-failure-fixtures \
+                  -maxdepth 1 -type f -name '*.rs' | wc -l)"
+                test "$observed_negative_count" -eq "$expected_negative_count"
+                for fixture in verus/epoch-fence-failure-fixtures/*.rs; do
+                  fixture_name="$(basename "$fixture")"
+                  case "$fixture_name" in
+                    cross_entity_admits.rs|stale_epoch_admits.rs|terminal_mutation_admits.rs)
+                      expected='epoch_fence_decision_spec'
+                      ;;
+                    *)
+                      echo "unclassified epoch-fence failure fixture: $fixture_name" >&2
+                      exit 1
+                      ;;
+                  esac
+                  set +e
+                  octet-production-verus --crate-type=lib "$fixture" \
+                    > "$TMPDIR/negative.stdout" 2> "$TMPDIR/negative.stderr"
+                  negative_status="$?"
+                  set -e
+                  if [ "$negative_status" -eq 0 ]; then
+                    echo "negative epoch-fence fixture unexpectedly passed: $fixture_name" >&2
+                    exit 1
+                  fi
+                  grep -F 'postcondition not satisfied' "$TMPDIR/negative.stderr" > /dev/null
+                  grep -F "$expected" "$TMPDIR/negative.stderr" > /dev/null
+                done
+
+                if grep -E '#\[verifier::external_body\]|assume_specification|\bassume[[:space:]]*\(|\baxiom\b' \
+                  crates/choregraph-core/src/verified.rs; then
+                  echo 'epoch-fence proof core gained an unrecorded trust escape' >&2
+                  exit 1
+                fi
+                grep -F 'crate::verified::epoch_fence_decision(' \
+                  crates/choregraph-core/src/ownership/mod.rs > /dev/null
+                grep -F 'Some(crate::step(' \
+                  crates/choregraph-core/src/ownership/mod.rs > /dev/null
+                grep -F '../../crates/choregraph-core/src/verified.rs' \
+                  verus/proofs/epoch_fence.rs > /dev/null
+                if grep -E 'std::|SystemTime|Instant|TcpStream|UdpSocket|File::|Command::|Mutex|RwLock|OnceLock' \
+                  crates/choregraph-core/src/ownership/mod.rs; then
+                  echo 'epoch-fence core gained ambient I/O or shared mutable state' >&2
+                  exit 1
+                fi
+                grep -E 'std::|Mutex|RwLock|OnceLock' \
+                  fixtures/epoch-fence/negative/shared-store-coupling.rs > /dev/null
+
+                nickel export --format json evidence/epoch-fence-proof.ncl \
+                  > "$TMPDIR/evidence-raw.json"
+                jq -S . "$TMPDIR/evidence-raw.json" > "$TMPDIR/evidence.json"
+                diff --unified evidence/generated/epoch-fence-proof.json \
+                  "$TMPDIR/evidence.json"
+                expected_manifest_hash="$(cat evidence/generated/epoch-fence-proof.blake3)"
+                observed_manifest_hash="$(b3sum evidence/generated/epoch-fence-proof.json)"
+                test "''${observed_manifest_hash%% *}" = "$expected_manifest_hash"
+                jq --argjson expected_negative_count "$expected_negative_count" --exit-status '
+                  .schema == "choregraph.epoch-fence-proof.v1"
+                  and .status == "verified"
+                  and (.negative_fixtures | length) == $expected_negative_count
+                  and (.sources | length) > 0
+                  and (.non_claims | length) > 0
+                  and .reference.revision == "553ae73f83c87c3f7c7a5f73c32c2211d9d7341f"
+                  and .reference.license == "Apache-2.0"
+                ' "$TMPDIR/evidence.json" > /dev/null
+                jq --raw-output '.sources[] | [.path, .blake3] | @tsv' \
+                  "$TMPDIR/evidence.json" \
+                  | while IFS="$(printf '\t')" read -r source_path expected_hash; do
+                      observed_hash="$(b3sum "$source_path")"
+                      test "''${observed_hash%% *}" = "$expected_hash"
+                    done
+
+                mkdir -p "$out"
+                cp "$TMPDIR/positive.stdout" "$out/positive.stdout"
+                cp "$TMPDIR/evidence.json" "$out/evidence.json"
+                printf '%s\n' \
+                  'non-claim=supplied-epoch-decision-only-not-runtime-writer-authority' \
+                  > "$out/non-claim.txt"
+              '';
+
           # r[verify choregraph.proof.single_step.baseline]
           # r[verify choregraph.proof.single_step.negative]
           # r[verify choregraph.proof.single_step.evidence]

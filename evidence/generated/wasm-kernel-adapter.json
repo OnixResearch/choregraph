@@ -2,11 +2,11 @@
   "evidence": {
     "abi": "onix:choregraph/kernel@1.0.0 call(list<u8>) -> list<u8>",
     "component": {
-      "blake3": "9517ef85648b765359807a8fdfc5643c3c5460ed4dbb238710718d07dc206289",
+      "blake3": "3a3a7294054194d28367c87a13b0485647a0867afb8b31901a363bdbda61d76a",
       "blake3_context": "choregraph wasm component bytes v1",
       "export": "call",
       "imports": "none",
-      "nix_nar_hash": "sha256-NsEz709Wqi7bLDo6xE7TG9iKRdjMsvq5m8ml0E7Vsjc=",
+      "nix_nar_hash": "sha256-OVztAdR2nusyZBiaqIQ1WFTqmYuwdnU21c5RiI8oRGQ=",
       "nix_nar_hash_algorithm": "sha256 required by the Nix store protocol"
     },
     "conformance": {
@@ -36,16 +36,16 @@
     "proof_references": [
       {
         "claim_boundary": "production-called single-step transition obligations only",
-        "exported_blake3": "0bbffe7af30d884459ccfaf64cc4c6034cde3b57b0d11d3023a6efdfd71e405c",
+        "exported_blake3": "3d64731e9458013577737b603717903b07b7aee8770f8bf4091826ea05b53cb5",
         "exported_path": "evidence/generated/single-step-proof.json",
-        "manifest_blake3": "24f63be21123b2db0c5cdb2b528592be3123882a852ec0229a479b4f90b7fbd0",
+        "manifest_blake3": "9900cfb2ce8d110a2f4bccfde1ae0f97f27d8c295e5b1009e980a284c2616568",
         "manifest_path": "evidence/single-step-proof.ncl"
       },
       {
         "claim_boundary": "bounded replay refinement and first-denial obligations only",
-        "exported_blake3": "7e825c85644d364c06e8d3ec71056c3b0ba0fc812710ee57b472d9cd04bc4edc",
+        "exported_blake3": "52e218b33ca9655dbf67ea6797676f9e462dd1fb21fa8dc0e81f6bed97cf74e6",
         "exported_path": "evidence/generated/trace-replay-proof.json",
-        "manifest_blake3": "008dbf90d01dd4c157f70a5560f4b4959ac4fe247f2e9b111e65b88450aefdfd",
+        "manifest_blake3": "3610b3ff38a5f7f66c46cfddb8b75d0148a50b54d73b382bb151efeaf4dbceef",
         "manifest_path": "evidence/trace-replay-proof.ncl"
       }
     ],
@@ -70,13 +70,13 @@
         "role": "Rust channel and WASM target identity"
       },
       {
-        "blake3": "e0e748538b77a1f3449aed226ff0d2681a6b0efccc6bd0fb6baa5fa83510c1a4",
+        "blake3": "d6ba754c07e5b897a48a19a79bd30ce83c3fa73da77815ee62ce725f2d666099",
         "context": "choregraph wasm source file v1:flake.nix",
         "path": "flake.nix",
         "role": "reproducible component, conformance, and evidence build graph"
       },
       {
-        "blake3": "957db0f74b4930e4f1288e4e4d5cbdce4d7f5f660ba5d4bf2aa2386557b5ec57",
+        "blake3": "0da67ba00a0c0c628bad97f3f0eabd4641eb2cacd9332a0d1a93cdced1fda3c3",
         "context": "choregraph wasm source file v1:crates/choregraph-core/src/lib.rs",
         "path": "crates/choregraph-core/src/lib.rs",
         "role": "production kernel public entrypoints"

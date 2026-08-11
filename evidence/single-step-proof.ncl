@@ -143,7 +143,7 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/lib.rs",
-        blake3 = "f5dfef4f2359c5a7e19e9e9e631613b3d8561295babbcf619e531025f51336aa",
+        blake3 = "60f30828f6a4efe49f11a5cd14e7747b840189cae75c1607de08f4be371ada03",
         role = "production module linkage",
       },
       {
@@ -158,7 +158,7 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/verified.rs",
-        blake3 = "0f3e394dfb3eb752a67e91516c1900f0a8845244773d2ea087ee8819a67f8a3a",
+        blake3 = "ea5716274215e5b55d63132e532b27bd92a658d56b002ae91391d15232dae5a4",
         role = "verified primitives and module linkage",
       },
       {
@@ -183,7 +183,7 @@ let ProofManifest = {
       },
       {
         path = "flake.nix",
-        blake3 = "b4bee82af6f5455a888ae37d7dffbf1382349f3a1f21b2972a9a77fc44fa6a3f",
+        blake3 = "6196675dd685321527efd32a6432ee4fabe8cffc6a1f9987cfc589c67ff7bb12",
         role = "maintained proof and failure-fixture gate",
       },
       {

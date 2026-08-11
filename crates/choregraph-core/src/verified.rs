@@ -65,6 +65,62 @@ pub const DENIAL_SUSPENSION_FACT_PRESENT: u8 = 11u8;
 pub const DENIAL_SUSPENSION_EFFECTS: u8 = 12u8;
 pub const DENIAL_PROFILE_ACTION: u8 = 13u8;
 
+pub const EPOCH_FENCE_ADMIT: u8 = 0u8;
+pub const EPOCH_FENCE_UNKNOWN_ENTITY: u8 = 1u8;
+pub const EPOCH_FENCE_ENTITY_MISMATCH: u8 = 2u8;
+pub const EPOCH_FENCE_EPOCH_MISMATCH: u8 = 3u8;
+pub const EPOCH_FENCE_TERMINAL_MUTATION: u8 = 4u8;
+
+// r[impl choregraph.epoch_fence.proof]
+// r[verify choregraph.epoch_fence.proof]
+pub open spec fn epoch_fence_decision_spec(
+    entity_known: bool,
+    entity_matches: bool,
+    current_epoch: u64,
+    offered_epoch: u64,
+    terminal: bool,
+) -> u8 {
+    if !entity_known {
+        EPOCH_FENCE_UNKNOWN_ENTITY
+    } else if !entity_matches {
+        EPOCH_FENCE_ENTITY_MISMATCH
+    } else if current_epoch != offered_epoch {
+        EPOCH_FENCE_EPOCH_MISMATCH
+    } else if terminal {
+        EPOCH_FENCE_TERMINAL_MUTATION
+    } else {
+        EPOCH_FENCE_ADMIT
+    }
+}
+
+pub const fn epoch_fence_decision(
+    entity_known: bool,
+    entity_matches: bool,
+    current_epoch: u64,
+    offered_epoch: u64,
+    terminal: bool,
+) -> (result: u8)
+    ensures result == epoch_fence_decision_spec(
+        entity_known,
+        entity_matches,
+        current_epoch,
+        offered_epoch,
+        terminal,
+    )
+{
+    if !entity_known {
+        EPOCH_FENCE_UNKNOWN_ENTITY
+    } else if !entity_matches {
+        EPOCH_FENCE_ENTITY_MISMATCH
+    } else if current_epoch != offered_epoch {
+        EPOCH_FENCE_EPOCH_MISMATCH
+    } else if terminal {
+        EPOCH_FENCE_TERMINAL_MUTATION
+    } else {
+        EPOCH_FENCE_ADMIT
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct IndexedSuspensionFact {
     pub class: Vec<u8>,

@@ -118,5 +118,13 @@
     { requirement = "choregraph.wasm.boundary.valid", evidence = "foundation import/export checks and adapter non-claims" },
     # r[verify choregraph.wasm.boundary.invalid]
     { requirement = "choregraph.wasm.boundary.invalid", evidence = "foundation host-import and overclaim failures" },
+    # r[verify choregraph.epoch_fence.invariant]
+    { requirement = "choregraph.epoch_fence.invariant", evidence = "crates/choregraph-core/src/ownership/mod.rs and crates/choregraph-core/tests/epoch-fence.rs" },
+    # r[verify choregraph.epoch_fence.decision]
+    { requirement = "choregraph.epoch_fence.decision", evidence = "crates/choregraph-core/src/verified.rs and epoch-fence-verus Nix check" },
+    # r[verify choregraph.epoch_fence.proof]
+    { requirement = "choregraph.epoch_fence.proof", evidence = "verus/proofs/epoch_fence.rs and failure fixtures" },
+    # r[verify choregraph.epoch_fence.verification]
+    { requirement = "choregraph.epoch_fence.verification", evidence = "evidence/epoch-fence-proof.ncl, README.md, and docs/epoch-fenced-single-writer.md" },
   ],
 }
