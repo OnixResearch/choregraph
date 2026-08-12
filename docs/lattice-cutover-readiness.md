@@ -74,8 +74,8 @@ A consumer record fails if any Choregraph identity differs from the local candid
 The active owners remain:
 
 - `execution-graph/cairn/changes/delegate-core-to-choregraph/`;
-- `lattice/cairn/changes/adopt-choregraph-verified-machines/`;
-- `lattice/cairn/changes/authorize-choregraph-effect-intents/`.
+- `lattice/.cairn/changes/adopt-choregraph-verified-machines/`;
+- `lattice/.cairn/changes/authorize-choregraph-effect-intents/`.
 
 ## Duplicate-removal requirements
 
@@ -105,8 +105,8 @@ Before cutover acceptance, each consumer must test its rollback in a disposable 
 ## Cross-repository lifecycle owners
 
 - `execution-graph/cairn/changes/delegate-core-to-choregraph/` owns the published facade migration.
-- `lattice/cairn/changes/adopt-choregraph-verified-machines/` owns product machine adoption.
-- `lattice/cairn/changes/authorize-choregraph-effect-intents/` owns authorization and runtime effect handling.
+- `lattice/.cairn/changes/adopt-choregraph-verified-machines/` owns product machine adoption.
+- `lattice/.cairn/changes/authorize-choregraph-effect-intents/` owns authorization and runtime effect handling.
 
 Choregraph conformance does not complete those changes.
 

@@ -5473,7 +5473,7 @@
   },
   "sync_archive_policy": {
     "archive_date_prefix": true,
-    "default_archive_dir": "cairn/archive",
+    "default_archive_dir": ".cairn/archive",
     "require_all_tasks_done": true
   },
   "task_marker_policy": {

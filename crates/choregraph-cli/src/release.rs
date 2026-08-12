@@ -154,11 +154,11 @@ pub const RELEASE_ARTIFACTS: [ReleaseArtifactSpec; ARTIFACT_COUNT] = [
     },
     ReleaseArtifactSpec {
         role: ReleaseRole::ExecutionGraphParity,
-        relative_path: "cairn/archive/1970-01-01-add-seaglass-lattice-conformance/evidence/parity-validation-2026-07-27.md",
+        relative_path: ".cairn/archive/1970-01-01-add-seaglass-lattice-conformance/evidence/parity-validation-2026-07-27.md",
     },
     ReleaseArtifactSpec {
         role: ReleaseRole::LatticeDownstream,
-        relative_path: "cairn/archive/1970-01-01-add-seaglass-lattice-conformance/evidence/lattice-downstream-validation-2026-07-27.md",
+        relative_path: ".cairn/archive/1970-01-01-add-seaglass-lattice-conformance/evidence/lattice-downstream-validation-2026-07-27.md",
     },
     ReleaseArtifactSpec {
         role: ReleaseRole::LatticeConcreteHandoff,
@@ -468,6 +468,9 @@ mod tests {
     use super::*;
 
     const FIXTURE_BYTES: &[u8] = b"reviewed release artifact";
+    const LIFECYCLE_EVIDENCE_ARTIFACT_COUNT: usize = 2;
+    const NATIVE_CAIRN_PREFIX: &str = ".cairn/";
+    const LEGACY_CAIRN_PREFIX: &str = "cairn/";
     const SOURCE_REVISION: &str = "1111111111111111111111111111111111111111";
     const ROLLBACK_REVISION: &str = "2222222222222222222222222222222222222222";
     const SOURCE_ARCHIVE_BYTES: &[u8] = b"immutable source archive";
@@ -508,6 +511,35 @@ mod tests {
                 .map_err(|error| format!("cannot write fixture artifact: {error}"))?;
         }
         Ok(())
+    }
+
+    #[test]
+    fn release_inventory_uses_native_cairn_paths_for_lifecycle_evidence() {
+        let lifecycle_paths: Vec<&str> = RELEASE_ARTIFACTS
+            .iter()
+            .filter_map(|spec| match spec.role {
+                ReleaseRole::ExecutionGraphParity | ReleaseRole::LatticeDownstream => {
+                    Some(spec.relative_path)
+                }
+                _ => None,
+            })
+            .collect();
+
+        assert_eq!(lifecycle_paths.len(), LIFECYCLE_EVIDENCE_ARTIFACT_COUNT);
+        assert!(
+            lifecycle_paths
+                .iter()
+                .all(|path| path.starts_with(NATIVE_CAIRN_PREFIX))
+        );
+    }
+
+    #[test]
+    fn release_inventory_contains_no_legacy_cairn_paths() {
+        assert!(
+            RELEASE_ARTIFACTS
+                .iter()
+                .all(|spec| !spec.relative_path.starts_with(LEGACY_CAIRN_PREFIX))
+        );
     }
 
     #[test]

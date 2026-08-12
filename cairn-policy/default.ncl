@@ -676,7 +676,7 @@ let Base = import "upstream-default.ncl" in
   sync_archive_policy | force = {
     require_all_tasks_done = true,
     archive_date_prefix = true,
-    default_archive_dir = "cairn/archive",
+    default_archive_dir = ".cairn/archive",
   },
 
   mutation_policy | force = {

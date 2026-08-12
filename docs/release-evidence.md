@@ -42,7 +42,7 @@ Validation fails for missing, duplicate, malformed, stale, skipped, unsupported,
 
 The checked-in manifest is `evidence/release/generated/choregraph.release.bundle`. The adjacent BLAKE3 file identifies the manifest bytes, not the internal bundle framing.
 
-The current v2 bundle identity is `e9318450dfbf245d8f05d5910ae00fc661c2694f870708891ac5eedb5a4b3027`. It is local release evidence only.
+The current v2 bundle identity is `ff6918401eb789fc78d9d1b822a5db25731505833a38092ece8c0657bcfd1b0a`. It is local release evidence only.
 
 ## Valence projection
 

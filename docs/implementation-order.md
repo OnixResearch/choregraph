@@ -26,8 +26,8 @@ The proof and interchange branches can proceed in parallel after machine semanti
 2. Accept an immutable Choregraph source and evidence identity.
 3. Implement `execution-graph/cairn/changes/delegate-core-to-choregraph`.
 4. Complete Lattice's execution-graph and Nickel evaluator prerequisite changes.
-5. Implement `lattice/cairn/changes/adopt-choregraph-verified-machines`.
-6. Implement `lattice/cairn/changes/authorize-choregraph-effect-intents`.
+5. Implement `lattice/.cairn/changes/adopt-choregraph-verified-machines`.
+6. Implement `lattice/.cairn/changes/authorize-choregraph-effect-intents`.
 7. Remove every temporary dual-run path after parity and rollback checks pass.
 
 ## External boundaries

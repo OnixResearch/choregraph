@@ -29,7 +29,7 @@ Use named constants for non-trivial numeric values. Use BLAKE3 for project-owned
 
 ## Lifecycle and VCS
 
-Use native `cairn/` lifecycle packages. Use `jj` for version-control operations.
+Use native `.cairn/` lifecycle packages. Use `jj` for version-control operations.
 
 Do not edit `flake.lock` manually. Nix must generate lock changes.
 
