@@ -432,6 +432,16 @@
             }
           );
 
+          # r[verify choregraph.history.boundary]
+          # r[verify choregraph.history.verification.complete]
+          history-wasm = craneLib.cargoBuild (
+            commonCargoArgs
+            // {
+              inherit cargoArtifacts;
+              cargoExtraArgs = "-p choregraph-history -p choregraph-history-machine -p choregraph-weave --target wasm32-unknown-unknown";
+            }
+          );
+
           core-thumb = craneLib.cargoBuild (
             commonCargoArgs
             // {

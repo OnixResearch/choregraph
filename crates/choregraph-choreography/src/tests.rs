@@ -1,5 +1,26 @@
 use super::*;
 
+// r[verify choregraph.role_choreography.source.valid]
+// r[verify choregraph.role_choreography.source.undeclared]
+// r[verify choregraph.role_choreography.bounds.exceeded]
+// r[verify choregraph.role_choreography.admission.stale_owner]
+// r[verify choregraph.role_choreography.roles.external]
+// r[verify choregraph.role_choreography.roles.mixed]
+// r[verify choregraph.role_choreography.lowering.valid]
+// r[verify choregraph.role_choreography.lowering.dropped]
+// r[verify choregraph.role_choreography.trellis.unlinked]
+// r[verify choregraph.role_choreography.projection.valid]
+// r[verify choregraph.role_choreography.projection.conflict]
+// r[verify choregraph.role_choreography.complete_set.missing]
+// r[verify choregraph.role_choreography.identity.changed]
+// r[verify choregraph.role_choreography.artifacts.valid]
+// r[verify choregraph.role_choreography.diagnostics.redacted]
+// r[verify choregraph.role_choreography.diagnostics.multispan]
+// r[verify choregraph.role_choreography.reference.adopted]
+// r[verify choregraph.role_choreography.validation.stale]
+// r[verify choregraph.role_choreography.fixtures.coverage]
+// r[verify choregraph.role_choreography.boundary.delivery]
+
 const ROLE_A: RoleId = RoleId(1);
 const ROLE_B: RoleId = RoleId(2);
 const ROLE_C: RoleId = RoleId(3);

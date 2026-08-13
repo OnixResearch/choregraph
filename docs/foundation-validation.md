@@ -7,6 +7,7 @@ nix develop -c cargo fmt --all -- --check
 nix develop -c cargo test --workspace --all-targets
 nix develop -c cargo clippy --workspace --all-targets -- --deny warnings
 nix develop -c cargo check -p choregraph-core --target wasm32-unknown-unknown
+nix develop -c cargo check -p choregraph-history -p choregraph-history-machine -p choregraph-weave --target wasm32-unknown-unknown
 nix develop -c cargo check -p choregraph-core --target thumbv7em-none-eabihf
 nix develop -c cargo run -p choregraph-foundation-check -- --root .
 nix run path:../cairn#cairn -- validate --root .

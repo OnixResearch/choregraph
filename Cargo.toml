@@ -3,11 +3,14 @@ members = [
   "crates/choregraph-choreography",
   "crates/choregraph-cli",
   "crates/choregraph-core",
+  "crates/choregraph-history",
+  "crates/choregraph-history-machine",
   "crates/choregraph-kamacite",
   "crates/choregraph-nickel",
   "crates/choregraph-release",
   "crates/choregraph-seaglass",
   "crates/choregraph-wasm",
+  "crates/choregraph-weave",
   "crates/execution-graph-core",
   "tools/choregraph-foundation-check",
   "tools/choregraph-wasm-conformance",
@@ -39,11 +42,14 @@ cap-std = "=4.0.2"
 cargo_metadata = "=0.23.1"
 choregraph-choreography = { path = "crates/choregraph-choreography", version = "=0.1.0" }
 choregraph-core = { path = "crates/choregraph-core", version = "=0.1.0" }
+choregraph-history = { path = "crates/choregraph-history", version = "=0.1.0" }
+choregraph-history-machine = { path = "crates/choregraph-history-machine", version = "=0.1.0" }
 choregraph-kamacite = { path = "crates/choregraph-kamacite", version = "=0.1.0" }
 choregraph-nickel = { path = "crates/choregraph-nickel", version = "=0.1.0" }
 choregraph-release = { path = "crates/choregraph-release", version = "=0.1.0" }
 choregraph-seaglass = { path = "crates/choregraph-seaglass", version = "=0.1.0" }
 choregraph-wasm = { path = "crates/choregraph-wasm", version = "=0.1.0" }
+choregraph-weave = { path = "crates/choregraph-weave", version = "=0.1.0" }
 preserves = { version = "=5.0.0-rc.7", features = ["serde"] }
 serde = { version = "=1.0.228", features = ["derive"] }
 serde_bytes = "=0.11.19"

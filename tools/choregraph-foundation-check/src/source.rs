@@ -15,6 +15,37 @@ const CORE_FORBIDDEN_SOURCE_TOKENS: &[&str] = &[
     "nickel_lang",
 ];
 
+const HISTORY_FORBIDDEN_SOURCE_TOKENS: &[&str] = &[
+    "std::env",
+    "std::fs",
+    "std::net",
+    "std::process",
+    "std::time",
+    "bounded_exec",
+    "redb::",
+    "reqwest::",
+    "tokio::",
+    "lattice::",
+    "animus::",
+    "weft::",
+    "rat_widgets::",
+    "tile::",
+    "println!",
+    "eprintln!",
+];
+
+const HISTORY_MACHINE_REQUIRED_DELEGATION_TOKENS: &[&str] = &[
+    "choregraph_core::replay(replay_input)",
+    "choregraph_core::replay_concrete(replay_input)",
+];
+
+const HISTORY_MACHINE_FORBIDDEN_TRANSITION_TOKENS: &[&str] = &[
+    "choregraph_core::step(",
+    "choregraph_core::step_concrete(",
+    "crate::verified::indexed_step",
+    "(LocalState::Pending, Action::MarkReady)",
+];
+
 const WASM_REQUIRED_DELEGATION_TOKENS: &[&str] = &[
     "validate_machine_artifact(",
     "validate_durable_machine_artifact(",
@@ -117,6 +148,82 @@ fn combined_text(sources: &[crate::types::SourceUnit]) -> String {
     text
 }
 
+fn validate_no_std_boundary(
+    package: &'static str,
+    sources: &[crate::types::SourceUnit],
+) -> Vec<crate::types::ValidationIssue> {
+    let text = combined_text(sources);
+    let mut issues = Vec::with_capacity(CORE_MARKER_ISSUE_LIMIT);
+    if !text.contains("#![no_std]") {
+        issues.push(crate::validator::issue(crate::validator::IssueFacts {
+            code: "foundation.history-no-std",
+            subject: package,
+            detail: String::from("history boundary does not declare no_std"),
+        }));
+    }
+    if !text.contains("extern crate alloc") {
+        issues.push(crate::validator::issue(crate::validator::IssueFacts {
+            code: "foundation.history-alloc",
+            subject: package,
+            detail: String::from("history boundary does not declare alloc"),
+        }));
+    }
+    issues
+}
+
+fn validate_forbidden_history_tokens(
+    package: &'static str,
+    sources: &[crate::types::SourceUnit],
+) -> Vec<crate::types::ValidationIssue> {
+    let maximum_issue_count = sources
+        .len()
+        .saturating_mul(HISTORY_FORBIDDEN_SOURCE_TOKENS.len());
+    let mut issues = Vec::with_capacity(maximum_issue_count);
+    for source in sources {
+        for token in HISTORY_FORBIDDEN_SOURCE_TOKENS {
+            if source.text.contains(token) {
+                issues.push(crate::validator::issue(crate::validator::IssueFacts {
+                    code: "foundation.forbidden-history-source",
+                    subject: &source.path,
+                    detail: format!("{package} contains forbidden authority token: {token}"),
+                }));
+            }
+        }
+    }
+    issues
+}
+
+fn validate_history_machine_delegation(
+    sources: &[crate::types::SourceUnit],
+) -> Vec<crate::types::ValidationIssue> {
+    let text = combined_text(sources);
+    debug_assert!(!HISTORY_MACHINE_REQUIRED_DELEGATION_TOKENS.is_empty());
+    debug_assert!(!HISTORY_MACHINE_FORBIDDEN_TRANSITION_TOKENS.is_empty());
+    let maximum_issue_count = HISTORY_MACHINE_REQUIRED_DELEGATION_TOKENS
+        .len()
+        .saturating_add(HISTORY_MACHINE_FORBIDDEN_TRANSITION_TOKENS.len());
+    let mut issues = Vec::with_capacity(maximum_issue_count);
+    for token in HISTORY_MACHINE_REQUIRED_DELEGATION_TOKENS {
+        if !text.contains(token) {
+            issues.push(crate::validator::issue(crate::validator::IssueFacts {
+                code: "foundation.history-missing-replay-delegation",
+                subject: "choregraph-history-machine",
+                detail: format!("required production replay delegation is absent: {token}"),
+            }));
+        }
+    }
+    for token in HISTORY_MACHINE_FORBIDDEN_TRANSITION_TOKENS {
+        if text.contains(token) {
+            issues.push(crate::validator::issue(crate::validator::IssueFacts {
+                code: "foundation.history-duplicate-transition",
+                subject: "choregraph-history-machine",
+                detail: format!("forbidden transition implementation token: {token}"),
+            }));
+        }
+    }
+    issues
+}
+
 fn validate_wasm_delegation(
     model: &crate::types::WorkspaceModel,
 ) -> Vec<crate::types::ValidationIssue> {
@@ -200,8 +307,43 @@ fn validate_wit(model: &crate::types::WorkspaceModel) -> Vec<crate::types::Valid
 pub(crate) fn validate_sources(
     model: &crate::types::WorkspaceModel,
 ) -> Vec<crate::types::ValidationIssue> {
+    debug_assert!(!CORE_FORBIDDEN_SOURCE_TOKENS.is_empty());
+    debug_assert!(!WASM_FORBIDDEN_SOURCE_TOKENS.is_empty());
     let mut issues = validate_markers(markers(model));
     issues.extend(validate_tokens(model));
+    if model
+        .packages
+        .iter()
+        .any(|package| package.name == "choregraph-history")
+    {
+        issues.extend(validate_no_std_boundary(
+            "choregraph-history",
+            &model.history_sources,
+        ));
+        issues.extend(validate_forbidden_history_tokens(
+            "choregraph-history",
+            &model.history_sources,
+        ));
+        issues.extend(validate_no_std_boundary(
+            "choregraph-history-machine",
+            &model.history_machine_sources,
+        ));
+        issues.extend(validate_forbidden_history_tokens(
+            "choregraph-history-machine",
+            &model.history_machine_sources,
+        ));
+        issues.extend(validate_no_std_boundary(
+            "choregraph-weave",
+            &model.weave_sources,
+        ));
+        issues.extend(validate_forbidden_history_tokens(
+            "choregraph-weave",
+            &model.weave_sources,
+        ));
+        issues.extend(validate_history_machine_delegation(
+            &model.history_machine_sources,
+        ));
+    }
     if model
         .packages
         .iter()

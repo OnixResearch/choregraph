@@ -3,6 +3,22 @@
 //! The crate calls the pinned Trellis production projection. It does not execute
 //! roles, grant authority, transport values, persist sessions, or claim release
 //! eligibility.
+//!
+//! r[impl choregraph.role_choreography.source]
+//! r[impl choregraph.role_choreography.bounds]
+//! r[impl choregraph.role_choreography.admission]
+//! r[impl choregraph.role_choreography.roles]
+//! r[impl choregraph.role_choreography.lowering]
+//! r[impl choregraph.role_choreography.trellis]
+//! r[impl choregraph.role_choreography.projection]
+//! r[impl choregraph.role_choreography.complete_set]
+//! r[impl choregraph.role_choreography.identity]
+//! r[impl choregraph.role_choreography.artifacts]
+//! r[impl choregraph.role_choreography.diagnostics]
+//! r[impl choregraph.role_choreography.reference]
+//! r[impl choregraph.role_choreography.validation]
+//! r[impl choregraph.role_choreography.fixtures]
+//! r[impl choregraph.role_choreography.boundary]
 
 mod admission;
 mod endpoint;

@@ -6,7 +6,9 @@ Choregraph owns a pure verified machine kernel and compiler adapters. It does no
 
 ## Core boundary
 
-Keep `choregraph-core` `no_std` plus `alloc`. The core must not read files, inspect the environment, use clocks, spawn processes, access networks, persist state, evaluate Nickel, verify UCAN tokens, or execute effects.
+Keep `choregraph-core` and all history crates `no_std` plus `alloc`. These crates must not read files, inspect the environment, use clocks, spawn processes, access networks, persist state, evaluate Nickel, verify UCAN tokens, or execute effects.
+
+The machine-history adapter must call the production `replay` or `replay_concrete` entrypoint. It must not add a transition table.
 
 Use a functional core and thin imperative shells. Production transitions and proof targets must use one implementation.
 

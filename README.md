@@ -27,6 +27,10 @@ The export-only WASM component accepts canonical packed Preserves calls. It re-a
 
 The epoch-fenced transition wrapper admits supplied ownership facts only for the same entity, equal epoch, and non-terminal state. Choregraph does not discover or authorize the current epoch.
 
+The branchable history crates admit immutable event DAGs and generation-fenced branch plans. Explicit linear lineages delegate machine events to production replay.
+
+The optional Universal Weave adapter provides bounded metadata-only topology. Immutable history remains authoritative.
+
 If replay finds a denial, it reports the first denial and returns no dispatchable intents.
 
 A pinned Octet gate checks every workspace target. The gate treats every Octet lint as an error.
@@ -56,6 +60,9 @@ Choregraph owns these functions:
 - Seaglass and Lattice compatibility adapters
 - a stateless WASM component over the production kernel
 - a proof-linked epoch-fence decision over caller-supplied entity facts
+- immutable branchable event history and explicit lineage selection
+- a one-way machine-history adapter to production replay
+- optional bounded Universal Weave topology derived from history
 
 The production transition relation has one implementation. Compatibility crates must delegate to that implementation.
 
@@ -95,6 +102,10 @@ A denied transition must preserve state and emit no effects.
 
 ## Implementation lifecycle
 
+<!-- r[impl choregraph.history.supersession] -->
+<!-- r[impl choregraph.history.supersession.provenance] -->
+<!-- r[verify choregraph.history.verification.complete] -->
+
 Read [`docs/implementation-order.md`](docs/implementation-order.md) for the dependency order across Choregraph, execution-graph, and Lattice changes.
 
 ## Workspace
@@ -102,11 +113,14 @@ Read [`docs/implementation-order.md`](docs/implementation-order.md) for the depe
 ```text
 crates/choregraph-choreography/
 crates/choregraph-core/
+crates/choregraph-history/
+crates/choregraph-history-machine/
 crates/choregraph-kamacite/
 crates/choregraph-nickel/
 crates/choregraph-release/
 crates/choregraph-seaglass/
 crates/choregraph-wasm/
+crates/choregraph-weave/
 crates/execution-graph-core/
 crates/choregraph-cli/
 tools/choregraph-foundation-check/
@@ -129,6 +143,7 @@ evidence/
 - [`docs/release-evidence.md`](docs/release-evidence.md): bundle roles, Valence projection, and publication checks.
 - [`docs/wasm-kernel-adapter.md`](docs/wasm-kernel-adapter.md): WIT, Preserves envelopes, limits, identities, host duties, and non-claims.
 - [`docs/epoch-fenced-single-writer.md`](docs/epoch-fenced-single-writer.md): supplied epoch facts, the proof-linked gate, Celld reference scope, and non-claims.
+- [`docs/branchable-event-history.md`](docs/branchable-event-history.md): immutable history, branch plans, explicit lineages, machine replay, weave topology, migration, and non-claims.
 
 ## Checks
 
@@ -138,6 +153,7 @@ Run all commands from the repository root:
 nix develop -c cargo test --workspace --all-targets
 nix develop -c cargo clippy --workspace --all-targets -- --deny warnings
 nix develop -c cargo run -p choregraph-foundation-check -- --root .
+nix develop -c cargo check -p choregraph-history -p choregraph-history-machine -p choregraph-weave --target wasm32-unknown-unknown
 nix build .#choregraph-wasm-component --no-link -L
 nix build .#checks.x86_64-linux.wasm-kernel-conformance --no-link -L
 nix build .#checks.x86_64-linux.wasm-kernel-evidence --no-link -L
@@ -168,6 +184,9 @@ Choregraph preserves the source implementation license, `AGPL-3.0-or-later`. Thi
 - [Swamp](https://github.com/swamp-club/swamp) — product reference for durable workflow suspension.
 - [Celld at `553ae73f83c8`](https://github.com/denoland/celld/tree/553ae73f83c87c3f7c7a5f73c32c2211d9d7341f) — Apache-2.0 reference for per-cell ownership epochs and shard-by-construction isolation.
 - [Wyzer](https://github.com/Wyzer-Lang/wyzer) at `7f6acf0f60cf34357e06de50112eb2b1ed833a0c` — MIT-licensed reference for role-located authoring, explicit transfer, external-role declarations, structured diagnostics, and negative choreography cases.
+- [Animus](https://github.com/OnixResearch/animus) at `48baf2fc92cad29d3f929ecf0c2e5a91b5be51bd` — owner-authorized structural source for append-only session history and bounded weave adapter behavior.
+- [Universal Weave](https://github.com/transkatgirl/universal-weave) version `0.4.1` — Unlicense DAG weave used by the optional bounded topology adapter.
+- [Weft planning](../weft) at `8a89ffa9253f3d2a6d34ce635a0df95526ceab30` — superseded planning provenance for immutable replay graphs and rejected runtime scope.
 
 Choregraph adapts only Swamp's clean-room lifecycle mechanism. It does not adopt Swamp runtime code, approval authority, YAML/CEL authoring, or TypeScript loading.
 

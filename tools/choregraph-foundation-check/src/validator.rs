@@ -2,7 +2,7 @@ pub(crate) const CORE_PACKAGE: &str = "choregraph-core";
 const FOUNDATION_CHECK_PACKAGE: &str = "choregraph-foundation-check";
 const REQUIRED_LICENSE: &str = "AGPL-3.0-or-later";
 const REQUIRED_RUST_VERSION: &str = "1.96.0";
-const PACKAGE_METADATA_ISSUE_LIMIT: usize = 3;
+const PACKAGE_METADATA_ISSUE_LIMIT: usize = 4;
 const ADJACENT_ISSUE_COUNT: usize = 2;
 const BOUNDED_EXEC_PACKAGE: &str = "bounded-exec";
 const BOUNDED_EXEC_VENDOR_PATH: &str = "vendor/bounded-exec-selected/crates/bounded-exec";
@@ -14,6 +14,9 @@ const EXECUTION_GRAPH_VENDOR_PATH: &str = "vendor/execution-graph-core-selected"
 const PRODUCT_PACKAGES: &[&str] = &[
     "choregraph-choreography",
     CORE_PACKAGE,
+    "choregraph-history",
+    "choregraph-history-machine",
+    "choregraph-weave",
     EXECUTION_GRAPH_PACKAGE,
     "choregraph-kamacite",
     "choregraph-nickel",
@@ -26,6 +29,9 @@ const PRODUCT_PACKAGES: &[&str] = &[
 const CONSUMER_LIBRARY_PACKAGES: &[&str] = &[
     "choregraph-choreography",
     CORE_PACKAGE,
+    "choregraph-history",
+    "choregraph-history-machine",
+    "choregraph-weave",
     EXECUTION_GRAPH_PACKAGE,
     "choregraph-kamacite",
     "choregraph-nickel",
@@ -36,10 +42,14 @@ const CONSUMER_LIBRARY_PACKAGES: &[&str] = &[
 
 const BLAKE3_COMPATIBLE_REQUIREMENT: &str = "^1.8.2";
 const SERDE_JSON_COMPATIBLE_REQUIREMENT: &str = "^1.0.149";
+const UNIVERSAL_WEAVE_REQUIREMENT: &str = "=0.4.1";
 
 const REQUIRED_PACKAGES: &[&str] = &[
     "choregraph-choreography",
     CORE_PACKAGE,
+    "choregraph-history",
+    "choregraph-history-machine",
+    "choregraph-weave",
     EXECUTION_GRAPH_PACKAGE,
     "choregraph-kamacite",
     "choregraph-nickel",
@@ -63,9 +73,28 @@ const CORE_FORBIDDEN_DEPENDENCIES: &[&str] = &[
     "valence",
 ];
 
+const HISTORY_PACKAGES: &[&str] = &[
+    "choregraph-history",
+    "choregraph-history-machine",
+    "choregraph-weave",
+];
+const HISTORY_FORBIDDEN_DEPENDENCIES: &[&str] = &[
+    "animus",
+    "bounded-exec",
+    "lattice",
+    "rat-widgets",
+    "redb",
+    "reqwest",
+    "tile",
+    "tokio",
+    "weft",
+];
+
 const NO_INTERNAL_DEPENDENCIES: &[&str] = &[];
 const CHOREOGRAPHY_DEPENDENCIES: &[&str] = &["choregraph-kamacite"];
 const CORE_ONLY: &[&str] = &[CORE_PACKAGE];
+const HISTORY_MACHINE_DEPENDENCIES: &[&str] = &[CORE_PACKAGE, "choregraph-history"];
+const WEAVE_DEPENDENCIES: &[&str] = &["choregraph-history"];
 const SEAGLASS_DEPENDENCIES: &[&str] = &[CORE_PACKAGE, "choregraph-nickel"];
 const WASM_DEPENDENCIES: &[&str] = &[CORE_PACKAGE, "choregraph-kamacite"];
 const WASM_CONFORMANCE_DEPENDENCIES: &[&str] =
@@ -80,6 +109,9 @@ const CLI_DEPENDENCIES: &[&str] = &[
 
 const REQUIRED_INTERNAL_EDGES: &[(&str, &str)] = &[
     ("choregraph-choreography", "choregraph-kamacite"),
+    ("choregraph-history-machine", CORE_PACKAGE),
+    ("choregraph-history-machine", "choregraph-history"),
+    ("choregraph-weave", "choregraph-history"),
     (EXECUTION_GRAPH_PACKAGE, CORE_PACKAGE),
     ("choregraph-kamacite", CORE_PACKAGE),
     ("choregraph-nickel", CORE_PACKAGE),
@@ -117,10 +149,12 @@ pub(crate) fn issue(facts: IssueFacts<'_>) -> crate::types::ValidationIssue {
 )]
 fn allowed_internal_dependencies(package: &str) -> Option<&'static [&'static str]> {
     match package {
-        CORE_PACKAGE | "choregraph-release" | FOUNDATION_CHECK_PACKAGE => {
+        CORE_PACKAGE | "choregraph-history" | "choregraph-release" | FOUNDATION_CHECK_PACKAGE => {
             Some(NO_INTERNAL_DEPENDENCIES)
         }
         "choregraph-choreography" => Some(CHOREOGRAPHY_DEPENDENCIES),
+        "choregraph-history-machine" => Some(HISTORY_MACHINE_DEPENDENCIES),
+        "choregraph-weave" => Some(WEAVE_DEPENDENCIES),
         EXECUTION_GRAPH_PACKAGE | "choregraph-kamacite" | "choregraph-nickel" => Some(CORE_ONLY),
         "choregraph-seaglass" => Some(SEAGLASS_DEPENDENCIES),
         "choregraph-wasm" => Some(WASM_DEPENDENCIES),
@@ -257,6 +291,15 @@ fn validate_dependency(
             detail: String::from("core dependency imports excluded authority"),
         }));
     }
+    if HISTORY_PACKAGES.contains(&package.name.as_str())
+        && HISTORY_FORBIDDEN_DEPENDENCIES.contains(&dependency.name.as_str())
+    {
+        issues.push(issue(IssueFacts {
+            code: "foundation.forbidden-history-dependency",
+            subject: &dependency.name,
+            detail: String::from("history dependency imports product or host authority"),
+        }));
+    }
     if PRODUCT_PACKAGES.contains(&package.name.as_str())
         && matches!(
             dependency.source,
@@ -299,6 +342,28 @@ fn validate_dependency(
     issues
 }
 
+fn validate_selected_weave_dependency(
+    package: &crate::types::PackageModel,
+) -> Option<crate::types::ValidationIssue> {
+    if package.name != "choregraph-weave" {
+        return None;
+    }
+    let is_selected = package.dependencies.iter().any(|dependency| {
+        dependency.name == "universal-weave"
+            && dependency.source == crate::types::DependencySource::Registry
+            && dependency.requirement == UNIVERSAL_WEAVE_REQUIREMENT
+    });
+    if is_selected {
+        None
+    } else {
+        Some(issue(IssueFacts {
+            code: "foundation.universal-weave-selection",
+            subject: &package.name,
+            detail: String::from("the exact reviewed universal-weave 0.4.1 dependency is absent"),
+        }))
+    }
+}
+
 fn validate_package(package: &crate::types::PackageModel) -> Vec<crate::types::ValidationIssue> {
     if !REQUIRED_PACKAGES.contains(&package.name.as_str()) {
         return vec![issue(IssueFacts {
@@ -310,14 +375,17 @@ fn validate_package(package: &crate::types::PackageModel) -> Vec<crate::types::V
     let Some(allowed) = allowed_internal_dependencies(&package.name) else {
         return Vec::new();
     };
-    let maximum_issue_count = PACKAGE_METADATA_ISSUE_LIMIT.saturating_add(
-        package
-            .dependencies
-            .len()
-            .saturating_mul(PACKAGE_METADATA_ISSUE_LIMIT),
-    );
+    let maximum_issue_count = PACKAGE_METADATA_ISSUE_LIMIT
+        .saturating_add(1)
+        .saturating_add(
+            package
+                .dependencies
+                .len()
+                .saturating_mul(PACKAGE_METADATA_ISSUE_LIMIT),
+        );
     let mut issues = Vec::with_capacity(maximum_issue_count);
     issues.extend(validate_package_metadata(package));
+    issues.extend(validate_selected_weave_dependency(package));
     for dependency in &package.dependencies {
         issues.extend(validate_dependency(package, dependency, allowed));
     }

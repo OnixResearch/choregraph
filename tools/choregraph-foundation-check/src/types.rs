@@ -13,6 +13,12 @@ pub struct WorkspaceModel {
     pub wasm_adapter_sources: Vec<SourceUnit>,
     #[serde(default)]
     pub wasm_wit_sources: Vec<SourceUnit>,
+    #[serde(default)]
+    pub history_sources: Vec<SourceUnit>,
+    #[serde(default)]
+    pub history_machine_sources: Vec<SourceUnit>,
+    #[serde(default)]
+    pub weave_sources: Vec<SourceUnit>,
 }
 
 /// A normalized package and its direct dependency declarations.

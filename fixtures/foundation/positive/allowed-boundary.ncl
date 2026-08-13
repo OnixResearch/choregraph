@@ -30,10 +30,25 @@ let reviewed_execution_graph_oracle = {
   source = "local-path",
   path = "vendor/execution-graph-core-selected",
 } in
+let reviewed_universal_weave = {
+  name = "universal-weave",
+  requirement = "=0.4.1",
+  source = "registry",
+  path = "",
+} in
 {
   packages = [
     package "choregraph-choreography" [workspace "choregraph-kamacite"],
     package "choregraph-core" [],
+    package "choregraph-history" [],
+    package "choregraph-history-machine" [
+      workspace "choregraph-core",
+      workspace "choregraph-history",
+    ],
+    package "choregraph-weave" [
+      workspace "choregraph-history",
+      reviewed_universal_weave,
+    ],
     package "execution-graph-core" [workspace "choregraph-core"],
     package "choregraph-kamacite" [workspace "choregraph-core"],
     package "choregraph-nickel" [workspace "choregraph-core"],
@@ -66,6 +81,24 @@ let reviewed_execution_graph_oracle = {
   core_sources = [
     {
       path = "crates/choregraph-core/src/lib.rs",
+      text = "#![no_std]\nextern crate alloc;\n",
+    },
+  ],
+  history_sources = [
+    {
+      path = "crates/choregraph-history/src/lib.rs",
+      text = "#![no_std]\nextern crate alloc;\n",
+    },
+  ],
+  history_machine_sources = [
+    {
+      path = "crates/choregraph-history-machine/src/lib.rs",
+      text = "#![no_std]\nextern crate alloc;\nchoregraph_core::replay(replay_input);\nchoregraph_core::replay_concrete(replay_input);\n",
+    },
+  ],
+  weave_sources = [
+    {
+      path = "crates/choregraph-weave/src/lib.rs",
       text = "#![no_std]\nextern crate alloc;\n",
     },
   ],

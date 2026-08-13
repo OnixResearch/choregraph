@@ -521,7 +521,40 @@ mod tests {
                 ReleaseRole::ExecutionGraphParity | ReleaseRole::LatticeDownstream => {
                     Some(spec.relative_path)
                 }
-                _ => None,
+                ReleaseRole::SourceTree
+                | ReleaseRole::License
+                | ReleaseRole::MachineSchema
+                | ReleaseRole::ConcreteMachineSchema
+                | ReleaseRole::ConcreteIntentSchema
+                | ReleaseRole::LinkReceiptSchema
+                | ReleaseRole::CoreSource
+                | ReleaseRole::CoreLibrary
+                | ReleaseRole::SingleStepProofSource
+                | ReleaseRole::SingleStepProofResult
+                | ReleaseRole::TraceProofSource
+                | ReleaseRole::TraceProofResult
+                | ReleaseRole::TrustedSurface
+                | ReleaseRole::RustToolchain
+                | ReleaseRole::VerusToolchain
+                | ReleaseRole::SolverToolchain
+                | ReleaseRole::NickelToolchain
+                | ReleaseRole::NixInputs
+                | ReleaseRole::DependencyLock
+                | ReleaseRole::KamaciteMachine
+                | ReleaseRole::KamaciteConcreteMachine
+                | ReleaseRole::KamaciteConcreteIntent
+                | ReleaseRole::KamaciteConcreteIntentReceipt
+                | ReleaseRole::KamaciteLifecycle
+                | ReleaseRole::KamaciteTraceReceipt
+                | ReleaseRole::KamaciteExhaustivenessReceipt
+                | ReleaseRole::KamaciteSourceReceipt
+                | ReleaseRole::KamaciteProofReferenceReceipt
+                | ReleaseRole::PositiveFixtureCorpus
+                | ReleaseRole::NegativeFixtureCorpus
+                | ReleaseRole::LatticeConcreteHandoff
+                | ReleaseRole::CairnReceipt
+                | ReleaseRole::OctetReceipt
+                | ReleaseRole::NixReceipt => None,
             })
             .collect();
 

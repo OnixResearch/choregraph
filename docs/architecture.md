@@ -13,6 +13,10 @@ choregraph-core
 choregraph-kamacite
   <- choregraph-choreography
 
+choregraph-history
+  <- choregraph-history-machine -> choregraph-core
+  <- choregraph-weave
+
 choregraph-release
 
 choregraph-core + all adapters + choregraph-release
@@ -36,6 +40,14 @@ The core excludes:
 - effect execution and runtime authorization.
 
 The foundation checker rejects forbidden dependencies, source tokens, path dependencies, reverse edges, license drift, and unpinned package metadata.
+
+`choregraph-history` uses `no_std` plus `alloc`. It owns immutable event DAGs, explicit lineages, branch plans, snapshots, cursors, and merge-envelope shape.
+
+`choregraph-history-machine` depends on history and the machine core. It delegates only to production replay entrypoints.
+
+`choregraph-weave` depends on history and the exact Universal Weave cohort. Its mutable topology remains derived and metadata-only.
+
+These crates do not own persistence, application merge meaning, scheduling, effects, rendering, transport, authorization, or consumer evidence.
 
 ## Adapter boundaries
 

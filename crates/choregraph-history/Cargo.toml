@@ -1,0 +1,14 @@
+[package]
+name = "choregraph-history"
+description = "Pure no-std immutable branchable event history for Choregraph consumers."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+blake3 = { version = "1.8.2", default-features = false }

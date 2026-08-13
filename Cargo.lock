@@ -297,6 +297,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "choregraph-history"
+version = "0.1.0"
+dependencies = [
+ "blake3",
+]
+
+[[package]]
+name = "choregraph-history-machine"
+version = "0.1.0"
+dependencies = [
+ "blake3",
+ "choregraph-core",
+ "choregraph-history",
+]
+
+[[package]]
 name = "choregraph-kamacite"
 version = "0.1.0"
 dependencies = [
@@ -358,6 +374,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "choregraph-weave"
+version = "0.1.0"
+dependencies = [
+ "blake3",
+ "choregraph-history",
+ "universal-weave",
+]
+
+[[package]]
 name = "cobs"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -377,6 +402,17 @@ name = "constant_time_eq"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d52eff69cd5e647efe296129160853a42795992097e8af39800e1060caeea9b"
+
+[[package]]
+name = "contracts"
+version = "0.6.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "80771e396e09e4d428c6d034440a3fc62f3927334b66e13c8b8689d3f8785e42"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 3.0.3",
+]
 
 [[package]]
 name = "cpp_demangle"
@@ -806,6 +842,7 @@ version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a"
 dependencies = [
+ "allocator-api2",
  "foldhash",
  "serde",
  "serde_core",
@@ -1446,6 +1483,17 @@ name = "unicode-xid"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
+
+[[package]]
+name = "universal-weave"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "73d3e16ddf00e9b597111a05c2c7e0738646fac49f98784da64f761fe8879eeb"
+dependencies = [
+ "contracts",
+ "hashbrown 0.17.1",
+ "indexmap 2.14.0",
+]
 
 [[package]]
 name = "verified-logic"

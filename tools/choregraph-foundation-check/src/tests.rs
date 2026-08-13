@@ -38,6 +38,15 @@ fn serde_json_dependency(requirement: &str) -> crate::types::DependencyModel {
     }
 }
 
+fn universal_weave_dependency(requirement: &str) -> crate::types::DependencyModel {
+    crate::types::DependencyModel {
+        name: String::from("universal-weave"),
+        requirement: String::from(requirement),
+        source: crate::types::DependencySource::Registry,
+        path: String::new(),
+    }
+}
+
 fn reviewed_bounded_exec_dependency() -> crate::types::DependencyModel {
     crate::types::DependencyModel {
         name: String::from("bounded-exec"),
@@ -65,8 +74,29 @@ fn reviewed_execution_graph_oracle() -> crate::types::DependencyModel {
     }
 }
 
-fn allowed_packages() -> Vec<crate::types::PackageModel> {
+fn history_packages() -> Vec<crate::types::PackageModel> {
     vec![
+        package("choregraph-history", vec![]),
+        package(
+            "choregraph-history-machine",
+            vec![
+                workspace_dependency("choregraph-core"),
+                workspace_dependency("choregraph-history"),
+            ],
+        ),
+        package(
+            "choregraph-weave",
+            vec![
+                workspace_dependency("choregraph-history"),
+                universal_weave_dependency("=0.4.1"),
+            ],
+        ),
+    ]
+}
+
+fn allowed_packages() -> Vec<crate::types::PackageModel> {
+    let mut packages = history_packages();
+    packages.extend([
         package(
             "choregraph-choreography",
             vec![workspace_dependency("choregraph-kamacite")],
@@ -121,7 +151,10 @@ fn allowed_packages() -> Vec<crate::types::PackageModel> {
                 workspace_dependency("choregraph-wasm"),
             ],
         ),
-    ]
+    ]);
+    debug_assert!(!packages.is_empty());
+    debug_assert!(packages.iter().any(|item| item.name == "choregraph-core"));
+    packages
 }
 
 fn allowed_model() -> crate::types::WorkspaceModel {
@@ -150,6 +183,20 @@ fn allowed_model() -> crate::types::WorkspaceModel {
                 "package onix:choregraph@1.0.0;\nworld kernel {\n  export call: func(request: list<u8>) -> list<u8>;\n}\n",
             ),
         }],
+        history_sources: vec![crate::types::SourceUnit {
+            path: String::from("lib.rs"),
+            text: String::from("#![no_std]\nextern crate alloc;\n"),
+        }],
+        history_machine_sources: vec![crate::types::SourceUnit {
+            path: String::from("lib.rs"),
+            text: String::from(
+                "#![no_std]\nextern crate alloc;\nchoregraph_core::replay(replay_input);\nchoregraph_core::replay_concrete(replay_input);\n",
+            ),
+        }],
+        weave_sources: vec![crate::types::SourceUnit {
+            path: String::from("lib.rs"),
+            text: String::from("#![no_std]\nextern crate alloc;\n"),
+        }],
     }
 }
 
@@ -175,7 +222,8 @@ fn add_dependency(
 
 #[test]
 fn accepts_the_reviewed_workspace_boundary() {
-    assert!(crate::validator::validate_workspace(&allowed_model()).is_empty());
+    let issues = crate::validator::validate_workspace(&allowed_model());
+    assert!(issues.is_empty(), "unexpected issues: {issues:#?}");
 }
 
 #[test]
@@ -191,7 +239,8 @@ fn accepts_compatible_public_dependency_requirements() {
         "choregraph-nickel",
         serde_json_dependency("^1.0.149"),
     ));
-    assert!(crate::validator::validate_workspace(&model).is_empty());
+    let issues = crate::validator::validate_workspace(&model);
+    assert!(issues.is_empty(), "unexpected issues: {issues:#?}");
 }
 
 #[test]
@@ -219,6 +268,24 @@ fn rejects_exact_serde_json_public_dependency_requirement() {
     assert!(contains_code(
         &model,
         "foundation.public-dependency-requirement"
+    ));
+}
+
+#[test]
+fn rejects_unreviewed_universal_weave_revision() {
+    let mut model = allowed_model();
+    for package in &mut model.packages {
+        if package.name == "choregraph-weave" {
+            for dependency in &mut package.dependencies {
+                if dependency.name == "universal-weave" {
+                    dependency.requirement = String::from("^0.4.1");
+                }
+            }
+        }
+    }
+    assert!(contains_code(
+        &model,
+        "foundation.universal-weave-selection"
     ));
 }
 
@@ -402,6 +469,37 @@ fn rejects_wasm_persistent_handles_and_graph_specific_generation() {
         text: String::from("static CACHE: OnceLock<()>; MachineSpec::new(Vec::new(), Vec::new());"),
     });
     assert!(contains_code(&model, "foundation.forbidden-wasm-source"));
+}
+
+// r[verify choregraph.history.boundary.rejects_authority]
+// r[verify choregraph.history.source_adoption.rejects_product]
+// r[verify choregraph.history.supersession.rejects_dependency]
+#[test]
+fn rejects_history_authority_dependencies_and_duplicate_transitions() {
+    let mut model = allowed_model();
+    assert!(add_dependency(
+        &mut model,
+        "choregraph-history",
+        crate::types::DependencyModel {
+            name: String::from("redb"),
+            requirement: String::from("^3.1.1"),
+            source: crate::types::DependencySource::Registry,
+            path: String::new(),
+        },
+    ));
+    model.history_machine_sources[0]
+        .text
+        .push_str("\nchoregraph_core::step(machine, state, event);\n");
+    model.weave_sources[0].text.push_str("\nuse std::fs;\n");
+    assert!(contains_code(
+        &model,
+        "foundation.forbidden-history-dependency"
+    ));
+    assert!(contains_code(
+        &model,
+        "foundation.history-duplicate-transition"
+    ));
+    assert!(contains_code(&model, "foundation.forbidden-history-source"));
 }
 
 #[test]
