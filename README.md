@@ -8,6 +8,8 @@ It lowers reviewed data-oriented Nickel graphs into canonical machine artifacts.
 
 The buildable foundation, machine semantics, and Kamacite adapter exist.
 
+The role-choreography adapter admits bounded role and ownership data. It calls the pinned Trellis projection and emits one exact local protocol per declared role.
+
 The Kamacite adapter emits these values:
 
 - canonical packed Preserves artifacts
@@ -50,6 +52,7 @@ Choregraph owns these functions:
 - Verus proofs over production transition code
 - Kamacite artifact and receipt adapters
 - restricted Nickel evaluation and canonical lowering
+- Trellis-backed role choreography and endpoint projection
 - Seaglass and Lattice compatibility adapters
 - a stateless WASM component over the production kernel
 - a proof-linked epoch-fence decision over caller-supplied entity facts
@@ -97,6 +100,7 @@ Read [`docs/implementation-order.md`](docs/implementation-order.md) for the depe
 ## Workspace
 
 ```text
+crates/choregraph-choreography/
 crates/choregraph-core/
 crates/choregraph-kamacite/
 crates/choregraph-nickel/
@@ -118,6 +122,7 @@ evidence/
 - [`docs/trace-replay-verification.md`](docs/trace-replay-verification.md): bounded replay, finite-trace theorems, and failure behavior.
 - [`docs/kamacite-profile.md`](docs/kamacite-profile.md): codecs, schemas, identities, and receipts.
 - [`docs/restricted-nickel-lowering.md`](docs/restricted-nickel-lowering.md): source admission, evaluation, lowering, identities, and non-claims.
+- [`docs/role-choreography.md`](docs/role-choreography.md): typed role source, Trellis projection, canonical artifacts, and authority boundaries.
 - [`docs/octet-deny-all.md`](docs/octet-deny-all.md): lint policy, strict commands, and exceptions.
 - [`docs/lattice-cutover-readiness.md`](docs/lattice-cutover-readiness.md): source order, duplicate removal, and rollback gates.
 - [`docs/lattice-authority-boundary.md`](docs/lattice-authority-boundary.md): intent handoff and retained Lattice authority.

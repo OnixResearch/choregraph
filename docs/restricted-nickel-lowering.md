@@ -12,6 +12,8 @@ Choregraph begins its maintained frontend claim at evaluated data that satisfies
 
 The contract checks exact fields, required schemas, fixed lifecycle events, array bounds, scalar types, import declarations, and selected graph shapes.
 
+[`../contracts/nickel/role-choreography-contracts.ncl`](../contracts/nickel/role-choreography-contracts.ncl) defines the separate `choregraph.role-choreography.v1` profile. It checks native and external roles, values, ownership, communication, owned transfer, choice, termination, fixed limits, and required non-claims. This profile does not lower to machine IR.
+
 The v2 contract requires each effectful node to have a declaration. It rejects effects on nodes that are not effectful.
 
 Rust parses with `deny_unknown_fields`, checks numeric ceilings, and validates the import closure. V1 calls `AdmittedMachine::admit`. V2 calls `AdmittedMachine::admit_v2`.
@@ -48,6 +50,8 @@ These receipts do not prove arbitrary Nickel semantic equivalence, evaluator sou
 ## Diagnostics
 
 The pure frontend emits stable issue codes and constant bounded summaries. Evaluator redaction discards raw text. Safe diagnostics do not include source content, imported values, credentials, environment values, or host paths.
+
+The choreography profile also reports bounded primary and secondary spans, notes, hints, and optional replacements. Rust revalidates each diagnostic before rendering or artifact encoding.
 
 ## Capability shell
 

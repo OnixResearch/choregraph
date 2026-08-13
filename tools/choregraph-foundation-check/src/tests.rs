@@ -67,6 +67,10 @@ fn reviewed_execution_graph_oracle() -> crate::types::DependencyModel {
 
 fn allowed_packages() -> Vec<crate::types::PackageModel> {
     vec![
+        package(
+            "choregraph-choreography",
+            vec![workspace_dependency("choregraph-kamacite")],
+        ),
         package("choregraph-core", vec![]),
         package(
             "execution-graph-core",

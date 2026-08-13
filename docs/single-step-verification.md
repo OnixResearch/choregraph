@@ -48,6 +48,8 @@ The production proof sources are:
 
 The proof adapts finite lifecycle, readiness, and topological-order shapes from Trellis revision `aead4527bfc3c714e71669bce656719dd2a6b2e2`.
 
+Role choreography uses a separate proof-reference boundary. The adapter pins Trellis revision `d65974b14978e1a44b0f5067beb9ef6d83317dc8` and calls its production ownership, projectability, and endpoint-projection functions. Choregraph records exact theorem and source-set identities but does not restate those proofs.
+
 The manifest records the exact Trellis source values. Choregraph proves the adapted functions again with its pinned verifier.
 
 ## Run the rail
@@ -97,3 +99,5 @@ The rail does not prove Nickel evaluation, authorization, effect execution, pers
 The rail does not prove Verus, Z3, rustc, vstd, the allocator, or the operating system.
 
 The Trellis identity does not transfer a Trellis proof claim to Choregraph.
+
+Role projection evidence proves only exact linkage to the selected Trellis result. It does not prove external-role behavior, transport, runtime execution, fault liveness, or release readiness.

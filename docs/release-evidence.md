@@ -58,6 +58,8 @@ Every projection entry states `linkage-only-no-claim-promotion`. Projection vali
 
 Valence linkage does not create a behavioral proof or release decision.
 
+Role-choreography projection receipts use the same linkage-only rule. They are feature evidence and do not enter the existing release bundle automatically. Release publication needs a fresh reviewed role set, current artifact bytes, and explicit operator authority.
+
 ## Publication candidate
 
 The pure candidate model requires:

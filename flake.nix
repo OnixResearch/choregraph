@@ -43,6 +43,8 @@
             || pkgs.lib.hasInfix "/evidence/generated/" (toString path)
             || pkgs.lib.hasInfix "/fixtures/kamacite/" (toString path)
             || pkgs.lib.hasInfix "/fixtures/nickel/" (toString path)
+            || pkgs.lib.hasInfix "/fixtures/role-choreography/" (toString path)
+            || pkgs.lib.hasInfix "/schemas/preserves/" (toString path)
             || pkgs.lib.hasInfix "/vendor/bounded-exec-selected/" (toString path)
             || pkgs.lib.hasInfix "/vendor/cap-root-core-selected/" (toString path)
             || pkgs.lib.hasInfix "/vendor/execution-graph-core-selected/" (toString path)
@@ -76,6 +78,45 @@
             doCheck = true;
           }
         );
+        roleChoreographyCargoArtifacts = craneLib.buildDepsOnly (
+          commonCargoArgs
+          // {
+            pname = "choregraph-role-choreography-dependencies";
+            cargoExtraArgs = "--locked -p choregraph-choreography";
+            doCheck = false;
+          }
+        );
+        roleChoreographyPackage = craneLib.buildPackage (
+          commonCargoArgs
+          // {
+            cargoArtifacts = roleChoreographyCargoArtifacts;
+            pname = "choregraph-role-choreography";
+            cargoExtraArgs = "--locked -p choregraph-choreography";
+            doCheck = true;
+          }
+        );
+        roleChoreographyContractsCheck =
+          pkgs.runCommand "choregraph-role-choreography-contracts"
+            {
+              nativeBuildInputs = [ pkgs.nickel ];
+              src = cargoSource;
+            }
+            ''
+              set -eu
+              cd "$src"
+              nickel typecheck contracts/nickel/role-choreography-contracts.ncl
+              nickel export --format json fixtures/role-choreography/positive/two-role-transfer.ncl \
+                > "$TMPDIR/two-role-transfer.json"
+              for fixture in fixtures/role-choreography/negative/*.ncl; do
+                if nickel export --format json "$fixture" \
+                  > "$TMPDIR/negative.json" 2> "$TMPDIR/negative.stderr"; then
+                  echo "invalid role choreography unexpectedly exported: $fixture" >&2
+                  exit 1
+                fi
+              done
+              mkdir -p "$out"
+              cp "$TMPDIR/two-role-transfer.json" "$out/two-role-transfer.json"
+            '';
         wasmConformanceCargoArtifacts = craneLib.buildDepsOnly (
           commonCargoArgs
           // {
@@ -270,12 +311,15 @@
           default = choregraphPackage;
           choregraph = choregraphPackage;
           foundation-check = foundationChecker;
+          role-choreography = roleChoreographyPackage;
           choregraph-wasm-component = wasmKernelComponent;
           choregraph-wasm-conformance = wasmConformanceChecker;
           octet-deny-all = octetDenyAllRunner;
         };
 
         checks = {
+          role-choreography = roleChoreographyPackage;
+          role-choreography-contracts = roleChoreographyContractsCheck;
           octet-deny-all = octetDenyAllCheck;
           wasm-kernel-component = wasmKernelComponent;
           wasm-kernel-conformance = wasmConformanceCheck;

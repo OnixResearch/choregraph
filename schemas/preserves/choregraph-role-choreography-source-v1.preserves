@@ -1,0 +1,81 @@
+; Strict evaluated role-choreography DTO v1.
+; The Rust DTO is the executable admission authority.
+
+RoleChoreographySource = <RoleChoreographySource {
+  schema: "choregraph.role-choreography.v1",
+  limits: ChoreographyLimits,
+  imports: [ImportIdentity ...],
+  roles: [RoleDeclaration ...],
+  values: [ValueDeclaration ...],
+  protocol: ChoreographyNode,
+  non_claims: [string ...]
+}>
+
+SourceSpan = <SourceSpan { start: integer, end: integer }>
+
+RoleDeclaration = <RoleDeclaration {
+  id: integer,
+  kind: RoleKind,
+  span: SourceSpan
+}>
+
+RoleKind =
+    <native>
+  / <external {
+      contract_identity: string,
+      input_schema_identity: string,
+      output_schema_identity: string
+    }>
+
+ValueDeclaration = <ValueDeclaration {
+  id: integer,
+  payload_tag: integer,
+  initial_owner: integer,
+  span: SourceSpan
+}>
+
+ImportIdentity = <ImportIdentity { logical_id: string, blake3: string }>
+
+ChoreographyLimits = <ChoreographyLimits {
+  max_roles: integer,
+  max_values: integer,
+  max_steps: integer,
+  max_branches: integer,
+  max_nesting_depth: integer,
+  max_identifier_bytes: integer,
+  max_imports: integer,
+  max_diagnostics: integer,
+  max_diagnostic_text_bytes: integer,
+  max_canonical_output_bytes: integer
+}>
+
+ChoreographyNode =
+    <end { span: SourceSpan }>
+  / <communication {
+      from: integer,
+      to: integer,
+      label: integer,
+      payload_tag: integer,
+      next: ChoreographyNode,
+      span: SourceSpan
+    }>
+  / <transfer {
+      from: integer,
+      to: integer,
+      label: integer,
+      payload_tag: integer,
+      value: integer,
+      next: ChoreographyNode,
+      span: SourceSpan
+    }>
+  / <choice {
+      decider: integer,
+      branches: [ChoiceBranch ...],
+      span: SourceSpan
+    }>
+
+ChoiceBranch = <ChoiceBranch {
+  label: integer,
+  body: ChoreographyNode,
+  span: SourceSpan
+}>

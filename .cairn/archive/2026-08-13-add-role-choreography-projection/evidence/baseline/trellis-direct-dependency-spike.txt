@@ -1,0 +1,123 @@
+    Updating git repository `https://github.com/OnixResearch/trellis.git`
+error: failed to get `verified-logic` as a dependency of package `choregraph-trellis-spike v0.1.0 (/tmp/choregraph-trellis-spike)`
+
+Caused by:
+  failed to load source for dependency `verified-logic`
+
+Caused by:
+  unable to update https://github.com/OnixResearch/trellis.git?rev=d65974b14978e1a44b0f5067beb9ef6d83317dc8
+
+Caused by:
+  failed to clone into: /home/brittonr/.cargo/git/db/trellis-5b84949c2ff73637
+
+Caused by:
+  revision d65974b14978e1a44b0f5067beb9ef6d83317dc8 not found
+
+Caused by:
+  failed to authenticate when downloading repository
+
+  * attempted to find username/password via git's `credential.helper` support, but failed
+
+  if the git CLI succeeds then `net.git-fetch-with-cli` may help here
+  https://doc.rust-lang.org/cargo/reference/config.html#netgit-fetch-with-cli
+
+Caused by:
+  failed to acquire username/password from local configuration
+    Updating git repository `ssh://git@github.com/OnixResearch/trellis.git`
+From ssh://github.com/OnixResearch/trellis
+ * [new ref]         d65974b14978e1a44b0f5067beb9ef6d83317dc8 -> refs/commit/d65974b14978e1a44b0f5067beb9ef6d83317dc8
+    Updating crates.io index
+     Locking 68 packages to latest Rust 1.97.1 compatible versions
+      Adding generic-array v0.14.7 (available: v0.14.9)
+      Adding verus_builtin v0.0.0-2026-01-25-0057 (available: v0.0.0-2026-08-09-0044)
+      Adding verus_builtin_macros v0.0.0-2026-01-25-0057 (available: v0.0.0-2026-08-09-0044)
+      Adding verus_prettyplease v0.0.0-2026-01-25-0057 (available: v0.0.0-2026-08-09-0044)
+      Adding verus_state_machines_macros v0.0.0-2026-01-25-0057 (available: v0.0.0-2026-08-02-0125)
+      Adding verus_syn v0.0.0-2026-01-25-0057 (available: v0.0.0-2026-08-02-0125)
+      Adding vstd v0.0.0-2026-01-25-0057 (available: v0.0.0-2026-08-09-0044)
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.24
+   Compiling quote v1.0.47
+   Compiling version_check v0.9.5
+   Compiling generic-array v0.14.7
+   Compiling typenum v1.20.1
+   Compiling syn v2.0.119
+   Compiling autocfg v1.5.1
+   Compiling semver v1.0.28
+   Compiling rustc_version v0.4.1
+   Compiling indexmap v1.9.3
+   Compiling crypto-common v0.1.7
+   Compiling block-buffer v0.10.4
+   Compiling verus_syn v0.0.0-2026-01-25-0057
+   Compiling memchr v2.8.3
+   Compiling verus_prettyplease v0.0.0-2026-01-25-0057
+   Compiling shlex v2.0.1
+   Compiling find-msvc-tools v0.1.10
+   Compiling serde_core v1.0.229
+   Compiling cfg-if v1.0.4
+   Compiling cc v1.4.2
+   Compiling digest v0.10.7
+   Compiling curve25519-dalek v4.1.3
+   Compiling libc v0.2.189
+   Compiling hashbrown v0.12.3
+   Compiling zmij v1.0.23
+   Compiling cpufeatures v0.2.17
+   Compiling blake3 v1.8.6
+   Compiling aho-corasick v1.1.5
+   Compiling curve25519-dalek-derive v0.1.1
+   Compiling synstructure v0.13.2
+   Compiling syn v3.0.3
+   Compiling serde v1.0.229
+   Compiling anyhow v1.0.104
+   Compiling redb v2.6.3
+   Compiling signature v2.2.0
+   Compiling serde_json v1.0.151
+   Compiling vstd v0.0.0-2026-01-25-0057
+   Compiling zeroize v1.9.0
+   Compiling regex-syntax v0.8.11
+   Compiling subtle v2.6.1
+   Compiling regex-automata v0.4.18
+   Compiling ed25519 v2.2.3
+   Compiling serde_derive v1.0.229
+   Compiling verus_builtin_macros v0.0.0-2026-01-25-0057
+   Compiling verus_state_machines_macros v0.0.0-2026-01-25-0057
+   Compiling sha2 v0.10.9
+   Compiling verus_builtin v0.0.0-2026-01-25-0057
+   Compiling rand_core v0.6.4
+   Compiling constant_time_eq v0.4.2
+   Compiling itoa v1.0.18
+   Compiling arrayref v0.3.9
+   Compiling cpufeatures v0.3.0
+   Compiling arrayvec v0.7.8
+   Compiling ed25519-dalek v2.2.0
+   Compiling regex v1.13.1
+   Compiling bs58 v0.5.1
+   Compiling verified-logic v0.2.0 (ssh://git@github.com/OnixResearch/trellis.git?rev=d65974b14978e1a44b0f5067beb9ef6d83317dc8#d65974b1)
+error[E0554]: `#![feature]` may not be used on the stable release channel
+   --> <WORKSPACE>/src/lib.rs:404:36
+    |
+404 | #![cfg_attr(not(verus_keep_ghost), feature(register_tool))]
+    |                                    ^^^^^^^^^^^^^^^^^^^^^^
+
+For more information about this error, try `rustc --explain E0554`.
+error: could not compile `verified-logic` (lib) due to 1 previous error
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling syn v2.0.119
+   Compiling verus_syn v0.0.0-2026-01-25-0057
+   Compiling verus_prettyplease v0.0.0-2026-01-25-0057
+   Compiling curve25519-dalek-derive v0.1.1
+   Compiling synstructure v0.13.2
+   Compiling syn v3.0.3
+   Compiling curve25519-dalek v4.1.3
+   Compiling anyhow v1.0.104
+   Compiling serde_derive v1.0.229
+   Compiling verus_builtin_macros v0.0.0-2026-01-25-0057
+   Compiling verus_state_machines_macros v0.0.0-2026-01-25-0057
+   Compiling ed25519-dalek v2.2.0
+   Compiling vstd v0.0.0-2026-01-25-0057
+   Compiling serde v1.0.229
+   Compiling verified-logic v0.2.0 (ssh://git@github.com/OnixResearch/trellis.git?rev=d65974b14978e1a44b0f5067beb9ef6d83317dc8#d65974b1)
+   Compiling choregraph-trellis-spike v0.1.0 (/tmp/choregraph-trellis-spike)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 22.48s
+     Running `/tmp/choregraph-trellis-spike-target/debug/choregraph-trellis-spike`

@@ -1,0 +1,750 @@
+these 6 derivations will be built:
+  /nix/store/g2i8yhhd92kg930bl7ayndlw4dcmymwr-cargo-package-tinyvec-1.12.0.drv
+  /nix/store/6bs3234b7viimq0kfalyh22j9v8m04zb-vendor-registry.drv
+  /nix/store/hvsxw1jq2g66bxl4c6a3pac6240hsfgl-cargo-git-ssh-git-github.com-OnixResearch-trellis.git-d65974b14978e1a44b0f5067beb9ef6d83317dc8.drv
+  /nix/store/wg01jfq9l7vf584bxqawnabq3v91bjf0-linkLockedDeps.drv
+  /nix/store/9q9qpdmjvc1qi44hkh1n436s7hz830jg-vendor-cargo-deps.drv
+  /nix/store/vmdl646fxjkc0piy3vrv1xwgzw8yv1zk-octet-consumer-check.drv
+building '/nix/store/hvsxw1jq2g66bxl4c6a3pac6240hsfgl-cargo-git-ssh-git-github.com-OnixResearch-trellis.git-d65974b14978e1a44b0f5067beb9ef6d83317dc8.drv'...
+building '/nix/store/g2i8yhhd92kg930bl7ayndlw4dcmymwr-cargo-package-tinyvec-1.12.0.drv'...
+cargo-git-ssh-git-github.com-OnixResearch-trellis.git-d65974b14978e1a44b0f5067beb9ef6d83317dc8> Running phase: unpackPhase
+cargo-package-tinyvec> Running phase: unpackPhase
+cargo-git-ssh-git-github.com-OnixResearch-trellis.git-d65974b14978e1a44b0f5067beb9ef6d83317dc8> unpacking source archive /nix/store/vzv5cx1snwdznjc87rpxp9jvrw7rr1cf-source
+cargo-package-tinyvec> setting SOURCE_DATE_EPOCH to timestamp 1153704088 of file "./crate/tests/tinyvec.rs"
+cargo-package-tinyvec> Running phase: patchPhase
+cargo-package-tinyvec> Running phase: updateAutotoolsGnuConfigScriptsPhase
+cargo-package-tinyvec> Running phase: installPhase
+building '/nix/store/6bs3234b7viimq0kfalyh22j9v8m04zb-vendor-registry.drv'...
+cargo-git-ssh-git-github.com-OnixResearch-trellis.git-d65974b14978e1a44b0f5067beb9ef6d83317dc8> source root is source
+cargo-git-ssh-git-github.com-OnixResearch-trellis.git-d65974b14978e1a44b0f5067beb9ef6d83317dc8> Running phase: patchPhase
+cargo-git-ssh-git-github.com-OnixResearch-trellis.git-d65974b14978e1a44b0f5067beb9ef6d83317dc8> Running phase: updateAutotoolsGnuConfigScriptsPhase
+cargo-git-ssh-git-github.com-OnixResearch-trellis.git-d65974b14978e1a44b0f5067beb9ef6d83317dc8> Running phase: installPhase
+building '/nix/store/wg01jfq9l7vf584bxqawnabq3v91bjf0-linkLockedDeps.drv'...
+building '/nix/store/9q9qpdmjvc1qi44hkh1n436s7hz830jg-vendor-cargo-deps.drv'...
+building '/nix/store/vmdl646fxjkc0piy3vrv1xwgzw8yv1zk-octet-consumer-check.drv'...
+octet-consumer-check>    Compiling proc-macro2 v1.0.107
+octet-consumer-check>    Compiling unicode-ident v1.0.24
+octet-consumer-check>    Compiling quote v1.0.47
+octet-consumer-check>    Compiling serde_core v1.0.228
+octet-consumer-check>    Compiling serde v1.0.228
+octet-consumer-check>    Compiling autocfg v1.5.1
+octet-consumer-check>     Checking cfg-if v1.0.4
+octet-consumer-check>     Checking memchr v2.8.3
+octet-consumer-check>    Compiling verus_prettyplease v0.0.0-2026-01-25-0057
+octet-consumer-check>    Compiling hashbrown v0.12.3
+octet-consumer-check>    Compiling vstd v0.0.0-2026-01-25-0057
+octet-consumer-check>     Checking verus_builtin v0.0.0-2026-01-25-0057
+octet-consumer-check>    Compiling shlex v2.0.1
+octet-consumer-check>    Compiling zmij v1.0.23
+octet-consumer-check>    Compiling find-msvc-tools v0.1.9
+octet-consumer-check>     Checking cpufeatures v0.3.0
+octet-consumer-check>     Checking arrayvec v0.7.8
+octet-consumer-check>     Checking arrayref v0.3.9
+octet-consumer-check>     Checking constant_time_eq v0.4.2
+octet-consumer-check>    Compiling libm v0.2.16
+octet-consumer-check>    Compiling serde_json v1.0.151
+octet-consumer-check>     Checking bitflags v2.13.1
+octet-consumer-check>     Checking itoa v1.0.18
+octet-consumer-check>    Compiling anyhow v1.0.104
+octet-consumer-check>     Checking foldhash v0.2.0
+octet-consumer-check>    Compiling libc v0.2.189
+octet-consumer-check>    Compiling version_check v0.9.5
+octet-consumer-check>     Checking regex-syntax v0.8.11
+octet-consumer-check>     Checking typenum v1.20.1
+octet-consumer-check>    Compiling rustix v1.1.4
+octet-consumer-check>    Compiling wasmtime-internal-core v45.0.0
+octet-consumer-check>     Checking linux-raw-sys v0.12.1
+octet-consumer-check>    Compiling cranelift-srcgen v0.132.3
+octet-consumer-check>    Compiling cfg_if v1.0.4
+octet-consumer-check>    Compiling arrayref v0.3.9
+octet-consumer-check>    Compiling cpufeatures v0.3.0
+octet-consumer-check>    Compiling thiserror v2.0.19
+octet-consumer-check>    Compiling verus_builtin v0.0.0-2026-01-25-0057
+octet-consumer-check>    Compiling hashbrown v0.17.1
+octet-consumer-check>    Compiling constant_time_eq v0.4.2
+octet-consumer-check>    Compiling foldhash v0.2.0
+octet-consumer-check>    Compiling unicode_ident v1.0.24   Compiling log v0.4.33
+octet-consumer-check> 
+octet-consumer-check>    Compiling itoa v1.0.18
+octet-consumer-check>    Compiling semver v1.0.28
+octet-consumer-check>     Checking base64 v0.13.1
+octet-consumer-check>    Compiling bitflags v2.13.1
+octet-consumer-check>     Checking lazy_static v1.5.0
+octet-consumer-check>    Compiling foldhash v0.2.0
+octet-consumer-check>    Compiling arrayvec v0.7.8
+octet-consumer-check>    Compiling cc v1.4.0
+octet-consumer-check>    Compiling shlex v2.0.1
+octet-consumer-check>     Checking bytemuck v1.25.2
+octet-consumer-check>     Checking dtoa v0.4.8
+octet-consumer-check>    Compiling lazy_static v1.5.0
+octet-consumer-check>    Compiling find_msvc_tools v0.1.9
+octet-consumer-check>    Compiling heck v0.5.0
+octet-consumer-check>    Compiling log v0.4.33
+octet-consumer-check>    Compiling cranelift-assembler-x64-meta v0.132.3
+octet-consumer-check>    Compiling generic-array v0.14.7
+octet-consumer-check>    Compiling version_check v0.9.5
+octet-consumer-check>    Compiling dtoa v0.4.8
+octet-consumer-check>    Compiling cranelift-isle v0.132.0
+octet-consumer-check>    Compiling build-script-build v0.0.0-2026-01-25-0057
+octet-consumer-check>    Compiling build-script-build v0.0.0-2026-01-25-0057
+octet-consumer-check>    Compiling build-script-build v45.0.0
+octet-consumer-check>    Compiling build-script-build v1.0.151
+octet-consumer-check>    Compiling build-script-build v45.0.0
+octet-consumer-check>    Compiling build-script-build v1.0.23
+octet-consumer-check>    Compiling build-script-build v1.0.104
+octet-consumer-check>    Compiling build-script-build v0.2.16
+octet-consumer-check>    Compiling build-script-build v1.1.4
+octet-consumer-check>    Compiling build-script-build v1.0.228
+octet-consumer-check>    Compiling build-script-build v1.0.47
+octet-consumer-check>    Compiling build-script-build v1.0.228
+octet-consumer-check>    Compiling build-script-build v1.0.107
+octet-consumer-check>    Compiling base64 v0.13.1
+octet-consumer-check>     Checking cpufeatures v0.2.17
+octet-consumer-check>     Checking once_cell v1.21.4
+octet-consumer-check>     Checking equivalent v1.0.2
+octet-consumer-check>    Compiling cranelift-codegen-shared v0.132.3
+octet-consumer-check>    Compiling cranelift_srcgen v0.132.3
+octet-consumer-check>    Compiling target-lexicon v0.13.5
+octet-consumer-check>    Compiling build-script-build v0.2.189
+octet-consumer-check>    Compiling bytemuck v1.25.2
+octet-consumer-check>     Checking allocator-api2 v0.2.21
+octet-consumer-check>     Checking hashbrown v0.16.1
+octet-consumer-check>    Compiling autocfg v1.5.1
+octet-consumer-check>    Compiling indexmap v1.9.3
+octet-consumer-check>    Compiling num-traits v0.2.19
+octet-consumer-check>    Compiling equivalent v1.0.2
+octet-consumer-check>    Compiling build-script-build v2.0.19
+octet-consumer-check>    Compiling heck v0.5.0
+octet-consumer-check>    Compiling io-lifetimes v2.0.4
+octet-consumer-check>    Compiling cpufeatures v0.2.17
+octet-consumer-check>     Checking fnv v1.0.7
+octet-consumer-check>    Compiling io-lifetimes v3.0.1
+octet-consumer-check>    Compiling cranelift_codegen_shared v0.132.3
+octet-consumer-check>    Compiling crc32fast v1.5.0
+octet-consumer-check>    Compiling fnv v1.0.7
+octet-consumer-check>    Compiling build-script-build v0.14.7
+octet-consumer-check>     Checking arbitrary v1.4.2
+octet-consumer-check>     Checking rustc-hash v2.1.3
+octet-consumer-check>    Compiling semver v1.0.28
+octet-consumer-check>    Compiling io-extras v0.19.0
+octet-consumer-check>    Compiling cap-primitives v4.0.2
+octet-consumer-check>    Compiling rustc_hash v2.1.3
+octet-consumer-check>    Compiling log v0.4.33
+octet-consumer-check>    Compiling cfg_aliases v0.2.2
+octet-consumer-check>    Compiling build-script-build v0.132.0
+octet-consumer-check>    Compiling build-script-build v0.2.19
+octet-consumer-check>    Compiling cranelift_codegen_shared v0.132.3
+octet-consumer-check>    Compiling build-script-build v1.9.3
+octet-consumer-check>    Compiling cfg_aliases v0.2.2
+octet-consumer-check>    Compiling object v0.39.1
+octet-consumer-check>    Compiling once_cell v1.21.4
+octet-consumer-check>    Compiling memchr v2.8.3    Checking aho-corasick v1.1.4
+octet-consumer-check> 
+octet-consumer-check>    Compiling zmij v1.0.23
+octet-consumer-check>    Compiling linux_raw_sys v0.12.1
+octet-consumer-check>    Compiling nix v0.30.1
+octet-consumer-check>    Compiling anyhow v1.0.104
+octet-consumer-check>    Compiling build-script-build v1.5.0
+octet-consumer-check>    Compiling build-script-build v2.0.4
+octet-consumer-check>    Compiling hashbrown v0.12.3
+octet-consumer-check>    Compiling allocator_api2 v0.2.21
+octet-consumer-check>     Checking bumpalo v3.20.3
+octet-consumer-check>    Compiling build-script-build v3.0.1
+octet-consumer-check>    Compiling build-script-build v1.0.228
+octet-consumer-check>    Compiling rustc_version v0.4.1
+octet-consumer-check>    Compiling io_lifetimes v2.0.4
+octet-consumer-check>    Compiling build-script-build v0.19.0
+octet-consumer-check>    Compiling build-script-build v1.0.151
+octet-consumer-check>     Checking termcolor v1.4.1
+octet-consumer-check>    Compiling build-script-build v4.0.2
+octet-consumer-check>    Compiling io_lifetimes v3.0.1
+octet-consumer-check>     Checking ipnet v2.12.0
+octet-consumer-check>    Compiling crc32fast v1.5.0
+octet-consumer-check>     Checking maybe-owned v0.3.4
+octet-consumer-check>    Compiling hashbrown v0.17.1
+octet-consumer-check>    Compiling camino v1.2.4
+octet-consumer-check>    Compiling build-script-build v0.39.1
+octet-consumer-check>    Compiling build-script-build v1.0.228
+octet-consumer-check>    Compiling build-script-build v0.13.5
+octet-consumer-check>    Compiling build-script-build v1.0.104
+octet-consumer-check>    Compiling io_extras v0.19.0
+octet-consumer-check>     Checking ambient-authority v0.0.2
+octet-consumer-check>    Compiling bumpalo v3.20.3
+octet-consumer-check>     Checking leb128fmt v0.1.0
+octet-consumer-check>    Compiling cap-std v4.0.2
+octet-consumer-check>    Compiling hashbrown v0.17.1
+octet-consumer-check>    Compiling maybe_owned v0.3.4
+octet-consumer-check>    Compiling unicode-xid v0.2.6
+octet-consumer-check>    Compiling ambient_authority v0.0.2
+octet-consumer-check>    Compiling id-arena v2.3.0
+octet-consumer-check>    Compiling equivalent v1.0.2
+octet-consumer-check>    Compiling ipnet v2.12.0
+octet-consumer-check>    Compiling cap-fs-ext v4.0.2
+octet-consumer-check>    Compiling unicode_xid v0.2.6
+octet-consumer-check>     Checking wasmtime-internal-component-util v45.0.0
+octet-consumer-check>    Compiling termcolor v1.4.1
+octet-consumer-check>    Compiling wasmparser v0.248.0
+octet-consumer-check>    Compiling wasmtime-internal-unwinder v45.0.0
+octet-consumer-check>    Compiling zmij v1.0.23
+octet-consumer-check>    Compiling bitflags v2.13.1
+octet-consumer-check>    Compiling id_arena v2.3.0
+octet-consumer-check>    Compiling redb v2.6.3
+octet-consumer-check>     Checking wasm-encoder v0.248.0
+octet-consumer-check>    Compiling leb128fmt v0.1.0
+octet-consumer-check>    Compiling wasmtime_internal_component_util v45.0.0
+octet-consumer-check>     Checking bounded-exec-core v0.1.0 (/build/source/vendor/bounded-exec-selected/crates/bounded-exec-core)
+octet-consumer-check>    Compiling build-script-build v0.30.1
+octet-consumer-check>     Checking either v1.17.0
+octet-consumer-check>    Compiling build-script-build v1.2.4
+octet-consumer-check>    Compiling hashbrown v0.16.1
+octet-consumer-check>    Compiling getrandom v0.3.4
+octet-consumer-check>    Compiling itoa v1.0.18
+octet-consumer-check>     Checking subtle v2.6.1
+octet-consumer-check>    Compiling curve25519-dalek v4.1.3
+octet-consumer-check>    Compiling rustc_version v0.4.1
+octet-consumer-check>    Compiling wasmtime-internal-cranelift v45.0.0
+octet-consumer-check>     Checking zeroize v1.9.0
+octet-consumer-check>    Compiling bounded_exec_core v0.1.0
+octet-consumer-check>    Compiling build-script-build v4.0.2
+octet-consumer-check>     Checking signature v2.2.0
+octet-consumer-check>    Compiling subtle v2.6.1
+octet-consumer-check>    Compiling wasmtime-internal-component-macro v45.0.0
+octet-consumer-check>    Compiling indexmap v1.9.3
+octet-consumer-check>    Compiling build-script-build v45.0.0
+octet-consumer-check>    Compiling build-script-build v2.6.3
+octet-consumer-check>     Checking rand_core v0.6.4
+octet-consumer-check>     Checking cap-root-core v0.1.0 (/build/source/vendor/cap-root-core-selected)
+octet-consumer-check>    Compiling target_lexicon v0.13.5
+octet-consumer-check>    Compiling anyhow v1.0.104
+octet-consumer-check>     Checking encoding_rs v0.8.35
+octet-consumer-check>     Checking fastrand v2.5.0
+octet-consumer-check>     Checking bs58 v0.5.1
+octet-consumer-check>    Compiling wasmtime_internal_component_util v45.0.0
+octet-consumer-check>    Compiling build-script-build v4.0.2
+octet-consumer-check>    Compiling signature v2.2.0   Compiling syn v2.0.119
+octet-consumer-check> 
+octet-consumer-check>    Compiling build-script-build v45.0.0
+octet-consumer-check>    Compiling verus_syn v0.0.0-2026-01-25-0057
+octet-consumer-check>    Compiling either v1.17.0
+octet-consumer-check>    Compiling syn v3.0.3
+octet-consumer-check>     Checking itertools v0.14.0
+octet-consumer-check>    Compiling zeroize v1.9.0
+octet-consumer-check>    Compiling typenum v1.20.1
+octet-consumer-check>     Checking ed25519 v2.2.3
+octet-consumer-check>    Compiling build-script-build v4.1.3
+octet-consumer-check>     Checking cranelift-control v0.132.3
+octet-consumer-check>    Compiling arbitrary v1.4.2
+octet-consumer-check>    Compiling quote v1.0.47
+octet-consumer-check>    Compiling rand_core v0.6.4
+octet-consumer-check>    Compiling proc_macro2 v1.0.107
+octet-consumer-check>    Compiling build-script-build v45.0.0
+octet-consumer-check>    Compiling cap_root_core v0.1.0
+octet-consumer-check>    Compiling cranelift_control v0.132.3
+octet-consumer-check>    Compiling bs58 v0.5.1
+octet-consumer-check>    Compiling ed25519 v2.2.3
+octet-consumer-check>    Compiling build-script-build v0.3.4
+octet-consumer-check>    Compiling fastrand v2.5.0
+octet-consumer-check>    Compiling libm v0.2.16
+octet-consumer-check>    Compiling aho_corasick v1.1.4
+octet-consumer-check>     Checking num-integer v0.1.46
+octet-consumer-check>    Compiling num_traits v0.2.19
+octet-consumer-check>    Compiling cc v1.4.0
+octet-consumer-check>    Compiling blake3 v1.8.5
+octet-consumer-check>    Compiling memchr v2.8.3
+octet-consumer-check>    Compiling libm v0.2.16
+octet-consumer-check>    Compiling generic_array v0.14.7
+octet-consumer-check>     Checking crypto-common v0.1.7
+octet-consumer-check>     Checking block-buffer v0.10.4
+octet-consumer-check>    Compiling num_integer v0.1.46
+octet-consumer-check>     Checking num-bigint v0.4.8
+octet-consumer-check>    Compiling crypto_common v0.1.7
+octet-consumer-check>    Compiling block_buffer v0.10.4
+octet-consumer-check>     Checking digest v0.10.7
+octet-consumer-check>    Compiling cranelift_assembler_x64_meta v0.132.3
+octet-consumer-check>    Compiling cranelift-assembler-x64 v0.132.3
+octet-consumer-check>    Compiling build-script-build v1.8.5
+octet-consumer-check>    Compiling digest v0.10.7
+octet-consumer-check>     Checking sha2 v0.10.9
+octet-consumer-check>    Compiling build-script-build v0.132.3
+octet-consumer-check>    Compiling cranelift-bitset v0.132.0
+octet-consumer-check>    Compiling wasmtime_internal_core v45.0.0
+octet-consumer-check>    Compiling cranelift_bitset v0.132.0
+octet-consumer-check>    Compiling wasm_encoder v0.248.0
+octet-consumer-check>    Compiling sha2 v0.10.9
+octet-consumer-check>    Compiling regex_syntax v0.8.11    Checking regex-automata v0.4.16
+octet-consumer-check> 
+octet-consumer-check>    Compiling encoding_rs v0.8.35
+octet-consumer-check>    Compiling libc v0.2.189
+octet-consumer-check>    Compiling getrandom v0.3.4
+octet-consumer-check>    Compiling blake3 v1.8.5
+octet-consumer-check>     Checking choregraph-release v0.1.0 (/build/source/crates/choregraph-release)
+octet-consumer-check>    Compiling cranelift_isle v0.132.0
+octet-consumer-check>    Compiling itertools v0.14.0
+octet-consumer-check>    Compiling choregraph_release v0.1.0
+octet-consumer-check>    Compiling serde_core v1.0.228
+octet-consumer-check>     Checking serde_bytes v0.11.19
+octet-consumer-check>     Checking indexmap v2.14.0
+octet-consumer-check>     Checking cargo-platform v0.3.3
+octet-consumer-check>    Compiling choregraph_release v0.1.0
+octet-consumer-check>    Compiling num_bigint v0.4.8
+octet-consumer-check>    Compiling serde_bytes v0.11.19
+octet-consumer-check>    Compiling cargo_platform v0.3.3
+octet-consumer-check>    Compiling nix v0.30.1
+octet-consumer-check>     Checking bounded-exec v0.1.0 (/build/source/vendor/bounded-exec-selected/crates/bounded-exec)
+octet-consumer-check>    Compiling semver v1.0.28
+octet-consumer-check>    Compiling camino v1.2.4
+octet-consumer-check>    Compiling bounded_exec v0.1.0
+octet-consumer-check>    Compiling indexmap v2.14.0
+octet-consumer-check>     Checking gimli v0.33.0
+octet-consumer-check>    Compiling serde_json v1.0.151
+octet-consumer-check>    Compiling serde_core v1.0.228
+octet-consumer-check>    Compiling serde v1.0.228
+octet-consumer-check>    Compiling regex_automata v0.4.16    Checking regex v1.13.1
+octet-consumer-check> 
+octet-consumer-check>    Compiling indexmap v2.14.0
+octet-consumer-check>    Compiling rustix v1.1.4
+octet-consumer-check>     Checking rustix-linux-procfs v0.1.1
+octet-consumer-check>     Checking fs-set-times v0.20.3
+octet-consumer-check>     Checking memfd v0.6.5
+octet-consumer-check>     Checking tempfile v3.23.0
+octet-consumer-check>    Compiling fs_set_times v0.20.3
+octet-consumer-check>    Compiling memfd v0.6.5
+octet-consumer-check>    Compiling rustix_linux_procfs v0.1.1
+octet-consumer-check>    Compiling regex v1.13.1
+octet-consumer-check>    Compiling serde_json v1.0.151
+octet-consumer-check>    Compiling syn v3.0.3
+octet-consumer-check>    Compiling thiserror-impl v2.0.19
+octet-consumer-check>    Compiling async-trait v0.1.92
+octet-consumer-check>    Compiling tempfile v3.23.0
+octet-consumer-check>    Compiling redb v2.6.3
+octet-consumer-check>    Compiling cap_primitives v4.0.2
+octet-consumer-check>    Compiling async_trait v0.1.92
+octet-consumer-check>    Compiling cap_std v4.0.2
+octet-consumer-check>    Compiling synstructure v0.13.2
+octet-consumer-check>    Compiling cap_fs_ext v4.0.2
+octet-consumer-check>    Compiling thiserror_impl v2.0.19
+octet-consumer-check>    Compiling thiserror v2.0.19
+octet-consumer-check>     Checking cobs v0.3.0
+octet-consumer-check>    Compiling synstructure v0.13.2
+octet-consumer-check>    Compiling cobs v0.3.0
+octet-consumer-check>    Compiling syn v2.0.119
+octet-consumer-check>    Compiling serde_derive v1.0.228
+octet-consumer-check>    Compiling pulley-macros v45.0.0
+octet-consumer-check>    Compiling wasmtime-internal-versioned-export-macros v45.0.0
+octet-consumer-check>    Compiling curve25519-dalek-derive v0.1.1
+octet-consumer-check>    Compiling wasmtime_internal_versioned_export_macros v45.0.0
+octet-consumer-check>    Compiling pulley_macros v45.0.0
+octet-consumer-check>    Compiling pulley-interpreter v45.0.0
+octet-consumer-check>    Compiling wasmtime v45.0.0
+octet-consumer-check>    Compiling curve25519_dalek_derive v0.1.1
+octet-consumer-check>    Compiling build-script-build v45.0.0
+octet-consumer-check>    Compiling gimli v0.33.0
+octet-consumer-check>    Compiling verus_syn v0.0.0-2026-01-25-0057
+octet-consumer-check>    Compiling verus_state_machines_macros v0.0.0-2026-01-25-0057
+octet-consumer-check>    Compiling verus_prettyplease v0.0.0-2026-01-25-0057
+octet-consumer-check>    Compiling verus_builtin_macros v0.0.0-2026-01-25-0057
+octet-consumer-check>    Compiling curve25519_dalek v4.1.3
+octet-consumer-check>     Checking ed25519-dalek v2.2.0
+octet-consumer-check>    Compiling ed25519_dalek v2.2.0
+octet-consumer-check>    Compiling object v0.39.1
+octet-consumer-check>    Compiling cranelift-codegen-meta v0.132.0
+octet-consumer-check>    Compiling pulley_interpreter v45.0.0
+octet-consumer-check>    Compiling serde_derive v1.0.228
+octet-consumer-check>    Compiling wit-parser v0.248.0
+octet-consumer-check>    Compiling serde v1.0.228
+octet-consumer-check>     Checking preserves v5.0.0-rc.7
+octet-consumer-check>     Checking smallvec v1.15.2
+octet-consumer-check>     Checking execution-graph-core v0.1.0 (/build/source/vendor/execution-graph-core-selected)
+octet-consumer-check>     Checking postcard v1.1.3
+octet-consumer-check>     Checking cargo_metadata v0.23.1
+octet-consumer-check>    Compiling smallvec v1.15.2
+octet-consumer-check>     Checking regalloc2 v0.15.2
+octet-consumer-check>    Compiling postcard v1.1.3
+octet-consumer-check>    Compiling execution_graph_core v0.1.0
+octet-consumer-check>    Compiling wasmtime_internal_core v45.0.0
+octet-consumer-check>     Checking wasmtime-internal-jit-icache-coherence v45.0.0
+octet-consumer-check>    Compiling wasmtime_internal_jit_icache_coherence v45.0.0
+octet-consumer-check>    Compiling cranelift_bitset v0.132.0
+octet-consumer-check>     Checking cranelift-entity v0.132.0
+octet-consumer-check>    Compiling wasmparser v0.248.0
+octet-consumer-check>    Compiling cranelift_entity v0.132.0
+octet-consumer-check>     Checking cranelift-bforest v0.132.0
+octet-consumer-check>    Compiling cargo_metadata v0.23.1
+octet-consumer-check>     Checking choregraph-foundation-check v0.1.0 (/build/source/tools/choregraph-foundation-check)
+octet-consumer-check>    Compiling preserves v5.0.0-rc.7
+octet-consumer-check>    Compiling cranelift_bforest v0.132.0
+octet-consumer-check>    Compiling choregraph_foundation_check v0.1.0
+octet-consumer-check>    Compiling choregraph_foundation_check v0.1.0
+octet-consumer-check>    Compiling choregraph-foundation-check v0.1.0
+octet-consumer-check>    Compiling verus_state_machines_macros v0.0.0-2026-01-25-0057
+octet-consumer-check>    Compiling choregraph-foundation-check v0.1.0
+octet-consumer-check>    Compiling cranelift_codegen_meta v0.132.0
+octet-consumer-check>    Compiling cranelift-codegen v0.132.0
+octet-consumer-check>    Compiling regalloc2 v0.15.2
+octet-consumer-check>    Compiling build-script-build v0.132.0
+octet-consumer-check>    Compiling verus_builtin_macros v0.0.0-2026-01-25-0057
+octet-consumer-check>    Compiling wasmtime-internal-wit-bindgen v45.0.0
+octet-consumer-check>    Compiling wit_parser v0.248.0
+octet-consumer-check>    Compiling wasmtime_internal_wit_bindgen v45.0.0
+octet-consumer-check>    Compiling vstd v0.0.0-2026-01-25-0057
+octet-consumer-check>     Checking choregraph-core v0.1.0 (/build/source/crates/choregraph-core)
+octet-consumer-check>     Checking verified-logic v0.2.0 (ssh://git@github.com/OnixResearch/trellis.git?rev=d65974b14978e1a44b0f5067beb9ef6d83317dc8#d65974b1)
+octet-consumer-check>    Compiling cranelift_assembler_x64 v0.132.3
+octet-consumer-check>    Compiling choregraph_core v0.1.0
+octet-consumer-check>     Checking choregraph-nickel v0.1.0 (/build/source/crates/choregraph-nickel)
+octet-consumer-check>     Checking choregraph-kamacite v0.1.0 (/build/source/crates/choregraph-kamacite)
+octet-consumer-check>     Checking choregraph-seaglass v0.1.0 (/build/source/crates/choregraph-seaglass)
+octet-consumer-check>     Checking execution-graph-core v0.2.0 (/build/source/crates/execution-graph-core)
+octet-consumer-check>    Compiling wasmtime_internal_component_macro v45.0.0
+octet-consumer-check>    Compiling choregraph_core v0.1.0
+octet-consumer-check>    Compiling epoch-fence v0.1.0
+octet-consumer-check>    Compiling concrete-effect-intents v0.1.0
+octet-consumer-check>    Compiling trace-replay v0.1.0
+octet-consumer-check>    Compiling durable-suspension v0.1.0
+octet-consumer-check>    Compiling machine-semantics v0.1.0
+octet-consumer-check>    Compiling choregraph_seaglass v0.1.0
+octet-consumer-check>    Compiling execution_graph_core v0.2.0
+octet-consumer-check>    Compiling wasmparser v0.248.0
+octet-consumer-check>     Checking wasmprinter v0.248.0
+octet-consumer-check>    Compiling execution_graph_core v0.2.0
+octet-consumer-check>    Compiling pulley_interpreter v45.0.0
+octet-consumer-check>    Compiling choregraph_nickel v0.1.0
+octet-consumer-check>    Compiling lattice-diamond v0.1.0
+octet-consumer-check>    Compiling architecture-boundary v0.1.0
+octet-consumer-check>    Compiling lattice-suspension v0.1.0
+octet-consumer-check>    Compiling consumer-failures v0.1.0
+octet-consumer-check>    Compiling parity v0.1.0
+octet-consumer-check>    Compiling concrete-handoff v0.1.0
+octet-consumer-check>    Compiling choregraph_nickel v0.1.0
+octet-consumer-check>    Compiling choregraph_seaglass v0.1.0
+octet-consumer-check>    Compiling wasmprinter v0.248.0
+octet-consumer-check>     Checking wasmtime-environ v45.0.0
+octet-consumer-check> error: non-trait import `CanonicalArtifact` hides the owner path; prefer the qualified path at the use site
+octet-consumer-check>  --> crates/choregraph-kamacite/src/choreography.rs:1:20
+octet-consumer-check>   |
+octet-consumer-check> 1 | use crate::codec::{CanonicalArtifact, CodecBoundaryError, encode};
+octet-consumer-check>   |                    ^^^^^^^^^^^^^^^^^
+octet-consumer-check>   |
+octet-consumer-check>   = help: Tiger Style (Searchable Owner Paths): keep concrete owner types at their qualified use sites; import traits only for method resolution Example: crate::addr::Addr
+octet-consumer-check>   = note: see Tiger Style guide: Naming
+octet-consumer-check>   = note: `-D tigerstyle::non-trait-imports` implied by `-D non-trait-imports`
+octet-consumer-check>   = help: to override `-D non-trait-imports` add `#[allow(tigerstyle::non_trait_imports)]`
+octet-consumer-check> 
+octet-consumer-check> error: non-trait import `CodecBoundaryError` hides the owner path; prefer the qualified path at the use site
+octet-consumer-check>  --> crates/choregraph-kamacite/src/choreography.rs:1:39
+octet-consumer-check>   |
+octet-consumer-check> 1 | use crate::codec::{CanonicalArtifact, CodecBoundaryError, encode};
+octet-consumer-check>   |                                       ^^^^^^^^^^^^^^^^^^
+octet-consumer-check>   |
+octet-consumer-check>   = help: Tiger Style (Searchable Owner Paths): keep concrete owner types at their qualified use sites; import traits only for method resolution Example: crate::addr::Addr
+octet-consumer-check>   = note: see Tiger Style guide: Naming
+octet-consumer-check> 
+octet-consumer-check> error: non-trait import `encode` hides the owner path; prefer the qualified path at the use site
+octet-consumer-check>  --> crates/choregraph-kamacite/src/choreography.rs:1:59
+octet-consumer-check>   |
+octet-consumer-check> 1 | use crate::codec::{CanonicalArtifact, CodecBoundaryError, encode};
+octet-consumer-check>   |                                                           ^^^^^^
+octet-consumer-check>   |
+octet-consumer-check>   = help: Tiger Style (Searchable Owner Paths): keep concrete owner types at their qualified use sites; import traits only for method resolution Example: crate::addr::Addr
+octet-consumer-check>   = note: see Tiger Style guide: Naming
+octet-consumer-check> 
+octet-consumer-check> error: non-trait import `Serialize` hides the owner path; prefer the qualified path at the use site
+octet-consumer-check>  --> crates/choregraph-kamacite/src/choreography.rs:2:1
+octet-consumer-check>   |
+octet-consumer-check> 2 | use serde::Serialize;
+octet-consumer-check>   | ^^^^^^^^^^^^^^^^^^^^^
+octet-consumer-check>   |
+octet-consumer-check>   = help: Tiger Style (Searchable Owner Paths): keep concrete owner types at their qualified use sites; import traits only for method resolution Example: crate::addr::Addr
+octet-consumer-check>   = note: see Tiger Style guide: Naming
+octet-consumer-check> 
+octet-consumer-check> error: item name `encode_role_choreography_source` repeats `choreography` from ancestor path segment `choreography`
+octet-consumer-check>   --> crates/choregraph-kamacite/src/choreography.rs:22:1
+octet-consumer-check>    |
+octet-consumer-check> 22 | / pub fn encode_role_choreography_source<T: Serialize>(
+octet-consumer-check> 23 | |     value: &T,
+octet-consumer-check> 24 | | ) -> Result<CanonicalArtifact, CodecBoundaryError> {
+octet-consumer-check> 25 | |     encode(
+octet-consumer-check> ...  |
+octet-consumer-check> 30 | | }
+octet-consumer-check>    | |_^
+octet-consumer-check>    |
+octet-consumer-check>    = help: Tiger Style (Searchable Path Names): do not repeat crate or module path words in item names unless documenting a compatibility API Example: guest::spawn_vm
+octet-consumer-check>    = note: see Tiger Style guide: Naming
+octet-consumer-check>    = note: `-D tigerstyle::path-segment-repetition` implied by `-D path-segment-repetition`
+octet-consumer-check>    = help: to override `-D path-segment-repetition` add `#[allow(tigerstyle::path_segment_repetition)]`
+octet-consumer-check> 
+octet-consumer-check> error: item name `encode_role_choreography_global` repeats `choreography` from ancestor path segment `choreography`
+octet-consumer-check>   --> crates/choregraph-kamacite/src/choreography.rs:32:1
+octet-consumer-check>    |
+octet-consumer-check> 32 | / pub fn encode_role_choreography_global<T: Serialize>(
+octet-consumer-check> 33 | |     value: &T,
+octet-consumer-check> 34 | | ) -> Result<CanonicalArtifact, CodecBoundaryError> {
+octet-consumer-check> 35 | |     encode(
+octet-consumer-check> ...  |
+octet-consumer-check> 40 | | }
+octet-consumer-check>    | |_^
+octet-consumer-check>    |
+octet-consumer-check>    = help: Tiger Style (Searchable Path Names): do not repeat crate or module path words in item names unless documenting a compatibility API Example: guest::spawn_vm
+octet-consumer-check>    = note: see Tiger Style guide: Naming
+octet-consumer-check> 
+octet-consumer-check> error: item name `encode_role_choreography_local` repeats `choreography` from ancestor path segment `choreography`
+octet-consumer-check>   --> crates/choregraph-kamacite/src/choreography.rs:42:1
+octet-consumer-check>    |
+octet-consumer-check> 42 | / pub fn encode_role_choreography_local<T: Serialize>(
+octet-consumer-check> 43 | |     value: &T,
+octet-consumer-check> 44 | | ) -> Result<CanonicalArtifact, CodecBoundaryError> {
+octet-consumer-check> 45 | |     encode(
+octet-consumer-check> ...  |
+octet-consumer-check> 50 | | }
+octet-consumer-check>    | |_^
+octet-consumer-check>    |
+octet-consumer-check>    = help: Tiger Style (Searchable Path Names): do not repeat crate or module path words in item names unless documenting a compatibility API Example: guest::spawn_vm
+octet-consumer-check>    = note: see Tiger Style guide: Naming
+octet-consumer-check> 
+octet-consumer-check> error: item name `encode_role_choreography_local_set` repeats `choreography` from ancestor path segment `choreography`
+octet-consumer-check>   --> crates/choregraph-kamacite/src/choreography.rs:52:1
+octet-consumer-check>    |
+octet-consumer-check> 52 | / pub fn encode_role_choreography_local_set<T: Serialize>(
+octet-consumer-check> 53 | |     value: &T,
+octet-consumer-check> 54 | | ) -> Result<CanonicalArtifact, CodecBoundaryError> {
+octet-consumer-check> 55 | |     encode(
+octet-consumer-check> ...  |
+octet-consumer-check> 60 | | }
+octet-consumer-check>    | |_^
+octet-consumer-check>    |
+octet-consumer-check>    = help: Tiger Style (Searchable Path Names): do not repeat crate or module path words in item names unless documenting a compatibility API Example: guest::spawn_vm
+octet-consumer-check>    = note: see Tiger Style guide: Naming
+octet-consumer-check> 
+octet-consumer-check> error: item name `encode_role_choreography_diagnostics` repeats `choreography` from ancestor path segment `choreography`
+octet-consumer-check>   --> crates/choregraph-kamacite/src/choreography.rs:62:1
+octet-consumer-check>    |
+octet-consumer-check> 62 | / pub fn encode_role_choreography_diagnostics<T: Serialize>(
+octet-consumer-check> 63 | |     value: &T,
+octet-consumer-check> 64 | | ) -> Result<CanonicalArtifact, CodecBoundaryError> {
+octet-consumer-check> 65 | |     encode(
+octet-consumer-check> ...  |
+octet-consumer-check> 70 | | }
+octet-consumer-check>    | |_^
+octet-consumer-check>    |
+octet-consumer-check>    = help: Tiger Style (Searchable Path Names): do not repeat crate or module path words in item names unless documenting a compatibility API Example: guest::spawn_vm
+octet-consumer-check>    = note: see Tiger Style guide: Naming
+octet-consumer-check> 
+octet-consumer-check> error: item name `encode_role_choreography_receipt` repeats `choreography` from ancestor path segment `choreography`
+octet-consumer-check>   --> crates/choregraph-kamacite/src/choreography.rs:72:1
+octet-consumer-check>    |
+octet-consumer-check> 72 | / pub fn encode_role_choreography_receipt<T: Serialize>(
+octet-consumer-check> 73 | |     value: &T,
+octet-consumer-check> 74 | | ) -> Result<CanonicalArtifact, CodecBoundaryError> {
+octet-consumer-check> 75 | |     encode(
+octet-consumer-check> ...  |
+octet-consumer-check> 80 | | }
+octet-consumer-check>    | |_^
+octet-consumer-check>    |
+octet-consumer-check>    = help: Tiger Style (Searchable Path Names): do not repeat crate or module path words in item names unless documenting a compatibility API Example: guest::spawn_vm
+octet-consumer-check>    = note: see Tiger Style guide: Naming
+octet-consumer-check> 
+octet-consumer-check> error: non-trait import `CanonicalArtifact` hides the owner path; prefer the qualified path at the use site
+octet-consumer-check>  --> crates/choregraph-kamacite/src/choreography.rs:1:20
+octet-consumer-check>   |
+octet-consumer-check> 1 | use crate::codec::{CanonicalArtifact, CodecBoundaryError, encode};
+octet-consumer-check>   |                    ^^^^^^^^^^^^^^^^^
+octet-consumer-check>   |
+octet-consumer-check>   = help: Tiger Style (Searchable Owner Paths): keep concrete owner types at their qualified use sites; import traits only for method resolution Example: crate::addr::Addr
+octet-consumer-check>   = note: see Tiger Style guide: Naming
+octet-consumer-check>   = note: `-D tigerstyle::non-trait-imports` implied by `-D non-trait-imports`
+octet-consumer-check>   = help: to override `-D non-trait-imports` add `#[allow(tigerstyle::non_trait_imports)]`
+octet-consumer-check> 
+octet-consumer-check> error: non-trait import `CodecBoundaryError` hides the owner path; prefer the qualified path at the use site
+octet-consumer-check>  --> crates/choregraph-kamacite/src/choreography.rs:1:39
+octet-consumer-check>   |
+octet-consumer-check> 1 | use crate::codec::{CanonicalArtifact, CodecBoundaryError, encode};
+octet-consumer-check>   |                                       ^^^^^^^^^^^^^^^^^^
+octet-consumer-check>   |
+octet-consumer-check>   = help: Tiger Style (Searchable Owner Paths): keep concrete owner types at their qualified use sites; import traits only for method resolution Example: crate::addr::Addr
+octet-consumer-check>   = note: see Tiger Style guide: Naming
+octet-consumer-check> 
+octet-consumer-check> error: non-trait import `encode` hides the owner path; prefer the qualified path at the use site
+octet-consumer-check>  --> crates/choregraph-kamacite/src/choreography.rs:1:59
+octet-consumer-check>   |
+octet-consumer-check> 1 | use crate::codec::{CanonicalArtifact, CodecBoundaryError, encode};
+octet-consumer-check>   |                                                           ^^^^^^
+octet-consumer-check>   |
+octet-consumer-check>   = help: Tiger Style (Searchable Owner Paths): keep concrete owner types at their qualified use sites; import traits only for method resolution Example: crate::addr::Addr
+octet-consumer-check>   = note: see Tiger Style guide: Naming
+octet-consumer-check> 
+octet-consumer-check> error: non-trait import `Serialize` hides the owner path; prefer the qualified path at the use site
+octet-consumer-check>  --> crates/choregraph-kamacite/src/choreography.rs:2:1
+octet-consumer-check>   |
+octet-consumer-check> 2 | use serde::Serialize;
+octet-consumer-check>   | ^^^^^^^^^^^^^^^^^^^^^
+octet-consumer-check>   |
+octet-consumer-check>   = help: Tiger Style (Searchable Owner Paths): keep concrete owner types at their qualified use sites; import traits only for method resolution Example: crate::addr::Addr
+octet-consumer-check>   = note: see Tiger Style guide: Naming
+octet-consumer-check> 
+octet-consumer-check> error: item name `encode_role_choreography_source` repeats `choreography` from ancestor path segment `choreography`
+octet-consumer-check>   --> crates/choregraph-kamacite/src/choreography.rs:22:1
+octet-consumer-check>    |
+octet-consumer-check> 22 | / pub fn encode_role_choreography_source<T: Serialize>(
+octet-consumer-check> 23 | |     value: &T,
+octet-consumer-check> 24 | | ) -> Result<CanonicalArtifact, CodecBoundaryError> {
+octet-consumer-check> 25 | |     encode(
+octet-consumer-check> ...  |
+octet-consumer-check> 30 | | }
+octet-consumer-check>    | |_^
+octet-consumer-check>    |
+octet-consumer-check>    = help: Tiger Style (Searchable Path Names): do not repeat crate or module path words in item names unless documenting a compatibility API Example: guest::spawn_vm
+octet-consumer-check>    = note: see Tiger Style guide: Naming
+octet-consumer-check>    = note: `-D tigerstyle::path-segment-repetition` implied by `-D path-segment-repetition`
+octet-consumer-check>    = help: to override `-D path-segment-repetition` add `#[allow(tigerstyle::path_segment_repetition)]`
+octet-consumer-check> 
+octet-consumer-check> error: item name `encode_role_choreography_global` repeats `choreography` from ancestor path segment `choreography`
+octet-consumer-check>   --> crates/choregraph-kamacite/src/choreography.rs:32:1
+octet-consumer-check>    |
+octet-consumer-check> 32 | / pub fn encode_role_choreography_global<T: Serialize>(
+octet-consumer-check> 33 | |     value: &T,
+octet-consumer-check> 34 | | ) -> Result<CanonicalArtifact, CodecBoundaryError> {
+octet-consumer-check> 35 | |     encode(
+octet-consumer-check> ...  |
+octet-consumer-check> 40 | | }
+octet-consumer-check>    | |_^
+octet-consumer-check>    |
+octet-consumer-check>    = help: Tiger Style (Searchable Path Names): do not repeat crate or module path words in item names unless documenting a compatibility API Example: guest::spawn_vm
+octet-consumer-check>    = note: see Tiger Style guide: Naming
+octet-consumer-check> 
+octet-consumer-check> error: item name `encode_role_choreography_local` repeats `choreography` from ancestor path segment `choreography`
+octet-consumer-check>   --> crates/choregraph-kamacite/src/choreography.rs:42:1
+octet-consumer-check>    |
+octet-consumer-check> 42 | / pub fn encode_role_choreography_local<T: Serialize>(
+octet-consumer-check> 43 | |     value: &T,
+octet-consumer-check> 44 | | ) -> Result<CanonicalArtifact, CodecBoundaryError> {
+octet-consumer-check> 45 | |     encode(
+octet-consumer-check> ...  |
+octet-consumer-check> 50 | | }
+octet-consumer-check>    | |_^
+octet-consumer-check>    |
+octet-consumer-check>    = help: Tiger Style (Searchable Path Names): do not repeat crate or module path words in item names unless documenting a compatibility API Example: guest::spawn_vm
+octet-consumer-check>    = note: see Tiger Style guide: Naming
+octet-consumer-check> 
+octet-consumer-check> error: item name `encode_role_choreography_local_set` repeats `choreography` from ancestor path segment `choreography`
+octet-consumer-check>   --> crates/choregraph-kamacite/src/choreography.rs:52:1
+octet-consumer-check>    |
+octet-consumer-check> 52 | / pub fn encode_role_choreography_local_set<T: Serialize>(
+octet-consumer-check> 53 | |     value: &T,
+octet-consumer-check> 54 | | ) -> Result<CanonicalArtifact, CodecBoundaryError> {
+octet-consumer-check> 55 | |     encode(
+octet-consumer-check> ...  |
+octet-consumer-check> 60 | | }
+octet-consumer-check>    | |_^
+octet-consumer-check>    |
+octet-consumer-check>    = help: Tiger Style (Searchable Path Names): do not repeat crate or module path words in item names unless documenting a compatibility API Example: guest::spawn_vm
+octet-consumer-check>    = note: see Tiger Style guide: Naming
+octet-consumer-check> 
+octet-consumer-check> error: item name `encode_role_choreography_diagnostics` repeats `choreography` from ancestor path segment `choreography`
+octet-consumer-check>   --> crates/choregraph-kamacite/src/choreography.rs:62:1
+octet-consumer-check>    |
+octet-consumer-check> 62 | / pub fn encode_role_choreography_diagnostics<T: Serialize>(
+octet-consumer-check> 63 | |     value: &T,
+octet-consumer-check> 64 | | ) -> Result<CanonicalArtifact, CodecBoundaryError> {
+octet-consumer-check> 65 | |     encode(
+octet-consumer-check> ...  |
+octet-consumer-check> 70 | | }
+octet-consumer-check>    | |_^
+octet-consumer-check>    |
+octet-consumer-check>    = help: Tiger Style (Searchable Path Names): do not repeat crate or module path words in item names unless documenting a compatibility API Example: guest::spawn_vm
+octet-consumer-check>    = note: see Tiger Style guide: Naming
+octet-consumer-check> 
+octet-consumer-check> error: item name `encode_role_choreography_receipt` repeats `choreography` from ancestor path segment `choreography`
+octet-consumer-check>   --> crates/choregraph-kamacite/src/choreography.rs:72:1
+octet-consumer-check>    |
+octet-consumer-check> 72 | / pub fn encode_role_choreography_receipt<T: Serialize>(
+octet-consumer-check> 73 | |     value: &T,
+octet-consumer-check> 74 | | ) -> Result<CanonicalArtifact, CodecBoundaryError> {
+octet-consumer-check> 75 | |     encode(
+octet-consumer-check> ...  |
+octet-consumer-check> 80 | | }
+octet-consumer-check>    | |_^
+octet-consumer-check>    |
+octet-consumer-check>    = help: Tiger Style (Searchable Path Names): do not repeat crate or module path words in item names unless documenting a compatibility API Example: guest::spawn_vm
+octet-consumer-check>    = note: see Tiger Style guide: Naming
+octet-consumer-check> 
+octet-consumer-check> error: could not compile `choregraph-kamacite` (lib) due to 10 previous errors
+octet-consumer-check> warning: build failed, waiting for other jobs to finish...
+octet-consumer-check> error: could not compile `choregraph-kamacite` (lib test) due to 10 previous errors
+octet-consumer-check>    Compiling verified_logic v0.2.0
+octet-consumer-check>    Compiling wasmtime_environ v45.0.0
+octet-consumer-check> --- octet summary ---
+octet-consumer-check> Status: integration-failure
+octet-consumer-check> Findings: 20
+octet-consumer-check> Warnings: 0
+octet-consumer-check> Errors: 20
+octet-consumer-check> Autofixable: 0
+octet-consumer-check> Tool: cargo-octet 0.1.0
+octet-consumer-check> Toolchain: nightly-2026-03-21-x86_64-unknown-linux-gnu
+octet-consumer-check> Profile: workspace-metadata
+octet-consumer-check> Config hash: b3:fee36348fb65180ef1bbdbcb67f2d3d85b5d6f7f6cf6fccc11b023645224f744
+octet-consumer-check> Profile hash: b3:f055e1631d3cd3d4b8b95794612753e095ac9176ef1c01f38ab6992bbb73f452
+octet-consumer-check> 
+octet-consumer-check> By crate:
+octet-consumer-check>   choregraph_kamacite        20
+octet-consumer-check> 
+octet-consumer-check> By effect:
+octet-consumer-check>   unknown        20
+octet-consumer-check> 
+octet-consumer-check> By lint:
+octet-consumer-check>   path_segment_repetition        12
+octet-consumer-check>   non_trait_imports              8
+octet-consumer-check> 
+octet-consumer-check> Index:
+octet-consumer-check>   F1   non_trait_imports       choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:1
+octet-consumer-check>   F2   non_trait_imports       choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:1
+octet-consumer-check>   F3   non_trait_imports       choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:1
+octet-consumer-check>   F4   non_trait_imports       choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:1
+octet-consumer-check>   F5   non_trait_imports       choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:1
+octet-consumer-check>   F6   non_trait_imports       choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:1
+octet-consumer-check>   F7   non_trait_imports       choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:2
+octet-consumer-check>   F8   non_trait_imports       choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:2
+octet-consumer-check>   F9   path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:22
+octet-consumer-check>   F10  path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:22
+octet-consumer-check>   F11  path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:32
+octet-consumer-check>   F12  path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:32
+octet-consumer-check>   F13  path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:42
+octet-consumer-check>   F14  path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:42
+octet-consumer-check>   F15  path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:52
+octet-consumer-check>   F16  path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:52
+octet-consumer-check>   F17  path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:62
+octet-consumer-check>   F18  path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:62
+octet-consumer-check>   F19  path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:72
+octet-consumer-check>   F20  path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:72
+octet-consumer-check> ---
+error: Cannot build '/nix/store/vmdl646fxjkc0piy3vrv1xwgzw8yv1zk-octet-consumer-check.drv'.
+       Reason: builder failed with exit code 2.
+       Output paths:
+         /nix/store/0a0vmq2pkyabz63qyg56hzah6f8q7z58-octet-consumer-check
+       Last 25 log lines:
+       >   path_segment_repetition        12
+       >   non_trait_imports              8
+       >
+       > Index:
+       >   F1   non_trait_imports       choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:1
+       >   F2   non_trait_imports       choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:1
+       >   F3   non_trait_imports       choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:1
+       >   F4   non_trait_imports       choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:1
+       >   F5   non_trait_imports       choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:1
+       >   F6   non_trait_imports       choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:1
+       >   F7   non_trait_imports       choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:2
+       >   F8   non_trait_imports       choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:2
+       >   F9   path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:22
+       >   F10  path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:22
+       >   F11  path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:32
+       >   F12  path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:32
+       >   F13  path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:42
+       >   F14  path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:42
+       >   F15  path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:52
+       >   F16  path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:52
+       >   F17  path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:62
+       >   F18  path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:62
+       >   F19  path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:72
+       >   F20  path_segment_repetition choregraph_kamacite  crates/choregraph-kamacite/src/choreography.rs:72
+       > ---
+       For full logs, run:
+         nix log /nix/store/vmdl646fxjkc0piy3vrv1xwgzw8yv1zk-octet-consumer-check.drv

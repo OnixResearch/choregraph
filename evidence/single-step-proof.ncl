@@ -108,12 +108,12 @@ let ProofManifest = {
     sources = [
       {
         path = "Cargo.lock",
-        blake3 = "d6fcb22b5927639b4b0f543a126c4f43f10fd8dd467ceca6c3860ce634a53652",
+        blake3 = "8671eec31308ebab42e876a24731895dba481ffe3f3d010aed78b4fd336041f6",
         role = "resolved Rust dependency identity",
       },
       {
         path = "config/project.ncl",
-        blake3 = "0c2c754868bd94b6590b2260e46885dc19a440f3b2bba078e88385e38b6eb714",
+        blake3 = "d078f3f80af66c0be83acb97ee0d6ba998ff445fd28ed116bd365483952be664",
         role = "reviewed project claim boundary",
       },
       {
@@ -183,7 +183,7 @@ let ProofManifest = {
       },
       {
         path = "flake.nix",
-        blake3 = "6196675dd685321527efd32a6432ee4fabe8cffc6a1f9987cfc589c67ff7bb12",
+        blake3 = "4f4a7e477b69096e23d9a7adbde8ae5136e22ccff719961b1efd0b5e5911ae39",
         role = "maintained proof and failure-fixture gate",
       },
       {

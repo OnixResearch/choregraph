@@ -1,0 +1,471 @@
+remote: Enumerating objects: 12779, done.        
+remote: Counting objects:   0% (1/2286)        remote: Counting objects:   1% (23/2286)        remote: Counting objects:   2% (46/2286)        remote: Counting objects:   3% (69/2286)        remote: Counting objects:   4% (92/2286)        remote: Counting objects:   5% (115/2286)        remote: Counting objects:   6% (138/2286)        remote: Counting objects:   7% (161/2286)        remote: Counting objects:   8% (183/2286)        remote: Counting objects:   9% (206/2286)        remote: Counting objects:  10% (229/2286)        remote: Counting objects:  11% (252/2286)        remote: Counting objects:  12% (275/2286)        remote: Counting objects:  13% (298/2286)        remote: Counting objects:  14% (321/2286)        remote: Counting objects:  15% (343/2286)        remote: Counting objects:  16% (366/2286)        remote: Counting objects:  17% (389/2286)        remote: Counting objects:  18% (412/2286)        remote: Counting objects:  19% (435/2286)        remote: Counting objects:  20% (458/2286)        remote: Counting objects:  21% (481/2286)        remote: Counting objects:  22% (503/2286)        remote: Counting objects:  23% (526/2286)        remote: Counting objects:  24% (549/2286)        remote: Counting objects:  25% (572/2286)        remote: Counting objects:  26% (595/2286)        remote: Counting objects:  27% (618/2286)        remote: Counting objects:  28% (641/2286)        remote: Counting objects:  29% (663/2286)        remote: Counting objects:  30% (686/2286)        remote: Counting objects:  31% (709/2286)        remote: Counting objects:  32% (732/2286)        remote: Counting objects:  33% (755/2286)        remote: Counting objects:  34% (778/2286)        remote: Counting objects:  35% (801/2286)        remote: Counting objects:  36% (823/2286)        remote: Counting objects:  37% (846/2286)        remote: Counting objects:  38% (869/2286)        remote: Counting objects:  39% (892/2286)        remote: Counting objects:  40% (915/2286)        remote: Counting objects:  41% (938/2286)        remote: Counting objects:  42% (961/2286)        remote: Counting objects:  43% (983/2286)        remote: Counting objects:  44% (1006/2286)        remote: Counting objects:  45% (1029/2286)        remote: Counting objects:  46% (1052/2286)        remote: Counting objects:  47% (1075/2286)        remote: Counting objects:  48% (1098/2286)        remote: Counting objects:  49% (1121/2286)        remote: Counting objects:  50% (1143/2286)        remote: Counting objects:  51% (1166/2286)        remote: Counting objects:  52% (1189/2286)        remote: Counting objects:  53% (1212/2286)        remote: Counting objects:  54% (1235/2286)        remote: Counting objects:  55% (1258/2286)        remote: Counting objects:  56% (1281/2286)        remote: Counting objects:  57% (1304/2286)        remote: Counting objects:  58% (1326/2286)        remote: Counting objects:  59% (1349/2286)        remote: Counting objects:  60% (1372/2286)        remote: Counting objects:  61% (1395/2286)        remote: Counting objects:  62% (1418/2286)        remote: Counting objects:  63% (1441/2286)        remote: Counting objects:  64% (1464/2286)        remote: Counting objects:  65% (1486/2286)        remote: Counting objects:  66% (1509/2286)        remote: Counting objects:  67% (1532/2286)        remote: Counting objects:  68% (1555/2286)        remote: Counting objects:  69% (1578/2286)        remote: Counting objects:  70% (1601/2286)        remote: Counting objects:  71% (1624/2286)        remote: Counting objects:  72% (1646/2286)        remote: Counting objects:  73% (1669/2286)        remote: Counting objects:  74% (1692/2286)        remote: Counting objects:  75% (1715/2286)        remote: Counting objects:  76% (1738/2286)        remote: Counting objects:  77% (1761/2286)        remote: Counting objects:  78% (1784/2286)        remote: Counting objects:  79% (1806/2286)        remote: Counting objects:  80% (1829/2286)        remote: Counting objects:  81% (1852/2286)        remote: Counting objects:  82% (1875/2286)        remote: Counting objects:  83% (1898/2286)        remote: Counting objects:  84% (1921/2286)        remote: Counting objects:  85% (1944/2286)        remote: Counting objects:  86% (1966/2286)        remote: Counting objects:  87% (1989/2286)        remote: Counting objects:  88% (2012/2286)        remote: Counting objects:  89% (2035/2286)        remote: Counting objects:  90% (2058/2286)        remote: Counting objects:  91% (2081/2286)        remote: Counting objects:  92% (2104/2286)        remote: Counting objects:  93% (2126/2286)        remote: Counting objects:  94% (2149/2286)        remote: Counting objects:  95% (2172/2286)        remote: Counting objects:  96% (2195/2286)        remote: Counting objects:  97% (2218/2286)        remote: Counting objects:  98% (2241/2286)        remote: Counting objects:  99% (2264/2286)        remote: Counting objects: 100% (2286/2286)        remote: Counting objects: 100% (2286/2286), done.        
+remote: Compressing objects:   0% (1/1232)        remote: Compressing objects:   1% (13/1232)        remote: Compressing objects:   2% (25/1232)        remote: Compressing objects:   3% (37/1232)        remote: Compressing objects:   4% (50/1232)        remote: Compressing objects:   5% (62/1232)        remote: Compressing objects:   6% (74/1232)        remote: Compressing objects:   7% (87/1232)        remote: Compressing objects:   8% (99/1232)        remote: Compressing objects:   9% (111/1232)        remote: Compressing objects:  10% (124/1232)        remote: Compressing objects:  11% (136/1232)        remote: Compressing objects:  12% (148/1232)        remote: Compressing objects:  13% (161/1232)        remote: Compressing objects:  14% (173/1232)        remote: Compressing objects:  15% (185/1232)        remote: Compressing objects:  16% (198/1232)        remote: Compressing objects:  17% (210/1232)        remote: Compressing objects:  18% (222/1232)        remote: Compressing objects:  19% (235/1232)        remote: Compressing objects:  20% (247/1232)        remote: Compressing objects:  21% (259/1232)        remote: Compressing objects:  22% (272/1232)        remote: Compressing objects:  23% (284/1232)        remote: Compressing objects:  24% (296/1232)        remote: Compressing objects:  25% (308/1232)        remote: Compressing objects:  26% (321/1232)        remote: Compressing objects:  27% (333/1232)        remote: Compressing objects:  28% (345/1232)        remote: Compressing objects:  29% (358/1232)        remote: Compressing objects:  30% (370/1232)        remote: Compressing objects:  31% (382/1232)        remote: Compressing objects:  32% (395/1232)        remote: Compressing objects:  33% (407/1232)        remote: Compressing objects:  34% (419/1232)        remote: Compressing objects:  35% (432/1232)        remote: Compressing objects:  36% (444/1232)        remote: Compressing objects:  37% (456/1232)        remote: Compressing objects:  38% (469/1232)        remote: Compressing objects:  39% (481/1232)        remote: Compressing objects:  40% (493/1232)        remote: Compressing objects:  41% (506/1232)        remote: Compressing objects:  42% (518/1232)        remote: Compressing objects:  43% (530/1232)        remote: Compressing objects:  44% (543/1232)        remote: Compressing objects:  45% (555/1232)        remote: Compressing objects:  46% (567/1232)        remote: Compressing objects:  47% (580/1232)        remote: Compressing objects:  48% (592/1232)        remote: Compressing objects:  49% (604/1232)        remote: Compressing objects:  50% (616/1232)        remote: Compressing objects:  51% (629/1232)        remote: Compressing objects:  52% (641/1232)        remote: Compressing objects:  53% (653/1232)        remote: Compressing objects:  54% (666/1232)        remote: Compressing objects:  55% (678/1232)        remote: Compressing objects:  56% (690/1232)        remote: Compressing objects:  57% (703/1232)        remote: Compressing objects:  58% (715/1232)        remote: Compressing objects:  59% (727/1232)        remote: Compressing objects:  60% (740/1232)        remote: Compressing objects:  61% (752/1232)        remote: Compressing objects:  62% (764/1232)        remote: Compressing objects:  63% (777/1232)        remote: Compressing objects:  64% (789/1232)        remote: Compressing objects:  65% (801/1232)        remote: Compressing objects:  66% (814/1232)        remote: Compressing objects:  67% (826/1232)        remote: Compressing objects:  68% (838/1232)        remote: Compressing objects:  69% (851/1232)        remote: Compressing objects:  70% (863/1232)        remote: Compressing objects:  71% (875/1232)        remote: Compressing objects:  72% (888/1232)        remote: Compressing objects:  73% (900/1232)        remote: Compressing objects:  74% (912/1232)        remote: Compressing objects:  75% (924/1232)        remote: Compressing objects:  76% (937/1232)        remote: Compressing objects:  77% (949/1232)        remote: Compressing objects:  78% (961/1232)        remote: Compressing objects:  79% (974/1232)        remote: Compressing objects:  80% (986/1232)        remote: Compressing objects:  81% (998/1232)        remote: Compressing objects:  82% (1011/1232)        remote: Compressing objects:  83% (1023/1232)        remote: Compressing objects:  84% (1035/1232)        remote: Compressing objects:  85% (1048/1232)        remote: Compressing objects:  86% (1060/1232)        remote: Compressing objects:  87% (1072/1232)        remote: Compressing objects:  88% (1085/1232)        remote: Compressing objects:  89% (1097/1232)        remote: Compressing objects:  90% (1109/1232)        remote: Compressing objects:  91% (1122/1232)        remote: Compressing objects:  92% (1134/1232)        remote: Compressing objects:  93% (1146/1232)        remote: Compressing objects:  94% (1159/1232)        remote: Compressing objects:  95% (1171/1232)        remote: Compressing objects:  96% (1183/1232)        remote: Compressing objects:  97% (1196/1232)        remote: Compressing objects:  98% (1208/1232)        remote: Compressing objects:  99% (1220/1232)        remote: Compressing objects: 100% (1232/1232)        remote: Compressing objects: 100% (1232/1232), done.        
+Receiving objects:   0% (1/12779)Receiving objects:   1% (128/12779)Receiving objects:   2% (256/12779)Receiving objects:   3% (384/12779)Receiving objects:   4% (512/12779)Receiving objects:   5% (639/12779)Receiving objects:   6% (767/12779)Receiving objects:   7% (895/12779)Receiving objects:   8% (1023/12779)Receiving objects:   9% (1151/12779)Receiving objects:  10% (1278/12779)Receiving objects:  11% (1406/12779)Receiving objects:  12% (1534/12779)Receiving objects:  13% (1662/12779)Receiving objects:  14% (1790/12779)Receiving objects:  15% (1917/12779)Receiving objects:  16% (2045/12779)Receiving objects:  17% (2173/12779)Receiving objects:  18% (2301/12779)Receiving objects:  19% (2429/12779)Receiving objects:  20% (2556/12779)Receiving objects:  21% (2684/12779)Receiving objects:  22% (2812/12779)Receiving objects:  23% (2940/12779)Receiving objects:  24% (3067/12779)Receiving objects:  25% (3195/12779)Receiving objects:  26% (3323/12779)Receiving objects:  27% (3451/12779)Receiving objects:  28% (3579/12779)Receiving objects:  29% (3706/12779)Receiving objects:  30% (3834/12779)Receiving objects:  31% (3962/12779)Receiving objects:  32% (4090/12779)Receiving objects:  33% (4218/12779)Receiving objects:  34% (4345/12779)Receiving objects:  35% (4473/12779)Receiving objects:  36% (4601/12779)Receiving objects:  37% (4729/12779)Receiving objects:  38% (4857/12779)Receiving objects:  39% (4984/12779)Receiving objects:  40% (5112/12779)Receiving objects:  41% (5240/12779)Receiving objects:  42% (5368/12779)Receiving objects:  43% (5495/12779)Receiving objects:  44% (5623/12779)Receiving objects:  45% (5751/12779)Receiving objects:  46% (5879/12779)Receiving objects:  47% (6007/12779)Receiving objects:  48% (6134/12779)Receiving objects:  49% (6262/12779)Receiving objects:  50% (6390/12779)Receiving objects:  51% (6518/12779)Receiving objects:  52% (6646/12779)Receiving objects:  53% (6773/12779)Receiving objects:  54% (6901/12779)Receiving objects:  55% (7029/12779)Receiving objects:  56% (7157/12779)Receiving objects:  57% (7285/12779)Receiving objects:  58% (7412/12779)Receiving objects:  59% (7540/12779)Receiving objects:  60% (7668/12779)Receiving objects:  61% (7796/12779)Receiving objects:  62% (7923/12779)Receiving objects:  63% (8051/12779)Receiving objects:  64% (8179/12779)Receiving objects:  65% (8307/12779)Receiving objects:  66% (8435/12779)Receiving objects:  67% (8562/12779)Receiving objects:  68% (8690/12779)Receiving objects:  69% (8818/12779)Receiving objects:  70% (8946/12779)Receiving objects:  71% (9074/12779)Receiving objects:  72% (9201/12779)Receiving objects:  73% (9329/12779)Receiving objects:  74% (9457/12779)Receiving objects:  75% (9585/12779)Receiving objects:  76% (9713/12779)Receiving objects:  77% (9840/12779)Receiving objects:  78% (9968/12779)Receiving objects:  79% (10096/12779)Receiving objects:  80% (10224/12779)Receiving objects:  81% (10351/12779)Receiving objects:  82% (10479/12779)Receiving objects:  83% (10607/12779)Receiving objects:  84% (10735/12779)Receiving objects:  85% (10863/12779)Receiving objects:  86% (10990/12779)Receiving objects:  87% (11118/12779)Receiving objects:  88% (11246/12779)Receiving objects:  89% (11374/12779)Receiving objects:  90% (11502/12779)Receiving objects:  91% (11629/12779)Receiving objects:  92% (11757/12779)Receiving objects:  93% (11885/12779)Receiving objects:  94% (12013/12779)Receiving objects:  95% (12141/12779)Receiving objects:  96% (12268/12779)Receiving objects:  97% (12396/12779)remote: Total 12779 (delta 945), reused 1985 (delta 709), pack-reused 10493 (from 1)        
+Receiving objects:  98% (12524/12779)Receiving objects:  99% (12652/12779)Receiving objects: 100% (12779/12779)Receiving objects: 100% (12779/12779), 9.66 MiB | 25.23 MiB/s, done.
+Resolving deltas:   0% (0/6699)Resolving deltas:   1% (67/6699)Resolving deltas:   2% (134/6699)Resolving deltas:   3% (201/6699)Resolving deltas:   4% (268/6699)Resolving deltas:   5% (335/6699)Resolving deltas:   6% (403/6699)Resolving deltas:   7% (469/6699)Resolving deltas:   8% (538/6699)Resolving deltas:   9% (604/6699)Resolving deltas:  10% (670/6699)Resolving deltas:  11% (737/6699)Resolving deltas:  12% (805/6699)Resolving deltas:  13% (871/6699)Resolving deltas:  14% (938/6699)Resolving deltas:  15% (1005/6699)Resolving deltas:  16% (1072/6699)Resolving deltas:  17% (1139/6699)Resolving deltas:  18% (1206/6699)Resolving deltas:  19% (1273/6699)Resolving deltas:  20% (1341/6699)Resolving deltas:  21% (1409/6699)Resolving deltas:  22% (1474/6699)Resolving deltas:  23% (1542/6699)Resolving deltas:  24% (1608/6699)Resolving deltas:  25% (1675/6699)Resolving deltas:  26% (1742/6699)Resolving deltas:  27% (1809/6699)Resolving deltas:  28% (1876/6699)Resolving deltas:  29% (1943/6699)Resolving deltas:  30% (2010/6699)Resolving deltas:  31% (2077/6699)Resolving deltas:  32% (2144/6699)Resolving deltas:  33% (2211/6699)Resolving deltas:  34% (2278/6699)Resolving deltas:  35% (2345/6699)Resolving deltas:  36% (2412/6699)Resolving deltas:  37% (2479/6699)Resolving deltas:  38% (2547/6699)Resolving deltas:  39% (2613/6699)Resolving deltas:  40% (2681/6699)Resolving deltas:  41% (2748/6699)Resolving deltas:  42% (2814/6699)Resolving deltas:  43% (2881/6699)Resolving deltas:  44% (2948/6699)Resolving deltas:  45% (3015/6699)Resolving deltas:  46% (3084/6699)Resolving deltas:  47% (3149/6699)Resolving deltas:  48% (3216/6699)Resolving deltas:  49% (3283/6699)Resolving deltas:  50% (3350/6699)Resolving deltas:  51% (3417/6699)Resolving deltas:  52% (3484/6699)Resolving deltas:  53% (3551/6699)Resolving deltas:  54% (3618/6699)Resolving deltas:  55% (3685/6699)Resolving deltas:  56% (3752/6699)Resolving deltas:  57% (3820/6699)Resolving deltas:  58% (3886/6699)Resolving deltas:  59% (3953/6699)Resolving deltas:  60% (4020/6699)Resolving deltas:  61% (4087/6699)Resolving deltas:  62% (4154/6699)Resolving deltas:  63% (4221/6699)Resolving deltas:  64% (4288/6699)Resolving deltas:  65% (4355/6699)Resolving deltas:  66% (4422/6699)Resolving deltas:  67% (4489/6699)Resolving deltas:  68% (4556/6699)Resolving deltas:  69% (4623/6699)Resolving deltas:  70% (4690/6699)Resolving deltas:  71% (4757/6699)Resolving deltas:  72% (4824/6699)Resolving deltas:  73% (4891/6699)Resolving deltas:  74% (4959/6699)Resolving deltas:  75% (5025/6699)Resolving deltas:  76% (5092/6699)Resolving deltas:  77% (5159/6699)Resolving deltas:  78% (5226/6699)Resolving deltas:  79% (5293/6699)Resolving deltas:  80% (5360/6699)Resolving deltas:  81% (5427/6699)Resolving deltas:  82% (5495/6699)Resolving deltas:  83% (5561/6699)Resolving deltas:  84% (5628/6699)Resolving deltas:  85% (5695/6699)Resolving deltas:  86% (5762/6699)Resolving deltas:  87% (5829/6699)Resolving deltas:  88% (5897/6699)Resolving deltas:  89% (5965/6699)Resolving deltas:  90% (6030/6699)Resolving deltas:  91% (6097/6699)Resolving deltas:  92% (6164/6699)Resolving deltas:  93% (6231/6699)Resolving deltas:  94% (6298/6699)Resolving deltas:  95% (6365/6699)Resolving deltas:  96% (6432/6699)Resolving deltas:  97% (6499/6699)Resolving deltas:  98% (6566/6699)Resolving deltas:  99% (6633/6699)Resolving deltas: 100% (6699/6699)Resolving deltas: 100% (6699/6699), done.
+From ssh://github.com/OnixResearch/trellis
+ * [new branch]      cairn/add-fenced-attempt-admission-primitives -> cairn/add-fenced-attempt-admission-primitives
+ * [new branch]      cairn/drain-20260811      -> cairn/drain-20260811
+ * [new branch]      cairn/drain-separate-durable-identities-20260812 -> cairn/drain-separate-durable-identities-20260812
+ * [new branch]      cairn/pilot-choreography-payload-tag-newtype-20260812 -> cairn/pilot-choreography-payload-tag-newtype-20260812
+ * [new branch]      cairn/prove-choreography-value-transfer-20260812 -> cairn/prove-choreography-value-transfer-20260812
+ * [new branch]      instruction-selection-fix -> instruction-selection-fix
+ * [new branch]      main                      -> main
+ * [new branch]      minimal-archive-packets-clean -> minimal-archive-packets-clean
+ * [new branch]      pdst                      -> pdst
+ * [new ref]         refs/pull/1/head          -> refs/pull/1/head
+ * [new ref]         refs/pull/2/head          -> refs/pull/2/head
+ * [new tag]         v0.1.0                    -> v0.1.0
+ * [new tag]         v0.2.0                    -> v0.2.0
+these 30 derivations will be built:
+  /nix/store/0060wnf58zrgr3jrkkn9avzwa2vbcdlv-cargo-package-signature-2.2.0.drv
+  /nix/store/0drq48kz40w5q8c7ggwcwldbapkr0g8m-cargo-package-fiat-crypto-0.2.9.drv
+  /nix/store/35z7iak9l8rsrl5kphmsyz7qjdblqglp-cargo-package-der-0.7.10.drv
+  /nix/store/60p2v13vynx3f8f2s9s6qzjv6g8z9kv4-cargo-package-subtle-2.6.1.drv
+  /nix/store/8l5isqkwsk964qhnqz64cgmkxplcq3pn-cargo-package-curve25519-dalek-4.1.3.drv
+  /nix/store/95spy5h28fw4yp83x62qjnryfmpass21-cargo-package-curve25519-dalek-derive-0.1.1.drv
+  /nix/store/9lwfpv08r3qlj6znkq6bbm3z2p7b62l8-cargo-package-ed25519-2.2.3.drv
+  /nix/store/9syhaql854lm6m5g7yiyvpy044xdz6ad-cargo-package-rand_core-0.6.4.drv
+  /nix/store/aybff642yj59x6n8lbjyli6l6b5aw09c-cargo-package-base64ct-1.8.3.drv
+  /nix/store/ggvdg87yjkgr4gd8kb62xsmc04kbr649-cargo-package-const-oid-0.9.6.drv
+  /nix/store/hzp0xqjb9f5j871xvkjdq91mp9yb15z9-cargo-package-ed25519-dalek-2.2.0.drv
+  /nix/store/khk6jpfnsz2fm0imxalzcmif928bsq7n-cargo-package-zeroize-1.9.0.drv
+  /nix/store/mcr5p7x61949z0m7qgbayil1l77a6mxw-cargo-package-spki-0.7.3.drv
+  /nix/store/pzjdi11lz5rl414rgv0ripimis1j1v31-cargo-package-bs58-0.5.1.drv
+  /nix/store/8l5ixfypynbd7ndsyqz0mn3qikf46xdm-cargo-src-tinyvec-1.12.0.drv
+  /nix/store/xqbq9g3fav345qgxgjvkrxs42n6lcr5r-cargo-package-tinyvec-1.12.0.drv
+  /nix/store/yjx7kpn9bngrscybwz3xpviaf7nz4w42-cargo-package-pkcs8-0.10.2.drv
+  /nix/store/9v38l800d0d51r4w4jj3hagj99bvhcg8-vendor-registry.drv
+  /nix/store/acwp5vdaa7kixs2yqq2zjyc0bxn0xrfh-toml_edit-0.25.3+spec-1.1.0.drv
+  /nix/store/wf16djn6c69wxfv5w2sy9ssl6il2g7f7-toml_parser-1.0.9+spec-1.1.0.drv
+  /nix/store/j02y76dj360rp24g8nq6wmsp40azsgvw-cargo-vendor-dir.drv
+  /nix/store/4i833dn6qs6r5hb79f357zh3lq4a0kc3-crane-utils-0.0.1.drv
+  /nix/store/9y0i64yig416pliypn1df2i1rck4cbsw-cargo-git-ssh-git-github.com-OnixResearch-trellis.git-d65974b14978e1a44b0f5067beb9ef6d83317dc8.drv
+  /nix/store/npwrq02mpm3m9fvbsccwwryha0k9hlbb-linkLockedDeps.drv
+  /nix/store/3h942jmzblsa1nv81xxjidxcfgkxi4yn-vendor-cargo-deps.drv
+  /nix/store/fjrmypyvkcvxjrdczdr6i5l72hxdfvak-Cargo.toml.drv
+  /nix/store/wg1zy6618d33dq55qz3rh480x820lc20-Cargo.toml.drv
+  /nix/store/44jbbbibhywmmzz55h2wfkfgmvl91hc5-source.drv
+  /nix/store/k219883604l5i3miyifxp9v0hn8jyk9s-choregraph-role-choreography-dependencies-deps-0.1.0.drv
+  /nix/store/z85n2cnnsly9v4h54vvmqsz3ndbs130c-choregraph-role-choreography-0.1.0.drv
+these 12 paths will be fetched (993.3 KiB download, 6.1 MiB unpacked):
+  /nix/store/8hinmd9s1yx0fvcx1plky3833hr2l3yh-anyhow-1.0.102
+  /nix/store/fq63xbdxr5zgc6m1f8wxvxb9jxznn5xr-equivalent-1.0.2
+  /nix/store/6jirpyb6jcbjprl4kszgs5g0kl3f0vvz-hashbrown-0.16.1
+  /nix/store/bpmzkfr4ykq52f0cs345vw1384qh7v63-indexmap-2.13.0
+  /nix/store/3jk08ql5p30r4ihdh90i8ws78kkpchwa-itoa-1.0.17
+  /nix/store/zbqc98rih3g4jxb7367bz82kw8i2bxcz-memchr-2.8.0
+  /nix/store/y5wrmic9f0rx5g0ss45z8z714nn87yvf-quote-1.0.44
+  /nix/store/r9wwnr6mla05aamh9q1n34vyw1nypjby-syn-2.0.117
+  /nix/store/nkghiixv3wavhizp8zicv0dr6k23djr7-toml_datetime-1.0.0+spec-1.1.0
+  /nix/store/4z02v24d6blpg27ygvzidd1qlvdy2ycl-toml_writer-1.0.6+spec-1.1.0
+  /nix/store/9lw1cnvb0jah1s5ccjla74hmfqxfgv9c-winnow-0.7.14
+  /nix/store/1hc2d9m7wj4wlrs1fjv3ds02kwanabks-zmij-1.0.21
+building '/nix/store/aybff642yj59x6n8lbjyli6l6b5aw09c-cargo-package-base64ct-1.8.3.drv'...
+building '/nix/store/pzjdi11lz5rl414rgv0ripimis1j1v31-cargo-package-bs58-0.5.1.drv'...
+building '/nix/store/ggvdg87yjkgr4gd8kb62xsmc04kbr649-cargo-package-const-oid-0.9.6.drv'...
+building '/nix/store/8l5isqkwsk964qhnqz64cgmkxplcq3pn-cargo-package-curve25519-dalek-4.1.3.drv'...
+cargo-package-base64ct> Running phase: unpackPhase
+cargo-package-base64ct> setting SOURCE_DATE_EPOCH to timestamp 1153704088 of file "./crate/tests/url.rs"
+cargo-package-base64ct> Running phase: patchPhase
+cargo-package-base64ct> Running phase: updateAutotoolsGnuConfigScriptsPhase
+cargo-package-base64ct> Running phase: installPhase
+building '/nix/store/mcr5p7x61949z0m7qgbayil1l77a6mxw-cargo-package-spki-0.7.3.drv'...
+cargo-package-bs58> Running phase: unpackPhase
+cargo-package-bs58> setting SOURCE_DATE_EPOCH to timestamp 1153704088 of file "./crate/tests/encode.rs"
+cargo-package-bs58> Running phase: patchPhase
+cargo-package-bs58> Running phase: updateAutotoolsGnuConfigScriptsPhase
+cargo-package-bs58> Running phase: installPhase
+cargo-package-const-oid> Running phase: unpackPhase
+cargo-package-const-oid> setting SOURCE_DATE_EPOCH to timestamp 1153704088 of file "./crate/tests/lib.rs"
+cargo-package-const-oid> Running phase: patchPhase
+cargo-package-const-oid> Running phase: updateAutotoolsGnuConfigScriptsPhase
+cargo-package-const-oid> Running phase: installPhase
+cargo-package-curve25519-dalek> Running phase: unpackPhase
+cargo-package-curve25519-dalek> setting SOURCE_DATE_EPOCH to timestamp 1153704088 of file "./crate/vendor/ristretto.sage"
+cargo-package-curve25519-dalek> Running phase: patchPhase
+cargo-package-curve25519-dalek> Running phase: updateAutotoolsGnuConfigScriptsPhase
+cargo-package-curve25519-dalek> Running phase: installPhase
+building '/nix/store/35z7iak9l8rsrl5kphmsyz7qjdblqglp-cargo-package-der-0.7.10.drv'...
+building '/nix/store/0060wnf58zrgr3jrkkn9avzwa2vbcdlv-cargo-package-signature-2.2.0.drv'...
+cargo-package-spki> Running phase: unpackPhase
+cargo-package-spki> setting SOURCE_DATE_EPOCH to timestamp 1153704088 of file "./crate/tests/traits.rs"
+cargo-package-spki> Running phase: patchPhase
+cargo-package-spki> Running phase: updateAutotoolsGnuConfigScriptsPhase
+cargo-package-spki> Running phase: installPhase
+copying path '/nix/store/8hinmd9s1yx0fvcx1plky3833hr2l3yh-anyhow-1.0.102' from 'https://cache.nixos.org'...
+copying path '/nix/store/fq63xbdxr5zgc6m1f8wxvxb9jxznn5xr-equivalent-1.0.2' from 'https://cache.nixos.org'...
+copying path '/nix/store/6jirpyb6jcbjprl4kszgs5g0kl3f0vvz-hashbrown-0.16.1' from 'https://cache.nixos.org'...
+copying path '/nix/store/3jk08ql5p30r4ihdh90i8ws78kkpchwa-itoa-1.0.17' from 'https://cache.nixos.org'...
+copying path '/nix/store/r9wwnr6mla05aamh9q1n34vyw1nypjby-syn-2.0.117' from 'https://cache.nixos.org'...
+copying path '/nix/store/y5wrmic9f0rx5g0ss45z8z714nn87yvf-quote-1.0.44' from 'https://cache.nixos.org'...
+copying path '/nix/store/zbqc98rih3g4jxb7367bz82kw8i2bxcz-memchr-2.8.0' from 'https://cache.nixos.org'...
+copying path '/nix/store/4z02v24d6blpg27ygvzidd1qlvdy2ycl-toml_writer-1.0.6+spec-1.1.0' from 'https://cache.nixos.org'...
+copying path '/nix/store/9lw1cnvb0jah1s5ccjla74hmfqxfgv9c-winnow-0.7.14' from 'https://cache.nixos.org'...
+copying path '/nix/store/bpmzkfr4ykq52f0cs345vw1384qh7v63-indexmap-2.13.0' from 'https://cache.nixos.org'...
+copying path '/nix/store/1hc2d9m7wj4wlrs1fjv3ds02kwanabks-zmij-1.0.21' from 'https://cache.nixos.org'...
+building '/nix/store/wg1zy6618d33dq55qz3rh480x820lc20-Cargo.toml.drv'...
+cargo-package-der> Running phase: unpackPhase
+cargo-package-der> setting SOURCE_DATE_EPOCH to timestamp 1153704088 of file "./crate/tests/set_of.rs"
+cargo-package-der> Running phase: patchPhase
+cargo-package-der> Running phase: updateAutotoolsGnuConfigScriptsPhase
+cargo-package-der> Running phase: installPhase
+cargo-package-signature> Running phase: unpackPhase
+cargo-package-signature> setting SOURCE_DATE_EPOCH to timestamp 1153704088 of file "./crate/tests/derive.rs"
+cargo-package-signature> Running phase: patchPhase
+cargo-package-signature> Running phase: updateAutotoolsGnuConfigScriptsPhase
+cargo-package-signature> Running phase: installPhase
+building '/nix/store/khk6jpfnsz2fm0imxalzcmif928bsq7n-cargo-package-zeroize-1.9.0.drv'...
+copying path '/nix/store/nkghiixv3wavhizp8zicv0dr6k23djr7-toml_datetime-1.0.0+spec-1.1.0' from 'https://nix-community.cachix.org'...
+building '/nix/store/hzp0xqjb9f5j871xvkjdq91mp9yb15z9-cargo-package-ed25519-dalek-2.2.0.drv'...
+building '/nix/store/60p2v13vynx3f8f2s9s6qzjv6g8z9kv4-cargo-package-subtle-2.6.1.drv'...
+cargo-package-zeroize> Running phase: unpackPhase
+cargo-package-zeroize> setting SOURCE_DATE_EPOCH to timestamp 1153704088 of file "./crate/tests/zeroize_derive.rs"
+cargo-package-zeroize> Running phase: patchPhase
+cargo-package-zeroize> Running phase: updateAutotoolsGnuConfigScriptsPhase
+cargo-package-zeroize> Running phase: installPhase
+cargo-package-ed25519-dalek> Running phase: unpackPhase
+building '/nix/store/wf16djn6c69wxfv5w2sy9ssl6il2g7f7-toml_parser-1.0.9+spec-1.1.0.drv'...
+cargo-package-ed25519-dalek> setting SOURCE_DATE_EPOCH to timestamp 1153704088 of file "./crate/tests/x25519.rs"
+cargo-package-ed25519-dalek> Running phase: patchPhase
+cargo-package-ed25519-dalek> Running phase: updateAutotoolsGnuConfigScriptsPhase
+cargo-package-ed25519-dalek> Running phase: installPhase
+cargo-package-subtle> Running phase: unpackPhase
+cargo-package-subtle> setting SOURCE_DATE_EPOCH to timestamp 1153704088 of file "./crate/tests/mod.rs"
+cargo-package-subtle> Running phase: patchPhase
+building '/nix/store/acwp5vdaa7kixs2yqq2zjyc0bxn0xrfh-toml_edit-0.25.3+spec-1.1.0.drv'...
+cargo-package-subtle> Running phase: updateAutotoolsGnuConfigScriptsPhase
+cargo-package-subtle> Running phase: installPhase
+building '/nix/store/0drq48kz40w5q8c7ggwcwldbapkr0g8m-cargo-package-fiat-crypto-0.2.9.drv'...
+Cargo.toml> 
+building '/nix/store/fjrmypyvkcvxjrdczdr6i5l72hxdfvak-Cargo.toml.drv'...
+building '/nix/store/mnr9fyiar4iygp0vikz9m69i4bs6150s-cargo-src-tinyvec-1.12.0.drv'...
+cargo-package-fiat-crypto> Running phase: unpackPhase
+cargo-package-fiat-crypto> setting SOURCE_DATE_EPOCH to timestamp 1153704088 of file "./crate/src/secp256k1_montgomery_scalar_64.rs"
+cargo-package-fiat-crypto> Running phase: patchPhase
+cargo-package-fiat-crypto> Running phase: updateAutotoolsGnuConfigScriptsPhase
+building '/nix/store/yjx7kpn9bngrscybwz3xpviaf7nz4w42-cargo-package-pkcs8-0.10.2.drv'...
+cargo-package-fiat-crypto> Running phase: installPhase
+cargo-src-tinyvec> structuredAttrs is enabled
+building '/nix/store/9syhaql854lm6m5g7yiyvpy044xdz6ad-cargo-package-rand_core-0.6.4.drv'...
+cargo-package-pkcs8> Running phase: unpackPhase
+cargo-package-pkcs8> setting SOURCE_DATE_EPOCH to timestamp 1153704088 of file "./crate/tests/traits.rs"
+cargo-package-pkcs8> Running phase: patchPhase
+cargo-package-pkcs8> Running phase: updateAutotoolsGnuConfigScriptsPhase
+cargo-src-tinyvec> 
+cargo-src-tinyvec> trying https://static.crates.io/crates/tinyvec/1.12.0/download
+cargo-src-tinyvec>   % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
+cargo-src-tinyvec>                                  Dload  Upload  Total   Spent   Left   Speed
+cargo-package-pkcs8> Running phase: installPhase
+building '/nix/store/95spy5h28fw4yp83x62qjnryfmpass21-cargo-package-curve25519-dalek-derive-0.1.1.drv'...
+Cargo.toml> 
+cargo-package-rand_core> Running phase: unpackPhase
+cargo-package-rand_core> setting SOURCE_DATE_EPOCH to timestamp 1153704088 of file "./crate/src/os.rs"
+cargo-package-rand_core> Running phase: patchPhase
+cargo-package-rand_core> Running phase: updateAutotoolsGnuConfigScriptsPhase
+cargo-src-tinyvec> 100  56568 100  56568   0      0  1.04M      0                              0
+building '/nix/store/9lwfpv08r3qlj6znkq6bbm3z2p7b62l8-cargo-package-ed25519-2.2.3.drv'...
+cargo-package-curve25519-dalek-derive> Running phase: unpackPhase
+cargo-package-rand_core> Running phase: installPhase
+building '/nix/store/44jbbbibhywmmzz55h2wfkfgmvl91hc5-source.drv'...
+cargo-package-curve25519-dalek-derive> setting SOURCE_DATE_EPOCH to timestamp 1153704088 of file "./crate/tests/tests.rs"
+cargo-package-curve25519-dalek-derive> Running phase: patchPhase
+cargo-package-curve25519-dalek-derive> Running phase: updateAutotoolsGnuConfigScriptsPhase
+cargo-package-curve25519-dalek-derive> Running phase: installPhase
+building '/nix/store/xqbq9g3fav345qgxgjvkrxs42n6lcr5r-cargo-package-tinyvec-1.12.0.drv'...
+cargo-package-ed25519> Running phase: unpackPhase
+cargo-package-ed25519> setting SOURCE_DATE_EPOCH to timestamp 1153704088 of file "./crate/tests/serde.rs"
+cargo-package-ed25519> Running phase: patchPhase
+cargo-package-ed25519> Running phase: updateAutotoolsGnuConfigScriptsPhase
+cargo-package-ed25519> Running phase: installPhase
+cargo-package-tinyvec> Running phase: unpackPhase
+cargo-package-tinyvec> setting SOURCE_DATE_EPOCH to timestamp 1153704088 of file "./crate/tests/tinyvec.rs"
+cargo-package-tinyvec> Running phase: patchPhase
+cargo-package-tinyvec> Running phase: updateAutotoolsGnuConfigScriptsPhase
+cargo-package-tinyvec> Running phase: installPhase
+building '/nix/store/9v38l800d0d51r4w4jj3hagj99bvhcg8-vendor-registry.drv'...
+building '/nix/store/j02y76dj360rp24g8nq6wmsp40azsgvw-cargo-vendor-dir.drv'...
+cargo-vendor-dir> structuredAttrs is enabled
+building '/nix/store/4i833dn6qs6r5hb79f357zh3lq4a0kc3-crane-utils-0.0.1.drv'...
+crane-utils> Running phase: unpackPhase
+crane-utils> unpacking source archive /nix/store/lxv0hbp6lqv3gsnzgg64bmmikfh9qh8a-source
+crane-utils> source root is source
+crane-utils> Executing cargoSetupPostUnpackHook
+crane-utils> Finished cargoSetupPostUnpackHook
+crane-utils> Running phase: patchPhase
+crane-utils> Executing cargoSetupPostPatchHook
+crane-utils> Validating consistency between /build/source/Cargo.lock and /build/cargo-vendor-dir/Cargo.lock
+crane-utils> Finished cargoSetupPostPatchHook
+crane-utils> Running phase: updateAutotoolsGnuConfigScriptsPhase
+crane-utils> Running phase: configurePhase
+crane-utils> Running phase: buildPhase
+crane-utils> Executing cargoBuildHook
+crane-utils> cargoBuildHook flags: -j 4 --target x86_64-unknown-linux-gnu --offline --profile release
+crane-utils>    Compiling proc-macro2 v1.0.106
+crane-utils>    Compiling unicode-ident v1.0.24
+crane-utils>    Compiling quote v1.0.44
+crane-utils>    Compiling serde_core v1.0.228
+crane-utils>    Compiling zmij v1.0.21
+crane-utils>    Compiling winnow v0.7.14
+crane-utils>    Compiling equivalent v1.0.2
+crane-utils>    Compiling serde v1.0.228
+crane-utils>    Compiling serde_json v1.0.149
+crane-utils>    Compiling anyhow v1.0.102
+crane-utils>    Compiling hashbrown v0.16.1
+crane-utils>    Compiling syn v2.0.117
+crane-utils>    Compiling indexmap v2.13.0
+crane-utils>    Compiling toml_parser v1.0.9+spec-1.1.0
+crane-utils>    Compiling toml_writer v1.0.6+spec-1.1.0
+crane-utils>    Compiling memchr v2.8.0
+crane-utils>    Compiling itoa v1.0.17
+crane-utils>    Compiling toml_datetime v1.0.0+spec-1.1.0
+crane-utils>    Compiling serde_derive v1.0.228
+crane-utils>    Compiling toml_edit v0.25.3+spec-1.1.0
+crane-utils>    Compiling crane-utils v0.1.0 (/build/source)
+crane-utils>     Finished `release` profile [optimized] target(s) in 5.10s
+crane-utils> Executing cargoInstallPostBuildHook
+crane-utils> Finished cargoInstallPostBuildHook
+crane-utils> Finished cargoBuildHook
+crane-utils> Running phase: checkPhase
+crane-utils> Executing cargoCheckHook
+crane-utils> cargoCheckHook flags: -j 4 --profile release --target x86_64-unknown-linux-gnu --offline --
+crane-utils>    Compiling yansi v1.0.1
+crane-utils>    Compiling diff v0.1.13
+crane-utils>    Compiling pretty_assertions v1.4.1
+crane-utils>    Compiling crane-utils v0.1.0 (/build/source)
+crane-utils>     Finished `release` profile [optimized] target(s) in 0.79s
+crane-utils>      Running unittests src/bin/crane-resolve-workspace-inheritance.rs (target/x86_64-unknown-linux-gnu/release/deps/crane_resolve_workspace_inheritance-dc877295046a87bd)
+crane-utils> 
+crane-utils> running 2 tests
+crane-utils> test tests::dependency_comments_ignored ... ok
+crane-utils> test tests::smoke ... ok
+crane-utils> 
+crane-utils> test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+crane-utils> 
+crane-utils> Finished cargoCheckHook
+crane-utils> Running phase: installPhase
+crane-utils> Executing cargoInstallHook
+crane-utils> Finished cargoInstallHook
+crane-utils> Running phase: fixupPhase
+crane-utils> shrinking RPATHs of ELF executables and libraries in /nix/store/8zvc0yfxxbz4xqnnxwkb58c947hmb5h8-crane-utils-0.0.1
+crane-utils> shrinking /nix/store/8zvc0yfxxbz4xqnnxwkb58c947hmb5h8-crane-utils-0.0.1/bin/crane-resolve-workspace-inheritance
+crane-utils> checking for references to /build/ in /nix/store/8zvc0yfxxbz4xqnnxwkb58c947hmb5h8-crane-utils-0.0.1...
+crane-utils> patching script interpreter paths in /nix/store/8zvc0yfxxbz4xqnnxwkb58c947hmb5h8-crane-utils-0.0.1
+crane-utils> stripping (with command strip and flags -S -p) in  /nix/store/8zvc0yfxxbz4xqnnxwkb58c947hmb5h8-crane-utils-0.0.1/bin
+building '/nix/store/9y0i64yig416pliypn1df2i1rck4cbsw-cargo-git-ssh-git-github.com-OnixResearch-trellis.git-d65974b14978e1a44b0f5067beb9ef6d83317dc8.drv'...
+cargo-git-ssh-git-github.com-OnixResearch-trellis.git-d65974b14978e1a44b0f5067beb9ef6d83317dc8> Running phase: unpackPhase
+cargo-git-ssh-git-github.com-OnixResearch-trellis.git-d65974b14978e1a44b0f5067beb9ef6d83317dc8> unpacking source archive /nix/store/vzv5cx1snwdznjc87rpxp9jvrw7rr1cf-source
+cargo-git-ssh-git-github.com-OnixResearch-trellis.git-d65974b14978e1a44b0f5067beb9ef6d83317dc8> source root is source
+cargo-git-ssh-git-github.com-OnixResearch-trellis.git-d65974b14978e1a44b0f5067beb9ef6d83317dc8> Running phase: patchPhase
+cargo-git-ssh-git-github.com-OnixResearch-trellis.git-d65974b14978e1a44b0f5067beb9ef6d83317dc8> Running phase: updateAutotoolsGnuConfigScriptsPhase
+cargo-git-ssh-git-github.com-OnixResearch-trellis.git-d65974b14978e1a44b0f5067beb9ef6d83317dc8> Running phase: installPhase
+building '/nix/store/npwrq02mpm3m9fvbsccwwryha0k9hlbb-linkLockedDeps.drv'...
+building '/nix/store/3h942jmzblsa1nv81xxjidxcfgkxi4yn-vendor-cargo-deps.drv'...
+building '/nix/store/k219883604l5i3miyifxp9v0hn8jyk9s-choregraph-role-choreography-dependencies-deps-0.1.0.drv'...
+choregraph-role-choreography-dependencies-deps> cargoArtifacts not set, will not reuse any cargo artifacts
+choregraph-role-choreography-dependencies-deps> Running phase: unpackPhase
+choregraph-role-choreography-dependencies-deps> unpacking source archive /nix/store/kwy9jxsvs9pfc17ga6k2jd854hzdndch-source
+choregraph-role-choreography-dependencies-deps> source root is source
+choregraph-role-choreography-dependencies-deps> Running phase: patchPhase
+choregraph-role-choreography-dependencies-deps> Executing configureCargoCommonVars
+choregraph-role-choreography-dependencies-deps> Running phase: updateAutotoolsGnuConfigScriptsPhase
+choregraph-role-choreography-dependencies-deps> Running phase: configurePhase
+choregraph-role-choreography-dependencies-deps> will append /build/source/.cargo-home/config.toml with contents of /nix/store/62x40qlf1qs9xb1rapscwyb9488mjl1n-vendor-cargo-deps/config.toml
+choregraph-role-choreography-dependencies-deps> default configurePhase, nothing to do
+choregraph-role-choreography-dependencies-deps> Running phase: buildPhase
+choregraph-role-choreography-dependencies-deps> +++ command cargo --version
+choregraph-role-choreography-dependencies-deps> cargo 1.97.1 (c980f4866 2026-06-30)
+choregraph-role-choreography-dependencies-deps> +++ command cargo check --release --locked -p choregraph-choreography
+choregraph-role-choreography-dependencies-deps>    Compiling proc-macro2 v1.0.107
+choregraph-role-choreography-dependencies-deps>    Compiling quote v1.0.47
+choregraph-role-choreography-dependencies-deps>    Compiling unicode-ident v1.0.24
+choregraph-role-choreography-dependencies-deps>    Compiling autocfg v1.5.1
+choregraph-role-choreography-dependencies-deps>    Compiling version_check v0.9.5
+choregraph-role-choreography-dependencies-deps>    Compiling serde_core v1.0.228
+choregraph-role-choreography-dependencies-deps>    Compiling generic-array v0.14.7
+choregraph-role-choreography-dependencies-deps>     Checking typenum v1.20.1
+choregraph-role-choreography-dependencies-deps>    Compiling indexmap v1.9.3
+choregraph-role-choreography-dependencies-deps>     Checking memchr v2.8.3
+choregraph-role-choreography-dependencies-deps>    Compiling verus_prettyplease v0.0.0-2026-01-25-0057
+choregraph-role-choreography-dependencies-deps>    Compiling syn v2.0.119
+choregraph-role-choreography-dependencies-deps>    Compiling verus_syn v0.0.0-2026-01-25-0057
+choregraph-role-choreography-dependencies-deps>    Compiling num-traits v0.2.19
+choregraph-role-choreography-dependencies-deps>    Compiling find-msvc-tools v0.1.9
+choregraph-role-choreography-dependencies-deps>    Compiling shlex v2.0.1
+choregraph-role-choreography-dependencies-deps>    Compiling semver v1.0.28
+choregraph-role-choreography-dependencies-deps>     Checking cfg-if v1.0.4
+choregraph-role-choreography-dependencies-deps>    Compiling hashbrown v0.12.3
+choregraph-role-choreography-dependencies-deps>    Compiling rustc_version v0.4.1
+choregraph-role-choreography-dependencies-deps>    Compiling cc v1.4.0
+choregraph-role-choreography-dependencies-deps>     Checking block-buffer v0.10.4
+choregraph-role-choreography-dependencies-deps>     Checking crypto-common v0.1.7
+choregraph-role-choreography-dependencies-deps>     Checking aho-corasick v1.1.4
+choregraph-role-choreography-dependencies-deps>     Checking regex-syntax v0.8.11
+choregraph-role-choreography-dependencies-deps>    Compiling vstd v0.0.0-2026-01-25-0057
+choregraph-role-choreography-dependencies-deps>    Compiling synstructure v0.13.2
+choregraph-role-choreography-dependencies-deps>    Compiling serde v1.0.228
+choregraph-role-choreography-dependencies-deps>    Compiling blake3 v1.8.5
+choregraph-role-choreography-dependencies-deps>    Compiling serde_derive v1.0.228
+choregraph-role-choreography-dependencies-deps>     Checking regex-automata v0.4.16
+choregraph-role-choreography-dependencies-deps>     Checking digest v0.10.7
+choregraph-role-choreography-dependencies-deps>    Compiling curve25519-dalek v4.1.3
+choregraph-role-choreography-dependencies-deps>    Compiling zmij v1.0.23
+choregraph-role-choreography-dependencies-deps>     Checking cpufeatures v0.2.17
+choregraph-role-choreography-dependencies-deps>     Checking verus_builtin v0.0.0-2026-01-25-0057
+choregraph-role-choreography-dependencies-deps>    Compiling libc v0.2.189
+choregraph-role-choreography-dependencies-deps>    Compiling verus_builtin_macros v0.0.0-2026-01-25-0057
+choregraph-role-choreography-dependencies-deps>    Compiling verus_state_machines_macros v0.0.0-2026-01-25-0057
+choregraph-role-choreography-dependencies-deps>     Checking regex v1.13.1
+choregraph-role-choreography-dependencies-deps>     Checking num-integer v0.1.46
+choregraph-role-choreography-dependencies-deps>    Compiling curve25519-dalek-derive v0.1.1
+choregraph-role-choreography-dependencies-deps>     Checking zeroize v1.9.0
+choregraph-role-choreography-dependencies-deps>    Compiling choregraph-core v0.1.0 (/build/source/crates/choregraph-core)
+choregraph-role-choreography-dependencies-deps>     Checking constant_time_eq v0.4.2
+choregraph-role-choreography-dependencies-deps>    Compiling anyhow v1.0.104
+choregraph-role-choreography-dependencies-deps>    Compiling redb v2.6.3
+choregraph-role-choreography-dependencies-deps>    Compiling serde_json v1.0.151
+choregraph-role-choreography-dependencies-deps>     Checking cpufeatures v0.3.0
+choregraph-role-choreography-dependencies-deps>     Checking signature v2.2.0
+choregraph-role-choreography-dependencies-deps>     Checking arrayref v0.3.9
+choregraph-role-choreography-dependencies-deps>     Checking arrayvec v0.7.8
+choregraph-role-choreography-dependencies-deps>     Checking subtle v2.6.1
+choregraph-role-choreography-dependencies-deps>     Checking ed25519 v2.2.3
+choregraph-role-choreography-dependencies-deps>     Checking num-bigint v0.4.8
+choregraph-role-choreography-dependencies-deps>     Checking sha2 v0.10.9
+choregraph-role-choreography-dependencies-deps>     Checking serde_bytes v0.11.19
+choregraph-role-choreography-dependencies-deps>     Checking rand_core v0.6.4
+choregraph-role-choreography-dependencies-deps>    Compiling choregraph-kamacite v0.1.0 (/build/source/crates/choregraph-kamacite)
+choregraph-role-choreography-dependencies-deps>     Checking dtoa v0.4.8
+choregraph-role-choreography-dependencies-deps>     Checking lazy_static v1.5.0
+choregraph-role-choreography-dependencies-deps>     Checking itoa v1.0.18
+choregraph-role-choreography-dependencies-deps>     Checking bytemuck v1.25.2
+choregraph-role-choreography-dependencies-deps>     Checking base64 v0.13.1
+choregraph-role-choreography-dependencies-deps>     Checking preserves v5.0.0-rc.7
+choregraph-role-choreography-dependencies-deps>     Checking ed25519-dalek v2.2.0
+choregraph-role-choreography-dependencies-deps>    Compiling choregraph-choreography v0.1.0 (/build/source/crates/choregraph-choreography)
+choregraph-role-choreography-dependencies-deps>     Checking bs58 v0.5.1
+choregraph-role-choreography-dependencies-deps>     Checking verified-logic v0.2.0 (ssh://git@github.com/OnixResearch/trellis.git?rev=d65974b14978e1a44b0f5067beb9ef6d83317dc8#d65974b1)
+choregraph-role-choreography-dependencies-deps>     Finished `release` profile [optimized] target(s) in 9.57s
+choregraph-role-choreography-dependencies-deps> +++ command cargo build --release --locked -p choregraph-choreography
+choregraph-role-choreography-dependencies-deps>    Compiling typenum v1.20.1
+choregraph-role-choreography-dependencies-deps>    Compiling memchr v2.8.3
+choregraph-role-choreography-dependencies-deps>    Compiling serde_core v1.0.228
+choregraph-role-choreography-dependencies-deps>    Compiling cfg-if v1.0.4
+choregraph-role-choreography-dependencies-deps>    Compiling regex-syntax v0.8.11
+choregraph-role-choreography-dependencies-deps>    Compiling generic-array v0.14.7
+choregraph-role-choreography-dependencies-deps>    Compiling crypto-common v0.1.7
+choregraph-role-choreography-dependencies-deps>    Compiling block-buffer v0.10.4
+choregraph-role-choreography-dependencies-deps>    Compiling aho-corasick v1.1.4
+choregraph-role-choreography-dependencies-deps>    Compiling digest v0.10.7
+choregraph-role-choreography-dependencies-deps>    Compiling num-traits v0.2.19
+choregraph-role-choreography-dependencies-deps>    Compiling cpufeatures v0.2.17
+choregraph-role-choreography-dependencies-deps>    Compiling verus_builtin v0.0.0-2026-01-25-0057
+choregraph-role-choreography-dependencies-deps>    Compiling vstd v0.0.0-2026-01-25-0057
+choregraph-role-choreography-dependencies-deps>    Compiling regex-automata v0.4.16
+choregraph-role-choreography-dependencies-deps>    Compiling num-integer v0.1.46
+choregraph-role-choreography-dependencies-deps>    Compiling serde v1.0.228
+choregraph-role-choreography-dependencies-deps>    Compiling regex v1.13.1
+choregraph-role-choreography-dependencies-deps>    Compiling cpufeatures v0.3.0
+choregraph-role-choreography-dependencies-deps>    Compiling subtle v2.6.1
+choregraph-role-choreography-dependencies-deps>    Compiling arrayvec v0.7.8
+choregraph-role-choreography-dependencies-deps>    Compiling constant_time_eq v0.4.2
+choregraph-role-choreography-dependencies-deps>    Compiling signature v2.2.0
+choregraph-role-choreography-dependencies-deps>    Compiling zeroize v1.9.0
+choregraph-role-choreography-dependencies-deps>    Compiling arrayref v0.3.9
+choregraph-role-choreography-dependencies-deps>    Compiling blake3 v1.8.5
+choregraph-role-choreography-dependencies-deps>    Compiling curve25519-dalek v4.1.3
+choregraph-role-choreography-dependencies-deps>    Compiling ed25519 v2.2.3
+choregraph-role-choreography-dependencies-deps>    Compiling num-bigint v0.4.8
+choregraph-role-choreography-dependencies-deps>    Compiling libc v0.2.189
+choregraph-role-choreography-dependencies-deps>    Compiling zmij v1.0.23
+choregraph-role-choreography-dependencies-deps>    Compiling sha2 v0.10.9
+choregraph-role-choreography-dependencies-deps>    Compiling serde_bytes v0.11.19
+choregraph-role-choreography-dependencies-deps>    Compiling itoa v1.0.18
+choregraph-role-choreography-dependencies-deps>    Compiling base64 v0.13.1
+choregraph-role-choreography-dependencies-deps>    Compiling rand_core v0.6.4
+choregraph-role-choreography-dependencies-deps>    Compiling bytemuck v1.25.2
+choregraph-role-choreography-dependencies-deps>    Compiling lazy_static v1.5.0
+choregraph-role-choreography-dependencies-deps>    Compiling dtoa v0.4.8
+choregraph-role-choreography-dependencies-deps>    Compiling preserves v5.0.0-rc.7
+choregraph-role-choreography-dependencies-deps>    Compiling ed25519-dalek v2.2.0
+choregraph-role-choreography-dependencies-deps>    Compiling serde_json v1.0.151
+choregraph-role-choreography-dependencies-deps>    Compiling redb v2.6.3
+choregraph-role-choreography-dependencies-deps>    Compiling choregraph-core v0.1.0 (/build/source/crates/choregraph-core)
+choregraph-role-choreography-dependencies-deps>    Compiling anyhow v1.0.104
+choregraph-role-choreography-dependencies-deps>    Compiling bs58 v0.5.1
+choregraph-role-choreography-dependencies-deps>    Compiling choregraph-kamacite v0.1.0 (/build/source/crates/choregraph-kamacite)
+choregraph-role-choreography-dependencies-deps>    Compiling verified-logic v0.2.0 (ssh://git@github.com/OnixResearch/trellis.git?rev=d65974b14978e1a44b0f5067beb9ef6d83317dc8#d65974b1)
+choregraph-role-choreography-dependencies-deps>    Compiling choregraph-choreography v0.1.0 (/build/source/crates/choregraph-choreography)
+choregraph-role-choreography-dependencies-deps>     Finished `release` profile [optimized] target(s) in 14.35s
+choregraph-role-choreography-dependencies-deps> Running phase: installPhase
+choregraph-role-choreography-dependencies-deps> no previous artifacts found, compressing and installing full archive of target to /nix/store/4x39wwwab4m6ffj8235wy6n7b6a24npf-choregraph-role-choreography-dependencies-deps-0.1.0/target.tar.zst
+choregraph-role-choreography-dependencies-deps> /*stdin*\            : 25.57%   (   252 MiB =>   64.4 MiB, /nix/store/4x39wwwab4m6ffj8235wy6n7b6a24npf-choregraph-role-choreography-dependencies-deps-0.1.0/target.tar.zst)
+choregraph-role-choreography-dependencies-deps> Running phase: fixupPhase
+choregraph-role-choreography-dependencies-deps> shrinking RPATHs of ELF executables and libraries in /nix/store/4x39wwwab4m6ffj8235wy6n7b6a24npf-choregraph-role-choreography-dependencies-deps-0.1.0
+choregraph-role-choreography-dependencies-deps> checking for references to /build/ in /nix/store/4x39wwwab4m6ffj8235wy6n7b6a24npf-choregraph-role-choreography-dependencies-deps-0.1.0...
+choregraph-role-choreography-dependencies-deps> patching script interpreter paths in /nix/store/4x39wwwab4m6ffj8235wy6n7b6a24npf-choregraph-role-choreography-dependencies-deps-0.1.0
+building '/nix/store/z85n2cnnsly9v4h54vvmqsz3ndbs130c-choregraph-role-choreography-0.1.0.drv'...
+choregraph-role-choreography> Running phase: unpackPhase
+choregraph-role-choreography> unpacking source archive /nix/store/876sfs681zrl1hzmha8f7gx93ffvgl0y-source
+choregraph-role-choreography> source root is source
+choregraph-role-choreography> Running phase: patchPhase
+choregraph-role-choreography> Executing configureCargoCommonVars
+choregraph-role-choreography> decompressing cargo artifacts from /nix/store/4x39wwwab4m6ffj8235wy6n7b6a24npf-choregraph-role-choreography-dependencies-deps-0.1.0/target.tar.zst to target
+choregraph-role-choreography> Running phase: updateAutotoolsGnuConfigScriptsPhase
+choregraph-role-choreography> Running phase: configurePhase
+choregraph-role-choreography> will append /build/source/.cargo-home/config.toml with contents of /nix/store/62x40qlf1qs9xb1rapscwyb9488mjl1n-vendor-cargo-deps/config.toml
+choregraph-role-choreography> default configurePhase, nothing to do
+choregraph-role-choreography> Running phase: buildPhase
+choregraph-role-choreography> +++ command cargo --version
+choregraph-role-choreography> cargo 1.97.1 (c980f4866 2026-06-30)
+choregraph-role-choreography> +++ command cargo build --release --message-format json-render-diagnostics --locked -p choregraph-choreography
+choregraph-role-choreography>    Compiling choregraph-core v0.1.0 (/build/source/crates/choregraph-core)
+choregraph-role-choreography>    Compiling choregraph-kamacite v0.1.0 (/build/source/crates/choregraph-kamacite)
+choregraph-role-choreography>    Compiling choregraph-choreography v0.1.0 (/build/source/crates/choregraph-choreography)
+choregraph-role-choreography>     Finished `release` profile [optimized] target(s) in 4.43s
+choregraph-role-choreography> searching for bins/libs to install from cargo build log at cargoBuildLoghaMH.json
+choregraph-role-choreography> searching for bins/libs complete
+choregraph-role-choreography> Running phase: checkPhase
+choregraph-role-choreography> +++ command cargo test --release --locked -p choregraph-choreography
+choregraph-role-choreography>    Compiling choregraph-choreography v0.1.0 (/build/source/crates/choregraph-choreography)
+choregraph-role-choreography>     Finished `release` profile [optimized] target(s) in 1.51s
+choregraph-role-choreography>      Running unittests src/lib.rs (target/release/deps/choregraph_choreography-7f40c8c0edbe990b)
+choregraph-role-choreography> 
+choregraph-role-choreography> running 16 tests
+choregraph-role-choreography> test tests::diagnostics_reject_host_and_secret_leakage ... ok
+choregraph-role-choreography> test tests::chained_and_return_transfer_preserve_exact_value ... ok
+choregraph-role-choreography> test tests::complete_set_rejects_missing_duplicate_and_reordered_roles ... ok
+choregraph-role-choreography> test tests::duplicate_and_undeclared_roles_fail ... ok
+choregraph-role-choreography> test tests::duplicate_and_unsorted_branch_labels_fail ... ok
+choregraph-role-choreography> test tests::external_role_is_identity_only_protocol_data ... ok
+choregraph-role-choreography> test tests::incompatible_offer_heads_are_not_projectable ... ok
+choregraph-role-choreography> test tests::malformed_external_role_and_limit_widening_fail ... ok
+choregraph-role-choreography> test tests::oversized_role_and_identifier_inputs_fail ... ok
+choregraph-role-choreography> test tests::projectable_choice_includes_uninvolved_role ... ok
+choregraph-role-choreography> test tests::self_transfer_and_stale_owner_fail ... ok
+choregraph-role-choreography> test tests::two_role_transfer_matches_trellis_sender_and_receiver ... ok
+choregraph-role-choreography> test tests::wrong_value_and_payload_fail ... ok
+choregraph-role-choreography> test tests::unknown_fields_and_missing_non_claims_fail ... ok
+choregraph-role-choreography> test tests::canonical_bundle_binds_every_local_and_rejects_receipt_mutation ... ok
+choregraph-role-choreography> test tests::local_continuation_change_invalidates_local_set_and_receipt ... ok
+choregraph-role-choreography> 
+choregraph-role-choreography> test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+choregraph-role-choreography> 
+choregraph-role-choreography>    Doc-tests choregraph_choreography
+choregraph-role-choreography> 
+choregraph-role-choreography> running 0 tests
+choregraph-role-choreography> 
+choregraph-role-choreography> test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+choregraph-role-choreography> 
+choregraph-role-choreography> Running phase: installPhase
+choregraph-role-choreography> actually installing contents of postBuildInstallFromCargoBuildLogOutTempNTZ to /nix/store/mnfhjgm43rnq0ynpcjk24d8ikx9aza9x-choregraph-role-choreography-0.1.0
+choregraph-role-choreography> stripping references to Rust toolchain
+choregraph-role-choreography> Rust toolchain at: /nix/store/ywbq1z244am4y1m81pmxhmxipcccdxg2-rust-minimal-1.97.1
+choregraph-role-choreography> stripping Rust toolchain references done
+choregraph-role-choreography> stripping references to cargoVendorDir from:
+choregraph-role-choreography> stripping references done
+choregraph-role-choreography> Running phase: fixupPhase
+choregraph-role-choreography> shrinking RPATHs of ELF executables and libraries in /nix/store/mnfhjgm43rnq0ynpcjk24d8ikx9aza9x-choregraph-role-choreography-0.1.0
+choregraph-role-choreography> checking for references to /build/ in /nix/store/mnfhjgm43rnq0ynpcjk24d8ikx9aza9x-choregraph-role-choreography-0.1.0...
+choregraph-role-choreography> patching script interpreter paths in /nix/store/mnfhjgm43rnq0ynpcjk24d8ikx9aza9x-choregraph-role-choreography-0.1.0

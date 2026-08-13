@@ -1,0 +1,18 @@
+; Bounded structured choreography diagnostics v1.
+
+DiagnosticArtifactBody = <DiagnosticArtifactBody {
+  diagnostics: [ChoreographyDiagnostic ...]
+}>
+
+ChoreographyDiagnostic = <ChoreographyDiagnostic {
+  code: symbol,
+  severity: symbol,
+  primary: SourceSpan,
+  secondary: [SourceSpan ...],
+  notes: [string ...],
+  hints: [string ...],
+  safe_replacement: SafeReplacement / #f
+}>
+
+SourceSpan = <SourceSpan { start: integer, end: integer }>
+SafeReplacement = <SafeReplacement { span: SourceSpan, replacement: string }>

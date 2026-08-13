@@ -1,0 +1,154 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.24
+   Compiling quote v1.0.47
+   Compiling syn v2.0.119
+   Compiling serde_core v1.0.228
+   Compiling serde_derive v1.0.228
+   Compiling serde v1.0.228
+   Compiling autocfg v1.5.1
+    Checking cfg-if v1.0.4
+    Checking memchr v2.8.3
+   Compiling indexmap v1.9.3
+   Compiling verus_syn v0.0.0-2026-01-25-0057
+   Compiling verus_prettyplease v0.0.0-2026-01-25-0057
+   Compiling hashbrown v0.12.3
+   Compiling synstructure v0.13.2
+   Compiling vstd v0.0.0-2026-01-25-0057
+   Compiling verus_builtin_macros v0.0.0-2026-01-25-0057
+   Compiling verus_state_machines_macros v0.0.0-2026-01-25-0057
+    Checking verus_builtin v0.0.0-2026-01-25-0057
+   Compiling zmij v1.0.23
+   Compiling shlex v2.0.1
+   Compiling find-msvc-tools v0.1.9
+   Compiling cc v1.4.0
+    Checking choregraph-core v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-core)
+   Compiling blake3 v1.8.5
+   Compiling libm v0.2.16
+    Checking arrayref v0.3.9
+    Checking cpufeatures v0.3.0
+    Checking constant_time_eq v0.4.2
+    Checking arrayvec v0.7.8
+    Checking bitflags v2.13.1
+   Compiling serde_json v1.0.151
+    Checking foldhash v0.2.0
+    Checking hashbrown v0.17.1
+    Checking itoa v1.0.18
+   Compiling anyhow v1.0.104
+   Compiling num-traits v0.2.19
+   Compiling syn v3.0.3
+   Compiling wasmtime-internal-core v45.0.0
+   Compiling rustix v1.1.4
+   Compiling log v0.4.33
+    Checking linux-raw-sys v0.12.1
+   Compiling thiserror v2.0.19
+   Compiling cranelift-srcgen v0.132.3
+   Compiling cranelift-assembler-x64-meta v0.132.3
+   Compiling thiserror-impl v2.0.19
+    Checking aho-corasick v1.1.4
+   Compiling libc v0.2.189
+    Checking regex-syntax v0.8.11
+    Checking regex-automata v0.4.16
+    Checking num-integer v0.1.46
+    Checking semver v1.0.28
+   Compiling pulley-macros v45.0.0
+   Compiling version_check v0.9.5
+   Compiling heck v0.5.0
+   Compiling generic-array v0.14.7
+    Checking num-bigint v0.4.8
+   Compiling cranelift-bitset v0.132.0
+    Checking regex v1.13.1
+    Checking serde_bytes v0.11.19
+   Compiling cranelift-isle v0.132.0
+    Checking lazy_static v1.5.0
+    Checking base64 v0.13.1
+    Checking bytemuck v1.25.2
+    Checking dtoa v0.4.8
+    Checking equivalent v1.0.2
+    Checking once_cell v1.21.4
+    Checking indexmap v2.14.0
+    Checking preserves v5.0.0-rc.7
+   Compiling pulley-interpreter v45.0.0
+    Checking choregraph-nickel v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-nickel)
+   Compiling target-lexicon v0.13.5
+   Compiling cranelift-codegen-shared v0.132.3
+    Checking typenum v1.20.1
+   Compiling cranelift-codegen-meta v0.132.0
+    Checking cranelift-entity v0.132.0
+   Compiling cranelift-assembler-x64 v0.132.3
+    Checking choregraph-seaglass v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-seaglass)
+    Checking smallvec v1.15.2
+   Compiling io-lifetimes v3.0.1
+    Checking hashbrown v0.16.1
+   Compiling io-lifetimes v2.0.4
+    Checking fnv v1.0.7
+    Checking allocator-api2 v0.2.21
+    Checking bumpalo v3.20.3
+    Checking gimli v0.33.0
+    Checking cranelift-bforest v0.132.0
+   Compiling cranelift-codegen v0.132.0
+    Checking choregraph-kamacite v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-kamacite)
+   Compiling io-extras v0.19.0
+    Checking rustc-hash v2.1.3
+    Checking arbitrary v1.4.2
+   Compiling crc32fast v1.5.0
+    Checking cranelift-control v0.132.3
+    Checking regalloc2 v0.15.2
+    Checking crypto-common v0.1.7
+    Checking block-buffer v0.10.4
+   Compiling cfg_aliases v0.2.2
+   Compiling object v0.39.1
+   Compiling cap-primitives v4.0.2
+   Compiling nix v0.30.1
+    Checking digest v0.10.7
+    Checking fs-set-times v0.20.3
+    Checking rustix-linux-procfs v0.1.1
+    Checking wasmparser v0.248.0
+    Checking cobs v0.3.0
+    Checking execution-graph-core v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/vendor/execution-graph-core-selected)
+   Compiling cap-std v4.0.2
+    Checking ipnet v2.12.0
+    Checking maybe-owned v0.3.4
+   Compiling camino v1.2.4
+    Checking cpufeatures v0.2.17
+    Checking ambient-authority v0.0.2
+    Checking termcolor v1.4.1
+    Checking leb128fmt v0.1.0
+    Checking wasm-encoder v0.248.0
+    Checking wasmprinter v0.248.0
+    Checking sha2 v0.10.9
+    Checking postcard v1.1.3
+   Compiling wasmtime-internal-versioned-export-macros v45.0.0
+    Checking wasmtime-internal-component-util v45.0.0
+   Compiling id-arena v2.3.0
+   Compiling wasmtime-internal-unwinder v45.0.0
+   Compiling cap-fs-ext v4.0.2
+   Compiling unicode-xid v0.2.6
+   Compiling wit-parser v0.248.0
+    Checking wasmtime-environ v45.0.0
+    Checking cargo-platform v0.3.3
+    Checking bounded-exec-core v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/vendor/bounded-exec-selected/crates/bounded-exec-core)
+   Compiling wasmtime-internal-component-macro v45.0.0
+   Compiling getrandom v0.3.4
+   Compiling wasmtime-internal-cranelift v45.0.0
+    Checking either v1.17.0
+    Checking itertools v0.14.0
+    Checking bounded-exec v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/vendor/bounded-exec-selected/crates/bounded-exec)
+    Checking cargo_metadata v0.23.1
+   Compiling wasmtime-internal-wit-bindgen v45.0.0
+   Compiling wasmtime v45.0.0
+    Checking cranelift-native v0.132.0
+    Checking cranelift-frontend v0.132.0
+    Checking choregraph-release v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-release)
+    Checking cap-root-core v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/vendor/cap-root-core-selected)
+    Checking choregraph-wasm v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-wasm)
+    Checking wasmtime-internal-jit-icache-coherence v45.0.0
+    Checking memfd v0.6.5
+   Compiling async-trait v0.1.92
+    Checking encoding_rs v0.8.35
+    Checking fastrand v2.5.0
+    Checking tempfile v3.23.0
+    Checking choregraph-cli v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-cli)
+    Checking choregraph-foundation-check v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/tools/choregraph-foundation-check)
+    Checking choregraph-wasm-conformance v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/tools/choregraph-wasm-conformance)
+    Checking execution-graph-core v0.2.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/execution-graph-core)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 38s

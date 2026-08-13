@@ -19,6 +19,7 @@ let Project = {
     core = "pure-no-std-plus-alloc-machine-boundary",
     first_consumer = "lattice-seaglass",
     workspace_members = [
+      "choregraph-choreography",
       "choregraph-core",
       "choregraph-kamacite",
       "choregraph-nickel",

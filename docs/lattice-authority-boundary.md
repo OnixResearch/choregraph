@@ -35,6 +35,12 @@ This is syntactic architecture evidence. It is not a semantic proof.
 | retries, schedules, triggers, budgets, and approvals | Lattice |
 | diagnostics, UI, and product evidence | Lattice |
 
+## Role choreography boundary
+
+A projected local role protocol is interchange data. It does not select a host, transport, adapter, credential, capability, or runtime.
+
+An external role declaration binds only contract and schema identities. Lattice or another consumer must supply current authority and all runtime integrations.
+
 ## Intent handoff
 
 A Choregraph concrete intent is a request for consumer handling. It is not an authorization result or proof of an external effect.

@@ -1,0 +1,21 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling serde_core v1.0.228
+   Compiling quote v1.0.47
+   Compiling syn v3.0.3
+   Compiling syn v2.0.119
+   Compiling serde v1.0.228
+   Compiling serde_derive v1.0.228
+   Compiling thiserror-impl v2.0.19
+   Compiling zmij v1.0.23
+   Compiling itoa v1.0.18
+   Compiling memchr v2.8.3
+   Compiling serde_json v1.0.151
+   Compiling thiserror v2.0.19
+   Compiling camino v1.2.4
+   Compiling semver v1.0.28
+   Compiling cargo-platform v0.3.3
+   Compiling cargo_metadata v0.23.1
+   Compiling choregraph-foundation-check v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/tools/choregraph-foundation-check)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 9.02s
+     Running `/tmp/choregraph-role-projection-baseline/debug/choregraph-foundation-check --root .`
+foundation-boundary: passed

@@ -1,0 +1,63 @@
+    Checking choregraph-core v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-core)
+    Checking choregraph-release v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-release)
+    Checking choregraph-foundation-check v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/tools/choregraph-foundation-check)
+   Compiling choregraph_release v0.1.0
+   Compiling choregraph_release v0.1.0
+   Compiling choregraph_foundation_check v0.1.0
+   Compiling choregraph_foundation_check v0.1.0
+   Compiling choregraph-foundation-check v0.1.0
+   Compiling choregraph-foundation-check v0.1.0
+   Compiling choregraph_core v0.1.0
+    Checking choregraph-kamacite v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-kamacite)
+    Checking choregraph-nickel v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-nickel)
+    Checking choregraph-seaglass v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-seaglass)
+    Checking execution-graph-core v0.2.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/execution-graph-core)
+   Compiling choregraph_core v0.1.0
+   Compiling epoch-fence v0.1.0
+   Compiling concrete-effect-intents v0.1.0
+   Compiling durable-suspension v0.1.0
+   Compiling trace-replay v0.1.0
+   Compiling choregraph_seaglass v0.1.0
+   Compiling machine-semantics v0.1.0
+   Compiling execution_graph_core v0.2.0
+   Compiling execution_graph_core v0.2.0
+   Compiling choregraph_nickel v0.1.0
+   Compiling lattice-diamond v0.1.0
+   Compiling consumer-failures v0.1.0
+   Compiling architecture-boundary v0.1.0
+   Compiling lattice-suspension v0.1.0
+   Compiling choregraph_nickel v0.1.0
+   Compiling concrete-handoff v0.1.0
+   Compiling parity v0.1.0
+   Compiling choregraph_seaglass v0.1.0
+   Compiling choregraph_kamacite v0.1.0
+    Checking choregraph-wasm v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-wasm)
+    Checking choregraph-cli v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-cli)
+    Checking choregraph-choreography v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-choreography)
+   Compiling choregraph_kamacite v0.1.0
+   Compiling choregraph_cli v0.1.0
+   Compiling choregraph v0.1.0
+   Compiling choregraph v0.1.0
+   Compiling choregraph_cli v0.1.0
+   Compiling choregraph_choreography v0.1.0
+   Compiling choregraph_wasm v0.1.0
+    Checking choregraph-wasm-conformance v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/tools/choregraph-wasm-conformance)
+   Compiling choregraph_choreography v0.1.0
+   Compiling choregraph_wasm v0.1.0
+   Compiling dispatcher v0.1.0
+   Compiling choregraph-wasm-conformance v0.1.0
+   Compiling choregraph-wasm-conformance v0.1.0
+    Finished checking
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.13s
+--- octet summary ---
+Status: clean
+Findings: 0
+Warnings: 0
+Errors: 0
+Autofixable: 0
+Tool: cargo-octet 0.1.0
+Toolchain: nightly-2026-03-21-x86_64-unknown-linux-gnu
+Profile: workspace-metadata
+Config hash: b3:fee36348fb65180ef1bbdbcb67f2d3d85b5d6f7f6cf6fccc11b023645224f744
+Profile hash: b3:f055e1631d3cd3d4b8b95794612753e095ac9176ef1c01f38ab6992bbb73f452
+---

@@ -1,0 +1,7 @@
+; Complete normalized endpoint projection set artifact body v1.
+
+LocalProtocolSetBody = <LocalProtocolSetBody {
+  locals: [LocalProtocolArtifactBody ...]
+}>
+
+; LocalProtocolArtifactBody is defined by choregraph-role-choreography-local-v1.

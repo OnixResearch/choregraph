@@ -1,0 +1,3 @@
+this derivation will be built:
+  /nix/store/2lywymlc18zp8yvw3m454iczqrm8745m-choregraph-role-choreography-contracts.drv
+building '/nix/store/2lywymlc18zp8yvw3m454iczqrm8745m-choregraph-role-choreography-contracts.drv'...

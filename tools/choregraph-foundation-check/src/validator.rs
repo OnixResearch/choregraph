@@ -12,6 +12,7 @@ const EXECUTION_GRAPH_PACKAGE: &str = "execution-graph-core";
 const EXECUTION_GRAPH_VENDOR_PATH: &str = "vendor/execution-graph-core-selected";
 
 const PRODUCT_PACKAGES: &[&str] = &[
+    "choregraph-choreography",
     CORE_PACKAGE,
     EXECUTION_GRAPH_PACKAGE,
     "choregraph-kamacite",
@@ -23,6 +24,7 @@ const PRODUCT_PACKAGES: &[&str] = &[
 ];
 
 const CONSUMER_LIBRARY_PACKAGES: &[&str] = &[
+    "choregraph-choreography",
     CORE_PACKAGE,
     EXECUTION_GRAPH_PACKAGE,
     "choregraph-kamacite",
@@ -36,6 +38,7 @@ const BLAKE3_COMPATIBLE_REQUIREMENT: &str = "^1.8.2";
 const SERDE_JSON_COMPATIBLE_REQUIREMENT: &str = "^1.0.149";
 
 const REQUIRED_PACKAGES: &[&str] = &[
+    "choregraph-choreography",
     CORE_PACKAGE,
     EXECUTION_GRAPH_PACKAGE,
     "choregraph-kamacite",
@@ -61,6 +64,7 @@ const CORE_FORBIDDEN_DEPENDENCIES: &[&str] = &[
 ];
 
 const NO_INTERNAL_DEPENDENCIES: &[&str] = &[];
+const CHOREOGRAPHY_DEPENDENCIES: &[&str] = &["choregraph-kamacite"];
 const CORE_ONLY: &[&str] = &[CORE_PACKAGE];
 const SEAGLASS_DEPENDENCIES: &[&str] = &[CORE_PACKAGE, "choregraph-nickel"];
 const WASM_DEPENDENCIES: &[&str] = &[CORE_PACKAGE, "choregraph-kamacite"];
@@ -75,6 +79,7 @@ const CLI_DEPENDENCIES: &[&str] = &[
 ];
 
 const REQUIRED_INTERNAL_EDGES: &[(&str, &str)] = &[
+    ("choregraph-choreography", "choregraph-kamacite"),
     (EXECUTION_GRAPH_PACKAGE, CORE_PACKAGE),
     ("choregraph-kamacite", CORE_PACKAGE),
     ("choregraph-nickel", CORE_PACKAGE),
@@ -115,6 +120,7 @@ fn allowed_internal_dependencies(package: &str) -> Option<&'static [&'static str
         CORE_PACKAGE | "choregraph-release" | FOUNDATION_CHECK_PACKAGE => {
             Some(NO_INTERNAL_DEPENDENCIES)
         }
+        "choregraph-choreography" => Some(CHOREOGRAPHY_DEPENDENCIES),
         EXECUTION_GRAPH_PACKAGE | "choregraph-kamacite" | "choregraph-nickel" => Some(CORE_ONLY),
         "choregraph-seaglass" => Some(SEAGLASS_DEPENDENCIES),
         "choregraph-wasm" => Some(WASM_DEPENDENCIES),

@@ -1,0 +1,3 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running `target/choreography-final/debug/choregraph-foundation-check --root .`
+foundation-boundary: passed

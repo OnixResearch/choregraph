@@ -1,0 +1,410 @@
+   Compiling hashbrown v0.17.1
+   Compiling rustix v1.1.4
+   Compiling anyhow v1.0.104
+   Compiling cranelift-codegen-shared v0.132.3
+   Compiling thiserror v2.0.19
+   Compiling smallvec v1.15.2
+   Compiling serde_core v1.0.228
+   Compiling hashbrown v0.16.1
+   Compiling choregraph-core v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-core)
+   Compiling target-lexicon v0.13.5
+   Compiling bumpalo v3.20.3
+   Compiling rustc-hash v2.1.3
+   Compiling cranelift-assembler-x64 v0.132.3
+   Compiling cranelift-control v0.132.3
+   Compiling execution-graph-core v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/vendor/execution-graph-core-selected)
+   Compiling wasmparser v0.248.0
+   Compiling wasmtime-internal-component-util v45.0.0
+   Compiling wasm-encoder v0.248.0
+   Compiling bounded-exec-core v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/vendor/bounded-exec-selected/crates/bounded-exec-core)
+   Compiling choregraph-release v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-release)
+   Compiling cobs v0.3.0
+   Compiling cargo_metadata v0.23.1
+   Compiling cap-root-core v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/vendor/cap-root-core-selected)
+   Compiling bounded-exec v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/vendor/bounded-exec-selected/crates/bounded-exec)
+   Compiling wasmtime-internal-core v45.0.0
+   Compiling indexmap v2.14.0
+   Compiling regalloc2 v0.15.2
+   Compiling postcard v1.1.3
+   Compiling choregraph-nickel v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-nickel)
+   Compiling choregraph-seaglass v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-seaglass)
+   Compiling choregraph-kamacite v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-kamacite)
+   Compiling execution-graph-core v0.2.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/execution-graph-core)
+   Compiling serde v1.0.228
+   Compiling cranelift-bitset v0.132.0
+   Compiling gimli v0.33.0
+   Compiling object v0.39.1
+   Compiling serde_json v1.0.151
+   Compiling wasmtime-internal-jit-icache-coherence v45.0.0
+   Compiling choregraph-foundation-check v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/tools/choregraph-foundation-check)
+   Compiling pulley-interpreter v45.0.0
+   Compiling cranelift-entity v0.132.0
+   Compiling rustix-linux-procfs v0.1.1
+   Compiling fs-set-times v0.20.3
+   Compiling memfd v0.6.5
+   Compiling tempfile v3.23.0
+   Compiling cranelift-bforest v0.132.0
+   Compiling wit-parser v0.248.0
+   Compiling cap-primitives v4.0.2
+   Compiling cranelift-codegen-meta v0.132.0
+   Compiling choregraph-wasm v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-wasm)
+   Compiling cap-std v4.0.2
+   Compiling wasmprinter v0.248.0
+   Compiling cap-fs-ext v4.0.2
+   Compiling cranelift-codegen v0.132.0
+   Compiling wasmtime-internal-wit-bindgen v45.0.0
+   Compiling choregraph-cli v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-cli)
+   Compiling wasmtime-environ v45.0.0
+   Compiling wasmtime-internal-component-macro v45.0.0
+   Compiling wasmtime-internal-unwinder v45.0.0
+   Compiling cranelift-frontend v0.132.0
+   Compiling cranelift-native v0.132.0
+   Compiling wasmtime-internal-cranelift v45.0.0
+   Compiling wasmtime v45.0.0
+   Compiling choregraph-wasm-conformance v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/tools/choregraph-wasm-conformance)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 38.53s
+     Running unittests src/lib.rs (/home/brittonr/.cargo-target/debug/deps/choregraph_cli-642c18f1e4fbfcd6)
+
+running 14 tests
+test tests::rejects_unknown_incomplete_or_extra_arguments ... ok
+test tests::parses_capability_compile_command_with_operator_roots ... ok
+test tests::report_keeps_the_foundation_claim_bounded ... ok
+test tests::parses_default_and_explicit_boundary_commands ... ok
+test release::tests::capability_shell_rejects_missing_artifact_and_relative_root ... ok
+test capability::tests::rejects_ambient_graph_paths_before_import_io ... ok
+test capability::tests::bounded_reads_reject_oversized_files ... ok
+test capability::tests::rejects_symlink_inputs_without_reading_targets ... ok
+test capability::tests::compiles_capability_relative_source_without_dispatch_authority ... ok
+test capability::tests::loads_declared_imports_from_operator_selected_roots ... ok
+test capability::tests::rejects_unknown_roots_and_existing_outputs ... ok
+test release::tests::capability_shell_writes_one_deterministic_bundle_without_replacement ... ok
+test corpus::tests::corpus_has_positive_and_negative_cases ... ok
+test corpus::tests::checked_in_corpus_matches_the_current_profile_and_adapter ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src/main.rs (/home/brittonr/.cargo-target/debug/deps/choregraph-ff74263e7bd8b0a6)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/home/brittonr/.cargo-target/debug/deps/choregraph_core-b12f916ecb62add3)
+
+running 15 tests
+test boundary::tests::permits_pure_machine_capabilities ... ok
+test boundary::tests::rejects_every_excluded_authority ... ok
+test id::tests::rejects_whitespace_and_non_blake3_references ... ok
+test boundary::tests::suspension_non_claims_cover_product_authority ... ok
+test id::tests::accepts_bounded_identifiers_and_blake3_references ... ok
+test verified::tests::durable_profile_mismatched_resume_denies ... ok
+test verified::tests::durable_profile_matching_resume_clears_fact ... ok
+test verified::tests::durable_profile_suspend_records_fact_without_effects ... ok
+test verified::tests::indexed_step_accepts_ready_transition_with_declared_intent ... ok
+test verified::tests::indexed_step_denies_duplicate_intents_without_outputs ... ok
+test verified::tests::indexed_step_denies_incomplete_dependency_without_outputs ... ok
+test verified::tests::linear_profile_rejects_suspension_actions ... ok
+test verified::tests::suspension_action_rejects_effect_requests ... ok
+test verified_topology::tests::topological_checker_accepts_a_diamond ... ok
+test verified_topology::tests::topological_checker_rejects_duplicates_and_reversed_edges ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/concrete-effect-intents.rs (/home/brittonr/.cargo-target/debug/deps/concrete_effect_intents-fcedefe9b111cbfb)
+
+running 8 tests
+test v1_and_v2_wrappers_reject_the_wrong_schema ... ok
+test duplicate_keys_and_unknown_profiles_fail_admission_without_raw_values ... ok
+test malformed_schema_and_reference_fail_before_intent_output ... ok
+test replay_uses_the_concrete_step_and_returns_no_intent_surface ... ok
+test exact_and_slot_bindings_emit_declared_concrete_intents ... ok
+test runtime_references_do_not_change_the_admitted_machine ... ok
+test wrong_exact_slot_source_unknown_duplicate_and_oversized_requests_fail_closed ... ok
+test declaration_and_request_source_order_do_not_change_the_decision ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/durable-suspension.rs (/home/brittonr/.cargo-target/debug/deps/durable_suspension-403277a6211e7cb5)
+
+running 18 tests
+test admission_rejects_unsupported_profile_and_profile_less_declarations ... ok
+test admission_rejects_effect_declarations_on_suspension_transitions ... ok
+test admission_rejects_malformed_duplicate_and_missing_suspension_declarations ... ok
+test declared_suspension_state_reconstructs_recorded_wait ... ok
+test durable_profile_admission_selects_explicit_profile ... ok
+test declared_suspension_resume_requires_completed_dependencies ... ok
+test malformed_and_oversized_suspension_facts_are_denied ... ok
+test reordered_suspension_inputs_admit_identically ... ok
+test matching_resume_releases_suspended_gate_without_effects ... ok
+test duplicate_resume_after_accept_is_denied ... ok
+test replay_reports_first_exact_suspension_denial ... ok
+test replay_ends_validly_suspended_and_matches_direct_stepping ... ok
+test suspended_gate_is_never_ready_and_waits_for_signal ... ok
+test v1_machine_behavior_stays_linear ... ok
+test suspend_moves_ready_gate_to_suspended_without_effects ... ok
+test terminal_nodes_reject_suspend_and_resume ... ok
+test suspension_denial_classes_fail_closed ... ok
+test state_invariant_flags_suspension_record_conflicts ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/epoch-fence.rs (/home/brittonr/.cargo-target/debug/deps/epoch_fence-9764dda107095ba6)
+
+running 6 tests
+test identity_and_non_claims_stay_bounded_and_canonical ... ok
+test stale_and_future_epochs_fail_closed_without_replacement_state ... ok
+test cross_entity_and_unknown_entity_mutations_are_rejected ... ok
+test admitted_fence_does_not_override_other_machine_denials ... ok
+test current_epoch_admits_exactly_one_entity_through_production_step ... ok
+test terminal_mutation_is_rejected_before_production_transition ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/machine-semantics.rs (/home/brittonr/.cargo-target/debug/deps/machine_semantics-06cf3aa0c32b96de)
+
+running 19 tests
+test admission_rejects_unsupported_profiles_and_malformed_effects ... ok
+test admission_diagnostics_are_independent_of_input_order ... ok
+test admission_rejects_malformed_graph_facts_and_cycles ... ok
+test admission_failure_corpus_covers_limits_and_effect_closure ... ok
+test denied_events_do_not_replace_caller_state_or_emit_intents ... ok
+test payload_reference_parser_accepts_only_canonical_blake3_identity ... ok
+test empty_machine_is_valid_and_has_no_work ... ok
+test dependency_invariant_checks_the_complete_ancestor_chain ... ok
+test invariant_rejects_missing_extra_and_premature_state_entries ... ok
+test lattice_diamond_has_stable_topology_readiness_and_analytics ... ok
+test effect_intent_order_is_independent_of_declaration_and_request_order ... ok
+test selected_limits_accept_the_boundary_and_reject_the_next_value ... ok
+test resume_decisions_match_completed_failed_and_waiting_dependencies ... ok
+test property_every_accepted_local_transition_preserves_the_invariant ... ok
+test top_level_count_limits_fail_before_graph_normalization ... ok
+test terminal_state_mutation_is_denied_without_state_replacement ... ok
+test undeclared_and_duplicate_effect_requests_are_denied ... ok
+test valid_lifecycle_emits_only_the_exact_declared_intent ... ok
+test property_all_diamond_input_orders_normalize_equally ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/trace-replay.rs (/home/brittonr/.cargo-target/debug/deps/trace_replay-45fb211369603721)
+
+running 11 tests
+test empty_trace_preserves_the_initial_state ... ok
+test denied_trace_stops_at_the_first_failure ... ok
+test linear_and_terminal_traces_end_in_invariant_states ... ok
+test equal_explicit_replay_inputs_return_equal_decisions ... ok
+test invalid_initial_state_fails_before_processing ... ok
+test diamond_trace_respects_declared_dependency_order ... ok
+test oversized_and_stale_bound_traces_fail_before_processing ... ok
+test malformed_unknown_invalid_terminal_and_reordered_traces_fail_exactly ... ok
+test trace_at_the_selected_limit_is_processed ... ok
+test replay_discards_historical_effect_intents ... ok
+test property_generated_traces_match_repeated_production_steps ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/home/brittonr/.cargo-target/debug/deps/choregraph_foundation_check-488622484845c799)
+
+running 17 tests
+test tests::accepts_legacy_models_without_a_selected_wasm_adapter ... ok
+test tests::accepts_compatible_public_dependency_requirements ... ok
+test tests::rejects_a_forbidden_core_dependency ... ok
+test tests::accepts_the_reviewed_workspace_boundary ... ok
+test tests::rejects_cap_root_from_an_unreviewed_path ... ok
+test tests::rejects_an_external_path_dependency ... ok
+test tests::rejects_bounded_exec_from_an_unreviewed_path ... ok
+test tests::rejects_exact_blake3_public_dependency_requirement ... ok
+test tests::rejects_exact_serde_json_public_dependency_requirement ... ok
+test tests::rejects_compiler_floor_drift ... ok
+test tests::rejects_forbidden_core_source ... ok
+test tests::rejects_execution_graph_oracle_from_an_unreviewed_path ... ok
+test tests::rejects_missing_wasm_production_delegation ... ok
+test tests::rejects_reverse_dependency_direction ... ok
+test tests::rejects_license_drift ... ok
+test tests::rejects_wasm_host_imports_and_extra_exports ... ok
+test tests::rejects_wasm_persistent_handles_and_graph_specific_generation ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (/home/brittonr/.cargo-target/debug/deps/choregraph_foundation_check-81d6e15ff7a6ec67)
+
+running 2 tests
+test tests::classifies_the_exact_workspace_package_path_as_internal ... ok
+test tests::does_not_classify_a_same_name_vendor_path_as_internal ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/home/brittonr/.cargo-target/debug/deps/choregraph_kamacite-63202ea8013a8844)
+
+running 25 tests
+test selected_kamacite_codec::tests::rejects_zero_limit_policy ... ok
+test selected_kamacite_codec::tests::rejects_legacy_prefixed_json_as_canonical_preserves ... ok
+test selected_kamacite_codec::tests::rejects_annotations_embedded_values_and_noncanonical_packed ... ok
+test selected_kamacite_codec::tests::rejects_malformed_trailing_and_unsupported_schema_inputs ... ok
+test selected_kamacite_codec::tests::enforces_every_named_limit_without_emitting_an_artifact ... ok
+test selected_kamacite_codec::tests::text_and_packed_transfer_syntaxes_converge ... ok
+test selected_kamacite_codec::tests::typed_roundtrip_binds_normative_fields ... ok
+test tests::concrete::machine_identity_stays_stable_when_content_changes ... ok
+test tests::concrete::v2_machine_intent_and_receipt_round_trip_canonically ... ok
+test tests::concrete::stale_json_overclaim_and_exact_reference_mutation_fail_closed ... ok
+test tests::empty_identity_material_is_rejected_before_artifact_issuance ... ok
+test tests::profile_and_adapter_identities_are_exact_and_bounded ... ok
+test tests::malformed_noncanonical_and_json_substitution_fail_closed ... ok
+test tests::incomplete_local_lifecycle_matrix_is_rejected ... ok
+test tests::duplicate_descriptor_fields_are_rejected ... ok
+test tests::unknown_global_product_table_field_is_rejected ... ok
+test tests::stale_fsm_dependency_links_are_rejected ... ok
+test tests::stale_and_mismatched_receipt_links_are_rejected ... ok
+test tests::unsupported_lifecycle_and_global_enumeration_are_rejected ... ok
+test tests::all_receipt_roles_validate_exact_links_without_behavioral_claims ... ok
+test tests::trace_mismatch_and_overclaim_receipts_are_rejected ... ok
+test tests::durable_artifacts_round_trip_with_exact_suspension_facts ... ok
+test tests::every_identity_binding_changes_only_with_its_selected_material ... ok
+test tests::durable_descriptor_tampering_and_profile_inference_fail_closed ... ok
+test tests::canonical_artifacts_round_trip_with_stable_normalized_identities ... ok
+
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src/lib.rs (/home/brittonr/.cargo-target/debug/deps/choregraph_nickel-79f90420a6ecd68e)
+
+running 17 tests
+test source::tests::accepts_data_records_and_import_named_fields ... ok
+test source::tests::rejects_import_authority_and_interpolation ... ok
+test tests::accepts_evaluated_data_and_rejects_ambient_stages ... ok
+test source::tests::rejects_malformed_and_oversized_input ... ok
+test tests::lowers_direct_graph_with_a_declared_content_addressed_import ... ok
+test tests::safe_diagnostics_are_constant_bounded_and_contain_no_raw_context ... ok
+test tests::lattice_workflow_formats_reject_suspension_inference ... ok
+test tests::lowers_lattice_port_diamond_to_stable_node_graph ... ok
+test tests::lowers_durable_suspension_profile_with_explicit_selection ... ok
+test tests::lowers_lattice_v2_with_explicit_concrete_effect_declarations ... ok
+test tests::rejects_import_escape_hash_mismatch_and_undeclared_observation ... ok
+test tests::translation_identity_chain_changes_with_selected_material_only ... ok
+test tests::translation_receipts_fail_when_lowerer_or_evaluator_identity_is_stale ... ok
+test tests::rejects_lattice_v2_missing_effects_pure_effects_and_foreign_sources ... ok
+test tests::rejects_suspension_inference_widening_and_product_fields ... ok
+test tests::source_and_lattice_array_order_variation_lower_to_the_same_machine ... ok
+test tests::rejects_unknown_fields_cycles_bad_ports_events_and_excessive_bounds ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/home/brittonr/.cargo-target/debug/deps/choregraph_release-47696e2c61ab2ff1)
+
+running 5 tests
+test tests::digest_hex_parsing_is_exact_and_lowercase ... ok
+test tests::publication_candidate_is_local_exact_and_fail_closed ... ok
+test tests::complete_bundles_are_deterministic_and_verify ... ok
+test tests::missing_duplicate_malformed_unsupported_and_stale_inputs_fail ... ok
+test tests::overclaim_and_projection_mutation_fail ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/home/brittonr/.cargo-target/debug/deps/choregraph_seaglass-d637509eb9bddd71)
+
+running 2 tests
+test tests::rejects_an_independent_transition_core ... ok
+test tests::accepts_delegation_to_core ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/architecture-boundary.rs (/home/brittonr/.cargo-target/debug/deps/architecture_boundary-071b34e3a630a886)
+
+running 3 tests
+test duplicate_algorithm_and_authority_tokens_fail_the_gate ... ok
+test extra_or_missing_production_dependencies_fail_the_gate ... ok
+test production_adapter_delegates_without_runtime_authority ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/concrete-handoff.rs (/home/brittonr/.cargo-target/debug/deps/concrete_handoff-a8c26aaf78fa7c4d)
+
+running 3 tests
+test rejects_v1_machine_as_a_concrete_handoff_plan ... ok
+test exposes_exact_concrete_intent_data_without_downstream_authority_fields ... ok
+test disposable_lattice_binding_requires_intent_and_separates_occurrences ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/consumer-failures.rs (/home/brittonr/.cargo-target/debug/deps/consumer_failures-32cebd660bf83442)
+
+running 4 tests
+test malformed_graph_and_forbidden_import_have_no_fallback_path ... ok
+test stale_source_and_mismatched_translation_receipts_fail_closed ... ok
+test authorization_denial_result_fails_the_node_without_reusing_the_intent ... ok
+test replay_rejects_the_first_invalid_suffix_event_without_dispatch_authority ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/lattice-diamond.rs (/home/brittonr/.cargo-target/debug/deps/lattice_diamond-5eb1e40bdde34848)
+
+running 2 tests
+test rejects_premature_sink_readiness_and_undeclared_effects ... ok
+test lowers_and_executes_the_reviewed_lattice_diamond ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/lattice-suspension.rs (/home/brittonr/.cargo-target/debug/deps/lattice_suspension-530f0f22beba43b2)
+
+running 2 tests
+test lattice_wait_node_observes_suspended_wait_resume_and_denial_decisions ... ok
+test lattice_wait_trace_replays_suspended_and_resumes_deterministically ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/parity.rs (/home/brittonr/.cargo-target/debug/deps/parity-930b6b1511a7443d)
+
+running 8 tests
+test lifecycle_matrix_matches_the_legacy_kernel ... ok
+test empty_graph_is_an_exact_no_work_plan ... ok
+test aggregate_steps_delegate_without_effect_authority ... ok
+test cycle_rejection_and_cycle_probes_match ... ok
+test malformed_graph_diagnostic_classes_match ... ok
+test diamond_admission_queries_groups_and_analytics_match ... ok
+test stricter_identifier_state_and_unknown_node_cases_fail_closed ... ok
+test ready_and_resume_decisions_match_for_valid_sparse_states ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/home/brittonr/.cargo-target/debug/deps/choregraph_wasm-0c790665928e6585)
+
+running 7 tests
+test codec::selected_codec::tests::rejects_zero_limit_policy ... ok
+test codec::selected_codec::tests::rejects_legacy_prefixed_json_as_canonical_preserves ... ok
+test codec::selected_codec::tests::rejects_annotations_embedded_values_and_noncanonical_packed ... ok
+test codec::selected_codec::tests::enforces_every_named_limit_without_emitting_an_artifact ... ok
+test codec::selected_codec::tests::rejects_malformed_trailing_and_unsupported_schema_inputs ... ok
+test codec::selected_codec::tests::typed_roundtrip_binds_normative_fields ... ok
+test codec::selected_codec::tests::text_and_packed_transfer_syntaxes_converge ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/dispatcher.rs (/home/brittonr/.cargo-target/debug/deps/dispatcher-44dfb40cb1e0cc98)
+
+running 3 tests
+test outer_and_trace_limits_stop_before_semantic_dispatch ... ok
+test all_production_operations_return_canonical_deterministic_results ... ok
+test malformed_stale_mismatched_and_denied_inputs_fail_closed ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running unittests src/main.rs (/home/brittonr/.cargo-target/debug/deps/choregraph_wasm_conformance-201a86d07b6aa6e6)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/home/brittonr/.cargo-target/debug/deps/execution_graph_core-515db9abaa0f0212)
+
+running 10 tests
+test adapter::tests::compatibility_state_mapping_accepts_linear_states_and_rejects_suspension ... ok
+test adapter::tests::suspension_admission_diagnostics_map_to_a_bounded_compatibility_failure ... ok
+test tests::lifecycle_accepts_valid_paths_and_rejects_invalid_or_terminal_mutation ... ok
+test tests::empty_graph_is_a_valid_no_work_plan ... ok
+test tests::admission_rejects_cycle ... ok
+test tests::static_admission_rejects_malformed_graph_facts ... ok
+test tests::admitted_graph_has_stable_order_groups_and_analytics ... ok
+test tests::cycle_probe_checks_target_to_source_reachability ... ok
+test tests::ready_and_resume_decisions_require_completed_dependencies ... ok
+test tests::malformed_and_bounded_inputs_fail_closed ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

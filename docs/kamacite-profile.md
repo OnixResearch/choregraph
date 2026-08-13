@@ -34,6 +34,8 @@ The v2 descriptor uses `choregraph.machine-preserves.v2` and the `choregraph-mac
 
 Concrete intents use `choregraph.concrete-intent-preserves.v2`. The intent schema is [`../schemas/preserves/choregraph-concrete-intent-v2.preserves`](../schemas/preserves/choregraph-concrete-intent-v2.preserves).
 
+Role choreography uses distinct versioned source, global, local, ordered-local-set, diagnostics, and projection-receipt Preserves profiles. Packed Preserves bytes own each identity. The complete local-set identity binds normalized role order and every local artifact identity.
+
 The descriptor contains normalized nodes, edges, dependencies, effect declarations, limits, compatibility revisions, and exact profile identities. It identifies aggregate state as a parameterized node map. It does not contain a global product-state table.
 
 The local lifecycle is one closed `kamacite.fsm-spec.v2` descriptor. It contains six local states, five events, accepted transitions, and explicit denial rows. Every local state and event pair has one row.
@@ -67,6 +69,8 @@ The corpus manifest is [`../fixtures/kamacite/corpus.ncl`](../fixtures/kamacite/
 Choregraph validates admission, lifecycle, source, and proof-reference link receipts. It also validates Kamacite-shaped exhaustiveness and trace receipts.
 
 All receipt bodies bind exact subject and dependency identities. Exhaustiveness receipts bind the state, event, transition, and denial coverage identities.
+
+A choreography projection receipt also binds the source envelope, import closure, evaluated DTO, global protocol, each local protocol, complete local set, Trellis sources and proof references, lowerer, schemas, limits, diagnostics, toolchains, and non-claims.
 
 Trace receipts bind each presented transition and positive guard evidence. Concrete-intent receipts bind one v2 machine identity, intent identity, and declaration key.
 

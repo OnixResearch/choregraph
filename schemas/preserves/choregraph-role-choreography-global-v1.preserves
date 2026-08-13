@@ -1,0 +1,34 @@
+; Admitted Trellis global protocol artifact body v1.
+
+GlobalProtocolArtifactBody = <GlobalProtocolArtifactBody {
+  roles: [RoleDeclaration ...],
+  values: [ValueDeclaration ...],
+  protocol: GlobalProtocol
+}>
+
+RoleDeclaration = <RoleDeclaration { id: integer, kind: RoleKind, span: SourceSpan }>
+RoleKind =
+    <native>
+  / <external {
+      contract_identity: string,
+      input_schema_identity: string,
+      output_schema_identity: string
+    }>
+ValueDeclaration = <ValueDeclaration {
+  id: integer, payload_tag: integer, initial_owner: integer, span: SourceSpan
+}>
+SourceSpan = <SourceSpan { start: integer, end: integer }>
+
+GlobalProtocol =
+    <end>
+  / <communication {
+      from: integer, to: integer, label: integer,
+      payload_tag: integer, next: GlobalProtocol
+    }>
+  / <transfer {
+      from: integer, to: integer, label: integer,
+      payload_tag: integer, value: integer, next: GlobalProtocol
+    }>
+  / <choice { decider: integer, branches: [GlobalProtocolBranch ...] }>
+
+GlobalProtocolBranch = <GlobalProtocolBranch { label: integer, body: GlobalProtocol }>

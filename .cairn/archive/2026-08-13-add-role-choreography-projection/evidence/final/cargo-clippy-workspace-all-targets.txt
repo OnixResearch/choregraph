@@ -1,0 +1,6 @@
+    Checking choregraph-kamacite v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-kamacite)
+    Checking choregraph-wasm v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-wasm)
+    Checking choregraph-cli v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-cli)
+    Checking choregraph-wasm-conformance v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/tools/choregraph-wasm-conformance)
+    Checking choregraph-choreography v0.1.0 (/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813/crates/choregraph-choreography)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.77s

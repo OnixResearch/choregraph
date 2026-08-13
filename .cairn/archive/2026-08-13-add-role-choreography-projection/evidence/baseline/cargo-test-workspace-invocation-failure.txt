@@ -1,0 +1,5 @@
+error: Path 'choregraph-worktrees/drain-role-projection-20260813/flake.nix' in the repository "/home/brittonr/git/OnixResearch" is not tracked by Git.
+
+       To make it visible to Nix, run:
+
+       git -C "/home/brittonr/git/OnixResearch" add -N "choregraph-worktrees/drain-role-projection-20260813/flake.nix"

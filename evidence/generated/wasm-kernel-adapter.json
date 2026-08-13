@@ -2,11 +2,11 @@
   "evidence": {
     "abi": "onix:choregraph/kernel@1.0.0 call(list<u8>) -> list<u8>",
     "component": {
-      "blake3": "3a3a7294054194d28367c87a13b0485647a0867afb8b31901a363bdbda61d76a",
+      "blake3": "2e8cdf1cc66326fb81acebac6b6ddf4848930914a812d013e3dbcda2c0e4cfc7",
       "blake3_context": "choregraph wasm component bytes v1",
       "export": "call",
       "imports": "none",
-      "nix_nar_hash": "sha256-OVztAdR2nusyZBiaqIQ1WFTqmYuwdnU21c5RiI8oRGQ=",
+      "nix_nar_hash": "sha256-iDyWcqCa4YxhRCM+qvxRDIKaRRWC4SCIHPerJ4lgASU=",
       "nix_nar_hash_algorithm": "sha256 required by the Nix store protocol"
     },
     "conformance": {
@@ -36,29 +36,29 @@
     "proof_references": [
       {
         "claim_boundary": "production-called single-step transition obligations only",
-        "exported_blake3": "3d64731e9458013577737b603717903b07b7aee8770f8bf4091826ea05b53cb5",
+        "exported_blake3": "5905e268e0f972650f3db774a3eac1ab1d4c4cb4b24a0c0eed7d686e78d097ed",
         "exported_path": "evidence/generated/single-step-proof.json",
-        "manifest_blake3": "9900cfb2ce8d110a2f4bccfde1ae0f97f27d8c295e5b1009e980a284c2616568",
+        "manifest_blake3": "dcd1e7998e9163598218eb8e35f2563ab105321a0ec577c95f1aa044e97960c4",
         "manifest_path": "evidence/single-step-proof.ncl"
       },
       {
         "claim_boundary": "bounded replay refinement and first-denial obligations only",
-        "exported_blake3": "52e218b33ca9655dbf67ea6797676f9e462dd1fb21fa8dc0e81f6bed97cf74e6",
+        "exported_blake3": "cd629bc756ed96a4c9a306a0cda21939d310fb5e487dda1f9147399eaaa0f1ca",
         "exported_path": "evidence/generated/trace-replay-proof.json",
-        "manifest_blake3": "3610b3ff38a5f7f66c46cfddb8b75d0148a50b54d73b382bb151efeaf4dbceef",
+        "manifest_blake3": "dfa1807726f4bc4043ca4aca6385c2d0d16f878406db3f2e0f610d3636035314",
         "manifest_path": "evidence/trace-replay-proof.ncl"
       }
     ],
     "schema": "choregraph.wasm-kernel-adapter-evidence.v1",
     "sources": [
       {
-        "blake3": "9d77f1e7368d56e2ce4f04ad7021acce861a230b37c3a8fc06f039cf093a9a86",
+        "blake3": "9e5353b2c2ceed84a55a9f8ae7d1b55fb71bffd6ba38f09289a93cf25895b14a",
         "context": "choregraph wasm source file v1:Cargo.toml",
         "path": "Cargo.toml",
         "role": "workspace membership and dependency policy"
       },
       {
-        "blake3": "f125a6e0bb51d8940878627f9b1b232ac6ee1479480782a3fed84d0b59e8060c",
+        "blake3": "f8520abc336389a7fbb438b75578e6fd257119baf01f7b14975f9c9cf25922e0",
         "context": "choregraph wasm source file v1:Cargo.lock",
         "path": "Cargo.lock",
         "role": "resolved Rust dependency identity"
@@ -70,7 +70,7 @@
         "role": "Rust channel and WASM target identity"
       },
       {
-        "blake3": "d6ba754c07e5b897a48a19a79bd30ce83c3fa73da77815ee62ce725f2d666099",
+        "blake3": "e0258e5bb36ed36484de2b9be92a16f131e12df60c1bade02b92387bd4410a3c",
         "context": "choregraph wasm source file v1:flake.nix",
         "path": "flake.nix",
         "role": "reproducible component, conformance, and evidence build graph"
@@ -100,7 +100,7 @@
         "role": "production concrete transition and replay entrypoints"
       },
       {
-        "blake3": "39315879460257152f29943db8fcf77b78cc81493a8208d2f7d56e4613cecfb7",
+        "blake3": "65b1ef17f155fc6dceb70e661d76ea9a82b1600457ed08cdd0f40381f8130edf",
         "context": "choregraph wasm source file v1:crates/choregraph-kamacite/src/lib.rs",
         "path": "crates/choregraph-kamacite/src/lib.rs",
         "role": "canonical artifact API boundary"
@@ -196,7 +196,7 @@
         "role": "repository source loader"
       },
       {
-        "blake3": "43dc5b134e2f45bc042d8f9bc79cbb68cd535b62df1552d598409dc02214c614",
+        "blake3": "fb67f101b0a7fd37b113809252f3a8f482de8abef248eca5461cc90db0a97b22",
         "context": "choregraph wasm source file v1:tools/choregraph-foundation-check/src/tests.rs",
         "path": "tools/choregraph-foundation-check/src/tests.rs",
         "role": "positive and negative boundary check fixtures"
@@ -208,7 +208,7 @@
         "role": "bounded finding model"
       },
       {
-        "blake3": "532f2af88747dd8116282ffdb0d11b21e79364b4da8180e295c556b0c41e2aa6",
+        "blake3": "62f8a0f58492460c991a5050f425200deba733ac2a553a935d21ba4fc732482a",
         "context": "choregraph wasm source file v1:tools/choregraph-foundation-check/src/validator.rs",
         "path": "tools/choregraph-foundation-check/src/validator.rs",
         "role": "static boundary and delegation checks"

@@ -7,6 +7,7 @@ mod codec;
 mod concrete;
 mod identity;
 mod lifecycle;
+mod profile;
 mod receipt;
 
 #[cfg(test)]
@@ -69,6 +70,17 @@ pub use lifecycle::{
     LifecycleDescriptor, LifecycleError, build_durable_lifecycle_artifact,
     build_lifecycle_artifact, transition_identity, validate_durable_lifecycle_artifact,
     validate_lifecycle_artifact,
+};
+pub use profile::{
+    ROLE_CHOREOGRAPHY_DIAGNOSTICS_ROOT, ROLE_CHOREOGRAPHY_DIAGNOSTICS_SCHEMA,
+    ROLE_CHOREOGRAPHY_GLOBAL_ROOT, ROLE_CHOREOGRAPHY_GLOBAL_SCHEMA, ROLE_CHOREOGRAPHY_LOCAL_ROOT,
+    ROLE_CHOREOGRAPHY_LOCAL_SCHEMA, ROLE_CHOREOGRAPHY_LOCAL_SET_ROOT,
+    ROLE_CHOREOGRAPHY_LOCAL_SET_SCHEMA, ROLE_CHOREOGRAPHY_RECEIPT_ROOT,
+    ROLE_CHOREOGRAPHY_RECEIPT_SCHEMA, ROLE_CHOREOGRAPHY_SOURCE_ROOT,
+    ROLE_CHOREOGRAPHY_SOURCE_SCHEMA, encode_role_choreography_diagnostics,
+    encode_role_choreography_global, encode_role_choreography_local,
+    encode_role_choreography_local_set, encode_role_choreography_receipt,
+    encode_role_choreography_source,
 };
 pub use receipt::{
     FsmGuardDecision, FsmReceiptArtifact, FsmReceiptBody, FsmTraceStep, LinkReceiptArtifact,

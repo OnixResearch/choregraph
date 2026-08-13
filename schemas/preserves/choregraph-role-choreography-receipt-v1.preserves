@@ -1,0 +1,34 @@
+; Complete role-choreography projection receipt body v1.
+
+ProjectionReceiptBody = <ProjectionReceiptBody {
+  source_envelope: ChoreographyIdentity,
+  import_closure: ChoreographyIdentity,
+  evaluator_output: ChoreographyIdentity,
+  strict_dto: ChoreographyIdentity,
+  global_artifact: ChoreographyIdentity,
+  local_artifacts: [ChoreographyIdentity ...],
+  complete_local_set: ChoreographyIdentity,
+  trellis_revision: string,
+  trellis_semantic_commit: string,
+  trellis_source_set: ChoreographyIdentity,
+  trellis_proof_set: ChoreographyIdentity,
+  lowerer: ChoreographyIdentity,
+  schema_set: ChoreographyIdentity,
+  bounds: ChoreographyIdentity,
+  diagnostics: ChoreographyIdentity,
+  toolchain: ChoreographyIdentity,
+  non_claims: ChoreographyIdentity,
+  evidence_roles: [ProjectionEvidenceBinding ...]
+}>
+
+ChoreographyIdentity = <ChoreographyIdentity {
+  domain: symbol,
+  algorithm: "blake3",
+  hex: string
+}>
+
+ProjectionEvidenceBinding = <ProjectionEvidenceBinding {
+  role: symbol,
+  identity: ChoreographyIdentity,
+  claim: "identity-linkage-only-no-claim-promotion"
+}>

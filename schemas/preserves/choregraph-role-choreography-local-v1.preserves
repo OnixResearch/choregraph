@@ -1,0 +1,36 @@
+; One exact Trellis endpoint projection artifact body v1.
+
+LocalProtocolArtifactBody = <LocalProtocolArtifactBody {
+  role: integer,
+  role_kind: RoleKind,
+  protocol: LocalProtocol
+}>
+
+RoleKind =
+    <native>
+  / <external {
+      contract_identity: string,
+      input_schema_identity: string,
+      output_schema_identity: string
+    }>
+
+LocalProtocol =
+    <end>
+  / <send {
+      peer: integer, label: integer, payload_tag: integer, next: LocalProtocol
+    }>
+  / <receive {
+      peer: integer, label: integer, payload_tag: integer, next: LocalProtocol
+    }>
+  / <send-owned {
+      peer: integer, label: integer, payload_tag: integer,
+      value: integer, next: LocalProtocol
+    }>
+  / <receive-owned {
+      peer: integer, label: integer, payload_tag: integer,
+      value: integer, next: LocalProtocol
+    }>
+  / <internal-choice { branches: [LocalProtocolBranch ...] }>
+  / <offer { from: integer, branches: [LocalProtocolBranch ...] }>
+
+LocalProtocolBranch = <LocalProtocolBranch { label: integer, body: LocalProtocol }>

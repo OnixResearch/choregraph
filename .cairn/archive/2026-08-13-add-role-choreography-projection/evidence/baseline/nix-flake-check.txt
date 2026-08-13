@@ -1,0 +1,37 @@
+evaluating flake...
+checking flake output 'packages'...
+checking derivation packages.x86_64-linux.default...
+derivation evaluated to /nix/store/49w3lv3m76a5fjqb1f6hwy9pqzffni40-choregraph-0.1.0.drv
+checking derivation packages.x86_64-linux.choregraph...
+derivation evaluated to /nix/store/49w3lv3m76a5fjqb1f6hwy9pqzffni40-choregraph-0.1.0.drv
+checking derivation packages.x86_64-linux.foundation-check...
+derivation evaluated to /nix/store/bn17ypb8ksd53qq8qh0nld74f23f9f9x-choregraph-foundation-check-0.1.0.drv
+checking derivation packages.x86_64-linux.choregraph-wasm-component...
+derivation evaluated to /nix/store/gjfps4akyv5iwsx7fixswdpja1lmy34d-choregraph-wasm-component-0.1.0.drv
+checking derivation packages.x86_64-linux.choregraph-wasm-conformance...
+derivation evaluated to /nix/store/1m51zmbp9n71k31nnfbc58flcydzkg1r-choregraph-wasm-conformance-0.1.0.drv
+checking derivation packages.x86_64-linux.octet-deny-all...
+derivation evaluated to /nix/store/igg0vvaqnq3r7bkzn129b9s19wzjm9k8-octet-deny-all.drv
+checking flake output 'checks'...
+checking derivation checks.x86_64-linux.octet-deny-all...
+error:
+       … while checking flake output 'checks'
+         at «github:numtide/flake-utils/11707dc2f618dd54ca8739b309ec4fc024de578b?narHash=sha256-l0KFg5HjrsfsO/JpG%2Br7fRrqm12kzFHyUHqHCVpMMbI%3D»/lib.nix:43:9:
+           42|       // {
+           43|         ${key} = (attrs.${key} or { }) // {
+             |         ^
+           44|           ${system} = ret.${key};
+
+       … while checking the derivation 'checks.x86_64-linux.octet-deny-all'
+         at «path:/home/brittonr/git/OnixResearch/choregraph-worktrees/drain-role-projection-20260813»/flake.nix:279:11:
+          278|         checks = {
+          279|           octet-deny-all = octetDenyAllCheck;
+             |           ^
+          280|           wasm-kernel-component = wasmKernelComponent;
+
+       … while evaluating derivation 'octet-consumer-check'
+         whose name attribute is located at «github:NixOS/nixpkgs/9cf7092bdd603554bd8b63c216e8943cf9b12512?narHash=sha256-9tpvMGFteZnd3gRQZFlRCohVpqooygFuy9yjuyRL2C0%3D»/pkgs/stdenv/generic/make-derivation.nix:536:13
+
+       (stack trace truncated; use '--show-trace' to show the full, detailed trace)
+
+       error: store path ('/nix/store/bhp83p6z94w49qm73kmbr0isd3fwnmxl-source') was hashed to avoid a full copy at first, but upon reading it again, the contents have changed ('/nix/store/x8a94c717i3xjgd9bpcqixgi0a8s3qj0-source'), so we can not proceed. Make sure files do not change during evaluation

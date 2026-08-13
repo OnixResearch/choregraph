@@ -10,6 +10,9 @@ choregraph-core
   <- choregraph-nickel
   <- choregraph-seaglass
 
+choregraph-kamacite
+  <- choregraph-choreography
+
 choregraph-release
 
 choregraph-core + all adapters + choregraph-release
@@ -35,6 +38,10 @@ The core excludes:
 The foundation checker rejects forbidden dependencies, source tokens, path dependencies, reverse edges, license drift, and unpinned package metadata.
 
 ## Adapter boundaries
+
+`choregraph-choreography` owns pure DTO admission, Trellis lowering, complete endpoint projection, and projection-receipt construction. It has no dependency on the machine core. It keeps dynamic role choices separate from execution-graph machine IR.
+
+The crate calls pinned Trellis production functions for projectability and endpoint projection. It does not own a second projection algorithm.
 
 `choregraph-kamacite` owns pure in-memory conversion to canonical artifacts and receipt vocabulary. It uses a hash-checked, selected Kamacite codec snapshot.
 
