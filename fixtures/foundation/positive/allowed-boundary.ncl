@@ -83,6 +83,14 @@ let reviewed_universal_weave = {
       path = "crates/choregraph-core/src/lib.rs",
       text = "#![no_std]\nextern crate alloc;\n",
     },
+    {
+      path = "crates/choregraph-core/src/analytics/mod.rs",
+      text = "pub fn ready_nodes() { crate::verified::ready_frontier(); }\n/// Returns one deterministic resume decision\n",
+    },
+    {
+      path = "crates/choregraph-core/src/verified.rs",
+      text = "pub proof fn readiness_is_sound() {}\n",
+    },
   ],
   history_sources = [
     {

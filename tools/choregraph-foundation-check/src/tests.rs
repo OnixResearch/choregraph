@@ -160,10 +160,22 @@ fn allowed_packages() -> Vec<crate::types::PackageModel> {
 fn allowed_model() -> crate::types::WorkspaceModel {
     crate::types::WorkspaceModel {
         packages: allowed_packages(),
-        core_sources: vec![crate::types::SourceUnit {
-            path: String::from("crates/choregraph-core/src/lib.rs"),
-            text: String::from("#![no_std]\nextern crate alloc;\n"),
-        }],
+        core_sources: vec![
+            crate::types::SourceUnit {
+                path: String::from("crates/choregraph-core/src/lib.rs"),
+                text: String::from("#![no_std]\nextern crate alloc;\n"),
+            },
+            crate::types::SourceUnit {
+                path: String::from("crates/choregraph-core/src/analytics/mod.rs"),
+                text: String::from(
+                    "pub fn ready_nodes() { crate::verified::ready_frontier(); }\n/// Returns one deterministic resume decision\n",
+                ),
+            },
+            crate::types::SourceUnit {
+                path: String::from("crates/choregraph-core/src/verified.rs"),
+                text: String::from("pub proof fn readiness_is_sound() {}\n"),
+            },
+        ],
         wasm_adapter_sources: vec![crate::types::SourceUnit {
             path: String::from("dispatch.rs"),
             text: [
@@ -333,6 +345,41 @@ fn rejects_forbidden_core_source() {
         text: String::from("use std::fs;"),
     });
     assert!(contains_code(&model, "foundation.forbidden-core-source"));
+}
+
+// r[verify choregraph.proof.single_step.readiness_completeness_negative]
+#[test]
+fn rejects_a_copied_readiness_implementation() {
+    let mut model = allowed_model();
+    for source in &mut model.core_sources {
+        if source
+            .path
+            .ends_with("choregraph-core/src/analytics/mod.rs")
+        {
+            source.text = String::from(include_str!(
+                "../../../fixtures/readiness-source-link/negative/copied-readiness.rs"
+            ));
+        }
+    }
+    assert!(contains_code(
+        &model,
+        "foundation.readiness-delegation-missing"
+    ));
+    assert!(contains_code(&model, "foundation.readiness-copy"));
+}
+
+// r[verify choregraph.proof.single_step.readiness_completeness_negative]
+#[test]
+fn rejects_an_unrestricted_proof_assumption() {
+    let mut model = allowed_model();
+    for source in &mut model.core_sources {
+        if source.path.ends_with("choregraph-core/src/verified.rs") {
+            source.text = String::from(include_str!(
+                "../../../fixtures/readiness-source-link/negative/unrestricted-assumption.rs"
+            ));
+        }
+    }
+    assert!(contains_code(&model, "foundation.proof-trust-escape"));
 }
 
 #[test]

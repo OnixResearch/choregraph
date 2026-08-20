@@ -19,10 +19,38 @@ use crate::model::{
     AdmittedMachine, Bottleneck, InvariantIssue, LocalState, MachineState, ParallelGroup,
     ResumeDecision,
 };
+use crate::verified::{
+    STATE_CANCELLED, STATE_COMPLETED, STATE_FAILED, STATE_PENDING, STATE_READY, STATE_RUNNING,
+    STATE_SUSPENDED,
+};
 
 const ROOT_LEVEL: usize = 0;
 const NEXT_LEVEL_INCREMENT: usize = 1;
 const MINIMUM_PARALLEL_NODE_COUNT: usize = 2;
+
+const fn local_state_code(state: LocalState) -> u8 {
+    match state {
+        LocalState::Pending => STATE_PENDING,
+        LocalState::Ready => STATE_READY,
+        LocalState::Running => STATE_RUNNING,
+        LocalState::Completed => STATE_COMPLETED,
+        LocalState::Failed => STATE_FAILED,
+        LocalState::Cancelled => STATE_CANCELLED,
+        LocalState::Suspended => STATE_SUSPENDED,
+    }
+}
+
+fn indexed_states(machine: &AdmittedMachine, state: &MachineState) -> Vec<u8> {
+    machine
+        .node_order
+        .iter()
+        .map(|node_id| {
+            state
+                .state(node_id)
+                .map_or(STATE_CANCELLED, local_state_code)
+        })
+        .collect()
+}
 
 fn dependencies_complete(
     machine: &AdmittedMachine,
@@ -60,6 +88,8 @@ fn has_failed_dependency(
 }
 
 /// Returns pending nodes whose direct dependencies are complete.
+// r[impl choregraph.proof.single_step.readiness_completeness]
+// r[impl choregraph.proof.single_step.readiness_frontier]
 pub fn ready_nodes(
     machine: &AdmittedMachine,
     state: &MachineState,
@@ -68,13 +98,15 @@ pub fn ready_nodes(
     if !issues.is_empty() {
         return Err(issues);
     }
-    let mut ready = Vec::new();
-    for node_id in &machine.topological_order {
-        if state.state(node_id) == Some(LocalState::Pending)
-            && dependencies_complete(machine, state, node_id)
-        {
-            ready.push(node_id.clone());
-        }
+    let states = indexed_states(machine, state);
+    let ready_indices = crate::verified::ready_frontier(
+        &machine.topological_indices,
+        &machine.dependency_indices,
+        &states,
+    );
+    let mut ready = Vec::with_capacity(ready_indices.len());
+    for node_index in ready_indices {
+        ready.push(machine.node_order[node_index].clone());
     }
     Ok(ready)
 }

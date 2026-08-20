@@ -504,7 +504,64 @@ pub fn indexed_step(
     }
 }
 
+// r[impl choregraph.proof.single_step.readiness_transition]
+pub open spec fn mark_ready_context_spec(
+    dependencies: Seq<Vec<usize>>,
+    states: Seq<u8>,
+    suspensions: Seq<Option<IndexedSuspensionFact>>,
+    profile: u8,
+    node_index: usize,
+) -> bool {
+    indexed_invariant_spec(dependencies, states)
+        && suspensions_consistent_spec(states, suspensions)
+        && profile_valid_spec(profile)
+        && node_index < dependencies.len()
+        && node_index < states.len()
+        && states[node_index as int] == STATE_PENDING
+        && indexed_invariant_spec(
+            dependencies,
+            step_next_states_spec(states, node_index, STATE_READY),
+        )
+        && terminal_states_preserved_spec(
+            states,
+            step_next_states_spec(states, node_index, STATE_READY),
+        )
+        && suspensions_consistent_spec(
+            step_next_states_spec(states, node_index, STATE_READY),
+            suspensions,
+        )
+}
+
+// r[verify choregraph.proof.single_step.readiness_transition]
+pub proof fn mark_ready_acceptance_is_exact(
+    dependencies: Seq<Vec<usize>>,
+    states: Seq<u8>,
+    suspensions: Seq<Option<IndexedSuspensionFact>>,
+    profile: u8,
+    node_index: usize,
+)
+    requires mark_ready_context_spec(
+        dependencies,
+        states,
+        suspensions,
+        profile,
+        node_index,
+    )
+    ensures indexed_step_accepts_spec(
+        dependencies,
+        states,
+        suspensions,
+        profile,
+        node_index,
+        ACTION_MARK_READY,
+        None,
+        Seq::<usize>::empty(),
+        Seq::<usize>::empty(),
+    ) == dependency_ready_spec(dependencies, states, node_index)
+{}
+
 // r[verify choregraph.proof.single_step.readiness]
+// r[verify choregraph.proof.single_step.readiness_completeness]
 pub proof fn readiness_is_sound(dependencies: Seq<usize>, states: Seq<u8>)
     requires dependencies_complete_spec(dependencies, states)
     ensures forall|index: int| #![trigger dependencies[index]]

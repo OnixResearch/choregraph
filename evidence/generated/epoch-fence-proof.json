@@ -34,9 +34,14 @@
       "role": "typed pure gate and production transition wrapper"
     },
     {
-      "blake3": "ea5716274215e5b55d63132e532b27bd92a658d56b002ae91391d15232dae5a4",
+      "blake3": "e451e74bbb1b9124f0a47c4459cc79bfbbb6ceda802fbee3f971b6a867f06a76",
       "path": "crates/choregraph-core/src/verified.rs",
-      "role": "production-linked Verus decision"
+      "role": "production-linked Verus decision and module linkage"
+    },
+    {
+      "blake3": "ce26c81b5f2f6b08c5adbb64c4cd55641ec5cf1951457f508f716195397a74b9",
+      "path": "crates/choregraph-core/src/verified/readiness.rs",
+      "role": "readiness module included by the positive proof root"
     },
     {
       "blake3": "bc1fa42d2d80e13fd189758797894efd995404e8c150ea1e374bc42aa61f3aa7",

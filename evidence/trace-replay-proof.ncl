@@ -174,13 +174,18 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/verified.rs",
-        blake3 = "ea5716274215e5b55d63132e532b27bd92a658d56b002ae91391d15232dae5a4",
+        blake3 = "e451e74bbb1b9124f0a47c4459cc79bfbbb6ceda802fbee3f971b6a867f06a76",
         role = "verified primitives and module linkage",
       },
       {
         path = "crates/choregraph-core/src/verified/kernel.rs",
-        blake3 = "c4d856e44051469be57f6cce5c5457ab98805e19b4d36ae64462d86fb428eefc",
+        blake3 = "940e78df77cbdb4ee549f56197d42e5142d735112c4fd683e75e42559b8de442",
         role = "production-called verified single-step kernel",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/readiness.rs",
+        blake3 = "ce26c81b5f2f6b08c5adbb64c4cd55641ec5cf1951457f508f716195397a74b9",
+        role = "verified dependency readiness included by the replay proof root",
       },
       {
         path = "crates/choregraph-core/src/verified/trace.rs",
@@ -209,7 +214,7 @@ let ProofManifest = {
       },
       {
         path = "flake.nix",
-        blake3 = "0c1dc4e9da288c95610afaa07686306895a9accb442bf2500b95d0ab9abf1c3f",
+        blake3 = "5918bc107086795f588d45d197899745b70043e4c8915efc6a93c88e5554cf38",
         role = "maintained positive, negative, trust, and evidence gate",
       },
       {

@@ -76,6 +76,28 @@ const WASM_FORBIDDEN_SOURCE_TOKENS: &[&str] = &[
     "(LocalState::Pending, Action::MarkReady)",
 ];
 
+const READINESS_SOURCE_SUFFIX: &str = "analytics/mod.rs";
+const READINESS_FUNCTION_START: &str = "pub fn ready_nodes(";
+const READINESS_FUNCTION_END: &str = "/// Returns one deterministic resume decision";
+const READINESS_REQUIRED_DELEGATION: &str = "crate::verified::ready_frontier(";
+const READINESS_FORBIDDEN_COPY_TOKENS: &[&str] = &[
+    "for node_id in &machine.topological_order",
+    "LocalState::Pending",
+    "dependencies_complete(machine, state, node_id)",
+];
+const PROOF_SOURCE_SUFFIXES: &[&str] = &[
+    "verified.rs",
+    "verified/kernel.rs",
+    "verified/readiness.rs",
+    "verified/topology.rs",
+];
+const PROOF_TRUST_FORBIDDEN_TOKENS: &[&str] = &[
+    "#[verifier::external_body]",
+    "assume_specification",
+    "assume(",
+    "axiom ",
+];
+
 const EXPECTED_WIT_EXPORT: &str = "export call: func(request: list<u8>) -> list<u8>;";
 
 #[derive(Clone, Copy)]
@@ -304,6 +326,99 @@ fn validate_wit(model: &crate::types::WorkspaceModel) -> Vec<crate::types::Valid
         .collect()
 }
 
+// r[impl choregraph.proof.single_step.readiness_completeness_negative]
+// r[impl choregraph.proof.single_step.readiness_completeness_compatibility]
+// r[impl choregraph.proof.single_step.readiness_completeness_evidence]
+// r[impl choregraph.proof.single_step.readiness_completeness_validation]
+// r[impl choregraph.proof.single_step.readiness_completeness_boundary]
+// r[verify choregraph.proof.single_step.readiness_completeness_negative]
+// r[verify choregraph.proof.single_step.readiness_completeness_compatibility]
+// r[verify choregraph.proof.single_step.readiness_completeness_evidence]
+// r[verify choregraph.proof.single_step.readiness_completeness_validation]
+// r[verify choregraph.proof.single_step.readiness_completeness_boundary]
+fn validate_readiness_delegation(
+    model: &crate::types::WorkspaceModel,
+) -> Vec<crate::types::ValidationIssue> {
+    debug_assert!(!READINESS_REQUIRED_DELEGATION.is_empty());
+    debug_assert!(!READINESS_FORBIDDEN_COPY_TOKENS.is_empty());
+    let Some(source) = model
+        .core_sources
+        .iter()
+        .find(|source| source.path.ends_with(READINESS_SOURCE_SUFFIX))
+    else {
+        return vec![crate::validator::issue(crate::validator::IssueFacts {
+            code: "foundation.readiness-source-missing",
+            subject: READINESS_SOURCE_SUFFIX,
+            detail: String::from("production readiness source is absent"),
+        })];
+    };
+    let Some(start) = source.text.find(READINESS_FUNCTION_START) else {
+        return vec![crate::validator::issue(crate::validator::IssueFacts {
+            code: "foundation.readiness-function-missing",
+            subject: &source.path,
+            detail: String::from("production ready_nodes function is absent"),
+        })];
+    };
+    let function_source = &source.text[start..];
+    let Some(end) = function_source.find(READINESS_FUNCTION_END) else {
+        return vec![crate::validator::issue(crate::validator::IssueFacts {
+            code: "foundation.readiness-function-boundary",
+            subject: &source.path,
+            detail: String::from("production ready_nodes boundary marker is absent"),
+        })];
+    };
+    let function_source = &function_source[..end];
+    let maximum_issue_count = READINESS_FORBIDDEN_COPY_TOKENS.len().saturating_add(1);
+    let mut issues = Vec::with_capacity(maximum_issue_count);
+    if !function_source.contains(READINESS_REQUIRED_DELEGATION) {
+        issues.push(crate::validator::issue(crate::validator::IssueFacts {
+            code: "foundation.readiness-delegation-missing",
+            subject: &source.path,
+            detail: format!("required production readiness delegation is absent: {READINESS_REQUIRED_DELEGATION}"),
+        }));
+    }
+    for token in READINESS_FORBIDDEN_COPY_TOKENS {
+        if function_source.contains(token) {
+            issues.push(crate::validator::issue(crate::validator::IssueFacts {
+                code: "foundation.readiness-copy",
+                subject: &source.path,
+                detail: format!("production ready_nodes contains copied decision token: {token}"),
+            }));
+        }
+    }
+    issues
+}
+
+// r[verify choregraph.proof.single_step.readiness_completeness_negative]
+fn validate_proof_trust_surface(
+    model: &crate::types::WorkspaceModel,
+) -> Vec<crate::types::ValidationIssue> {
+    debug_assert!(!PROOF_SOURCE_SUFFIXES.is_empty());
+    debug_assert!(!PROOF_TRUST_FORBIDDEN_TOKENS.is_empty());
+    let maximum_issue_count = PROOF_SOURCE_SUFFIXES
+        .len()
+        .saturating_mul(PROOF_TRUST_FORBIDDEN_TOKENS.len());
+    let mut issues = Vec::with_capacity(maximum_issue_count);
+    for source in &model.core_sources {
+        if !PROOF_SOURCE_SUFFIXES
+            .iter()
+            .any(|suffix| source.path.ends_with(suffix))
+        {
+            continue;
+        }
+        for token in PROOF_TRUST_FORBIDDEN_TOKENS {
+            if source.text.contains(token) {
+                issues.push(crate::validator::issue(crate::validator::IssueFacts {
+                    code: "foundation.proof-trust-escape",
+                    subject: &source.path,
+                    detail: format!("proof source contains forbidden trust token: {token}"),
+                }));
+            }
+        }
+    }
+    issues
+}
+
 pub(crate) fn validate_sources(
     model: &crate::types::WorkspaceModel,
 ) -> Vec<crate::types::ValidationIssue> {
@@ -311,6 +426,8 @@ pub(crate) fn validate_sources(
     debug_assert!(!WASM_FORBIDDEN_SOURCE_TOKENS.is_empty());
     let mut issues = validate_markers(markers(model));
     issues.extend(validate_tokens(model));
+    issues.extend(validate_readiness_delegation(model));
+    issues.extend(validate_proof_trust_surface(model));
     if model
         .packages
         .iter()

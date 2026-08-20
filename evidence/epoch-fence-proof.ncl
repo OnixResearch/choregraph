@@ -51,7 +51,8 @@ let Evidence = {
   ],
   sources = [
     { path = "crates/choregraph-core/src/ownership/mod.rs", blake3 = "f7c1d682962d757b0919893ff1f96b56475adff09cd200232886cb4fdbe4beea", role = "typed pure gate and production transition wrapper" },
-    { path = "crates/choregraph-core/src/verified.rs", blake3 = "ea5716274215e5b55d63132e532b27bd92a658d56b002ae91391d15232dae5a4", role = "production-linked Verus decision" },
+    { path = "crates/choregraph-core/src/verified.rs", blake3 = "e451e74bbb1b9124f0a47c4459cc79bfbbb6ceda802fbee3f971b6a867f06a76", role = "production-linked Verus decision and module linkage" },
+    { path = "crates/choregraph-core/src/verified/readiness.rs", blake3 = "ce26c81b5f2f6b08c5adbb64c4cd55641ec5cf1951457f508f716195397a74b9", role = "readiness module included by the positive proof root" },
     { path = "crates/choregraph-core/tests/epoch-fence.rs", blake3 = "bc1fa42d2d80e13fd189758797894efd995404e8c150ea1e374bc42aa61f3aa7", role = "positive, negative, terminal, and cross-entity tests" },
     { path = "verus/proofs/epoch_fence.rs", blake3 = "48558d89808eb179c4b26efac62ecb6f3dad64799e7f71cefafe4e6991f61fa9", role = "positive formal obligations" },
     { path = "verus/epoch-fence-failure-fixtures/cross_entity_admits.rs", blake3 = "ecc2a83316e229734126c275dd5af81067ac5aaa16f014e757f395f183ea0d09", role = "cross-entity false-claim fixture" },

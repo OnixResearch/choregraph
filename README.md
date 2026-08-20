@@ -133,6 +133,7 @@ evidence/
 - [`docs/architecture.md`](docs/architecture.md): one-way dependency boundaries.
 - [`docs/machine-semantics.md`](docs/machine-semantics.md): executable transitions and current non-claims.
 - [`docs/single-step-verification.md`](docs/single-step-verification.md): production linkage and the single-step proof boundary.
+- [`docs/readiness-completeness-baseline.md`](docs/readiness-completeness-baseline.md): pre-change proof, compatibility, and downstream readiness results.
 - [`docs/trace-replay-verification.md`](docs/trace-replay-verification.md): bounded replay, finite-trace theorems, and failure behavior.
 - [`docs/kamacite-profile.md`](docs/kamacite-profile.md): codecs, schemas, identities, and receipts.
 - [`docs/restricted-nickel-lowering.md`](docs/restricted-nickel-lowering.md): source admission, evaluation, lowering, identities, and non-claims.

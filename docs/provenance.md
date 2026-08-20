@@ -20,7 +20,7 @@ The public `preserves` dependency is pinned to the selected Kamacite profile ver
 
 The authenticated Kamacite repository is not a Cargo release input. All identities exclude sibling working-tree changes. No ambient sibling path is a release input.
 
-The single-step rail adapts lifecycle, readiness, and topological-order proof shapes from one exact Trellis revision.
+The single-step rail adapts lifecycle, readiness, topological-order, filtered-collection, uniqueness, and source-order proof shapes from one exact Trellis revision.
 
 The proof manifest records each selected Trellis source value. Choregraph verifies its adapted production functions again with the local toolchain.
 

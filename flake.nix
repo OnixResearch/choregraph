@@ -563,6 +563,14 @@
           # r[verify choregraph.proof.single_step.trust]
           # r[verify choregraph.proof.single_step.toolchain]
           # r[verify choregraph.proof.single_step.validation]
+          # r[verify choregraph.proof.single_step.readiness_completeness]
+          # r[verify choregraph.proof.single_step.readiness_frontier]
+          # r[verify choregraph.proof.single_step.readiness_transition]
+          # r[verify choregraph.proof.single_step.readiness_completeness_negative]
+          # r[verify choregraph.proof.single_step.readiness_completeness_evidence]
+          # r[verify choregraph.proof.single_step.readiness_completeness_compatibility]
+          # r[impl choregraph.proof.single_step.readiness_completeness_validation]
+          # r[verify choregraph.proof.single_step.readiness_completeness_validation]
           single-step-verus =
             pkgs.runCommand "choregraph-single-step-verus"
               {
@@ -609,6 +617,11 @@
                     concrete_reference_mutation.rs) expected='result.payload_reference' ;;
                     denial_with_intent.rs) expected='result.intent_indices@.len()' ;;
                     premature_readiness.rs) expected='dependencies_complete_spec' ;;
+                    readiness_duplicates_member.rs) expected='pairwise_distinct_spec' ;;
+                    readiness_includes_ineligible.rs) expected='ready_frontier_spec' ;;
+                    readiness_omits_eligible.rs) expected='ready_frontier_spec' ;;
+                    readiness_rejects_eligible_mark_ready.rs) expected='indexed_step_accepts_spec' ;;
+                    readiness_reverses_order.rs) expected='frontier_is_admitted_order_filter_spec' ;;
                     state_map_mismatch.rs) expected='indexed_invariant_spec' ;;
                     suspended_mark_ready.rs) expected='lifecycle_target_spec' ;;
                     suspension_effect_intent.rs) expected='indexed_step_accepts_spec' ;;
@@ -633,6 +646,8 @@
 
                 if grep -R -E '#\[verifier::external_body\]|assume_specification|\bassume[[:space:]]*\(|\baxiom\b' \
                   crates/choregraph-core/src/verified.rs \
+                  crates/choregraph-core/src/verified/kernel.rs \
+                  crates/choregraph-core/src/verified/readiness.rs \
                   crates/choregraph-core/src/verified/topology.rs; then
                   echo 'single-step proof core gained an unrecorded trust escape' >&2
                   exit 1
@@ -652,6 +667,8 @@
                   crates/choregraph-core/src/concrete.rs > /dev/null
                 grep -F 'crate::verified_topology::admitted_graph_valid(' \
                   crates/choregraph-core/src/invariant.rs > /dev/null
+                test "$(grep -F -c 'crate::verified::ready_frontier(' \
+                  crates/choregraph-core/src/analytics/mod.rs)" -eq 1
                 if grep -F '(LocalState::Pending, Action::MarkReady)' \
                   crates/choregraph-core/src/transition.rs; then
                   echo 'transition shell regained an independent lifecycle table' >&2
@@ -670,8 +687,8 @@
                 jq --exit-status '
                   .proof.schema == "choregraph.single-step-proof.v1"
                   and .proof.status == "verified"
-                  and (.proof.theorems | length) == 13
-                  and (.proof.negative_fixtures | length) == 10
+                  and (.proof.theorems | length) == 20
+                  and (.proof.negative_fixtures | length) == 17
                   and .proof.trusted_surface.project_trusted_declarations == []
                   and (.proof.non_claims | length) > 0
                 ' "$TMPDIR/proof-manifest.json" > /dev/null

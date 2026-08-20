@@ -1,5 +1,7 @@
 # r[impl choregraph.proof.single_step.evidence]
 # r[impl choregraph.proof.single_step.trust]
+# r[impl choregraph.proof.single_step.readiness_completeness_evidence]
+# r[verify choregraph.proof.single_step.readiness_completeness_evidence]
 let NonEmpty = std.contract.from_predicate (fun value =>
   std.is_string value && std.string.length value > 0
 ) in
@@ -55,7 +57,7 @@ let ProofManifest = {
   proof | ProofManifest = {
     schema = "choregraph.single-step-proof.v1",
     status = "verified",
-    claim = "The production-called indexed kernel preserves bounded state, declared intent membership, concrete binding decisions, reference witnesses, durable suspension facts, exact resume binding, and effect-free suspension transitions.",
+    claim = "The production-called indexed kernel and readiness frontier prove exact dependency readiness, complete ordered frontier membership, effect-free MarkReady acceptance, bounded state preservation, declared intent membership, concrete binding decisions, durable suspension facts, and exact resume binding.",
     positive_command_argv = [
       "octet-production-verus",
       "--crate-type=lib",
@@ -74,6 +76,11 @@ let ProofManifest = {
     vstd_crate = "vstd@0.0.0-2026-01-25-0057-no-default-features-alloc",
     trellis_revision = "aead4527bfc3c714e71669bce656719dd2a6b2e2",
     trellis_sources = [
+      {
+        path = "src/bounded_peers.rs",
+        blake3 = "6e1d5fc141777dd30f0c0b475388f973ee427628c7ba3a7bfa665e27f79ff860",
+        adapted_claim = "a deterministic filtered collection preserves source order and uniqueness from a distinct input",
+      },
       {
         path = "src/job_dag.rs",
         blake3 = "33d61c877ea238302c843a16647667d8703ede28c1f2888a4d5b8fc4164fcc70",
@@ -97,10 +104,17 @@ let ProofManifest = {
       "admitted_topology_has_each_node_once_and_edges_forward",
       "concrete binding and reference preservation witnesses",
       "denial_has_no_replacement_or_intents",
+      "dependency_ready executable refinement postcondition",
       "equal_explicit_inputs_have_equal_decisions",
       "indexed_step executable refinement postconditions",
+      "mark_ready_acceptance_is_exact",
       "mismatched_resume_is_denied",
       "readiness_is_sound",
+      "ready_frontier executable refinement postcondition",
+      "ready_frontier_contains_each_eligible_node_once",
+      "ready_frontier_contains_every_eligible_node",
+      "ready_frontier_contains_only_eligible_nodes",
+      "ready_frontier_preserves_admitted_order",
       "suspended_state_blocks_execution_actions",
       "suspension_transitions_emit_no_effects",
       "suspension_update_preserves_consistency",
@@ -125,6 +139,11 @@ let ProofManifest = {
         path = "crates/choregraph-core/Cargo.toml",
         blake3 = "b0317889ad7968e1982f4df7fbd81d5bdc40ddea2cbbec852bf07f6fa7c7eb84",
         role = "erased vstd dependency contract",
+      },
+      {
+        path = "crates/choregraph-core/src/analytics/mod.rs",
+        blake3 = "cc6bb985f4c5b5c870331033cdc5529d8c2295440acc762ae4a00aa218e820d7",
+        role = "production readiness frontier delegation and public identifier mapping",
       },
       {
         path = "crates/choregraph-core/src/admission.rs",
@@ -152,19 +171,29 @@ let ProofManifest = {
         role = "production indexed machine fields",
       },
       {
+        path = "crates/choregraph-core/tests/readiness-completeness.rs",
+        blake3 = "2744cd83baec290893a35e3469808b9f853eacf25496a38c92c3fc33f25dae92",
+        role = "positive and negative public readiness completeness fixtures",
+      },
+      {
         path = "crates/choregraph-core/src/transition.rs",
         blake3 = "0ceb97566ae5308a1fff9d560fd56c330819e5f359673035ea36365c89c5ac83",
         role = "production transition shell and kernel delegation",
       },
       {
         path = "crates/choregraph-core/src/verified.rs",
-        blake3 = "ea5716274215e5b55d63132e532b27bd92a658d56b002ae91391d15232dae5a4",
+        blake3 = "e451e74bbb1b9124f0a47c4459cc79bfbbb6ceda802fbee3f971b6a867f06a76",
         role = "verified primitives and module linkage",
       },
       {
         path = "crates/choregraph-core/src/verified/kernel.rs",
-        blake3 = "c4d856e44051469be57f6cce5c5457ab98805e19b4d36ae64462d86fb428eefc",
+        blake3 = "940e78df77cbdb4ee549f56197d42e5142d735112c4fd683e75e42559b8de442",
         role = "production-called verified transition kernel",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/readiness.rs",
+        blake3 = "ce26c81b5f2f6b08c5adbb64c4cd55641ec5cf1951457f508f716195397a74b9",
+        role = "production-called verified dependency readiness frontier",
       },
       {
         path = "crates/choregraph-core/src/verified/topology.rs",
@@ -182,8 +211,28 @@ let ProofManifest = {
         role = "reviewed selected-source baseline",
       },
       {
+        path = "fixtures/readiness-source-link/negative/copied-readiness.rs",
+        blake3 = "7f48baa719cd687f96a4b900dcb35cc9bb376d0a076db90e5a49e0ed91e20e8d",
+        role = "negative copied readiness source-link fixture",
+      },
+      {
+        path = "fixtures/readiness-source-link/negative/unrestricted-assumption.rs",
+        blake3 = "146a150988ac6e8592bf80f7c18074e699162ee3421f2d74454b88930ce2aec0",
+        role = "negative unrestricted proof trust fixture",
+      },
+      {
+        path = "tools/choregraph-foundation-check/src/source.rs",
+        blake3 = "a807f86e14af5eb8d5468e41606b71c8308af091ff8ee1d7606e10762f40eb8f",
+        role = "production readiness delegation and proof trust source guard",
+      },
+      {
+        path = "tools/choregraph-foundation-check/src/tests.rs",
+        blake3 = "a42a67c8fd3bedc6c95c92ec24e2d9ece32648ca84d7bb7b99b0628c3a964db5",
+        role = "positive and negative source guard tests",
+      },
+      {
         path = "flake.nix",
-        blake3 = "0c1dc4e9da288c95610afaa07686306895a9accb442bf2500b95d0ab9abf1c3f",
+        blake3 = "5918bc107086795f588d45d197899745b70043e4c8915efc6a93c88e5554cf38",
         role = "maintained proof and failure-fixture gate",
       },
       {
@@ -200,6 +249,31 @@ let ProofManifest = {
         path = "verus/failure-fixtures/premature_readiness.rs",
         blake3 = "d866a8659ca27339098f51b4916d03570ea2c85b30ad5542431e60fb77e1240c",
         role = "negative readiness fixture",
+      },
+      {
+        path = "verus/failure-fixtures/readiness_duplicates_member.rs",
+        blake3 = "3a2d6b162d85d71b13187bc0a441508b2411e1235e2fced9d50852e789d73055",
+        role = "negative duplicate readiness frontier fixture",
+      },
+      {
+        path = "verus/failure-fixtures/readiness_includes_ineligible.rs",
+        blake3 = "194edb70b96ad31eaf041e60f9c5b98255886ff6198eca4ae7e11216452fa0be",
+        role = "negative extra readiness frontier fixture",
+      },
+      {
+        path = "verus/failure-fixtures/readiness_omits_eligible.rs",
+        blake3 = "5142356f587e22331853bc5f0892179f97c2b1d9f4c3067543541d9e835ab001",
+        role = "negative omitted readiness frontier fixture",
+      },
+      {
+        path = "verus/failure-fixtures/readiness_rejects_eligible_mark_ready.rs",
+        blake3 = "dbb330cf445960812e6774e783f508b3b2916c67fa91aa1e114d65bf5c6ee920",
+        role = "negative eligible MarkReady rejection fixture",
+      },
+      {
+        path = "verus/failure-fixtures/readiness_reverses_order.rs",
+        blake3 = "a915a0525cd9d14ab614fd34f607e25c5a6619ce878de4159ba9c3077c052b6e",
+        role = "negative reversed readiness frontier fixture",
       },
       {
         path = "verus/failure-fixtures/state_map_mismatch.rs",
@@ -259,6 +333,41 @@ let ProofManifest = {
         violated_obligation = "readiness accepts a running dependency",
       },
       {
+        path = "verus/failure-fixtures/readiness_duplicates_member.rs",
+        expected_diagnostic = "postcondition not satisfied: pairwise_distinct_spec",
+        violated_obligation = "an eligible frontier member appears twice",
+      },
+      {
+        path = "verus/failure-fixtures/readiness_includes_ineligible.rs",
+        expected_diagnostic = "postcondition not satisfied: ready_frontier_spec",
+        violated_obligation = "an ineligible node appears in the frontier",
+      },
+      {
+        path = "verus/failure-fixtures/readiness_omits_eligible.rs",
+        expected_diagnostic = "postcondition not satisfied: ready_frontier_spec",
+        violated_obligation = "an eligible node is omitted from the frontier",
+      },
+      {
+        path = "verus/failure-fixtures/readiness_rejects_eligible_mark_ready.rs",
+        expected_diagnostic = "postcondition not satisfied: indexed_step_accepts_spec",
+        violated_obligation = "an otherwise valid eligible MarkReady event is rejected",
+      },
+      {
+        path = "verus/failure-fixtures/readiness_reverses_order.rs",
+        expected_diagnostic = "postcondition not satisfied: frontier_is_admitted_order_filter_spec",
+        violated_obligation = "eligible frontier members reverse admitted order",
+      },
+      {
+        path = "fixtures/readiness-source-link/negative/copied-readiness.rs",
+        expected_diagnostic = "foundation.readiness-delegation-missing",
+        violated_obligation = "the public readiness path copies the decision instead of delegating",
+      },
+      {
+        path = "fixtures/readiness-source-link/negative/unrestricted-assumption.rs",
+        expected_diagnostic = "foundation.proof-trust-escape",
+        violated_obligation = "an unrestricted assumption enters the proof root",
+      },
+      {
         path = "verus/failure-fixtures/state_map_mismatch.rs",
         expected_diagnostic = "postcondition not satisfied: indexed_invariant_spec",
         violated_obligation = "dependency and state vectors have different lengths",
@@ -306,13 +415,15 @@ let ProofManifest = {
         "Identifier parsing and BTreeMap-to-index conversion are executable Rust and are not Verus-proved.",
         "Canonical references are abstract proof tokens; Kamacite checks bytes and BLAKE3 identities outside Verus.",
         "The public shell accepts only an accepted indexed decision and reruns invariant and effect checks after conversion.",
+        "The production analytics path converts identifiers and states before it calls the verified indexed frontier.",
+        "The source-link guard proves selected delegation and forbidden-token facts, not source semantic equivalence.",
         "The proof starts at admitted indexed graph and state views, not at arbitrary source text or Nickel evaluation.",
       ],
     },
     non_claims = [
       "This evidence does not prove Verus, Z3, rustc, vstd, the allocator, or the operating system.",
       "This evidence does not prove arbitrary Nickel evaluation or source-to-index semantic equivalence.",
-      "This evidence does not prove runtime authorization, effect execution, persistence, scheduling, or liveness. Finite-trace claims require the separate trace rail.",
+      "This evidence does not prove runtime authorization, effect execution, persistence, scheduling, capacity, fairness, or liveness. Finite-trace claims require the separate trace rail.",
       "Trellis source identities record adapted proof inputs and do not transfer Trellis certification.",
     ],
   },

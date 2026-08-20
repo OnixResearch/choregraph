@@ -17,6 +17,8 @@
 // r[impl choregraph.proof.single_step.specifications]
 // r[impl choregraph.proof.single_step.production_linkage]
 // r[impl choregraph.proof.single_step.readiness]
+// r[impl choregraph.proof.single_step.readiness_completeness]
+// r[impl choregraph.proof.single_step.readiness_frontier]
 // r[impl choregraph.proof.single_step.determinism]
 // r[impl choregraph.proof.single_step.preservation]
 // r[impl choregraph.proof.single_step.denial]
@@ -750,6 +752,10 @@ pub fn bytes_equal(left: &[u8], right: &[u8]) -> (result: bool)
 
 
 } // verus!
+
+#[path = "verified/readiness.rs"]
+mod readiness;
+pub(crate) use readiness::*;
 
 #[path = "verified/kernel.rs"]
 mod kernel;
