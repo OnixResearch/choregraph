@@ -1,197 +1,210 @@
 # Choregraph
 
-Choregraph is a compiler and verified Rust kernel for bounded execution graphs.
+Choregraph is a Rust library and compiler for bounded workflow graphs. It validates a graph, tracks each node's lifecycle, and decides whether an event may change the state. Accepted events return a new state and any declared effect intents; the application decides how to authorize and execute those intents.
 
-It lowers reviewed data-oriented Nickel graphs into canonical machine artifacts. A pure `no_std` Rust core runs the admitted state-machine transition relation.
+Use it when you need deterministic workflow decisions that can be checked and replayed independently of a runner. The repository includes a restricted Nickel compiler, canonical binary artifacts, production-linked Verus proofs, and adapters for Lattice, WebAssembly, role protocols, and branchable history.
 
-## Status
+Choregraph is not a standalone workflow service. There is no worker daemon, job queue, database, or `run` command. The CLI compiles graph data and handles local artifacts; applications embed the kernel to drive workflows.
 
-The buildable foundation, machine semantics, and Kamacite adapter exist.
+## What you can build with it
 
-The role-choreography adapter admits bounded role and ownership data. It calls the pinned Trellis projection and emits one exact local protocol per declared role.
+- **Dependency-driven workflows.** Admit a DAG and ask which nodes are ready. A diamond graph can expose two independent branches after their shared predecessor completes, then hold the final node until both branches finish. See the [Lattice diamond test](crates/choregraph-seaglass/tests/lattice-diamond.rs).
+- **Workflows that wait for an external signal.** The opt-in durable-suspension profile records a suspension class and a BLAKE3 reference. A matching resume event moves the node back to ready. The host stores the wait and determines whether the signal is authentic or approved. See the [suspension tests](crates/choregraph-core/tests/durable-suspension.rs).
+- **Deterministic recovery and inspection.** Replay a bounded event sequence against an admitted machine and initial state. Replay reports the first rejected event and never returns historical effect intents for dispatch. See the [replay tests](crates/choregraph-core/tests/trace-replay.rs).
+- **Branchable application history.** Build immutable event DAGs, select an explicit lineage, and prepare generation-checked branch updates. The machine-history adapter can replay supported machine events from that lineage. The host supplies payload storage and application merge decisions.
+- **Role protocol compilation.** Validate declared roles, ownership, transfers, and choices, then project a global protocol into one local protocol per role using pinned Trellis functions. This is a separate library workflow, not a machine runner or a `compile-nickel` mode.
 
-The Kamacite adapter emits these values:
+These are implemented mechanisms with fixtures and tests. Product scheduling, distributed storage, transport, authorization, and effect execution remain consumer responsibilities.
 
-- canonical packed Preserves artifacts
-- exact BLAKE3 identity chains
-- a closed local lifecycle profile
-- bounded linkage receipts
+## Quick start: compile a graph
 
-The restricted Nickel frontend reads source and imports beneath an operator-selected root. It uses `cap-root` and `cap-std` for path and file access.
+Build from source. The workspace packages are version `0.1.0` with `publish = false`; these instructions do not assume a crates.io release.
 
-The frontend runs the selected evaluator through pinned Bounded Exec. Then it lowers checked output and publishes canonical machine artifacts without replacement.
+You need Git and Nix with flakes enabled. The development shell supplies Rust 1.97.1, Nickel, and the verification tools. The manifest declares Rust 1.96.0 as its minimum, but the maintained build uses the pinned toolchain. Cargo fetches the pinned Trellis dependency over GitHub SSH, so direct Cargo builds need working GitHub SSH access or an appropriate local Git URL rewrite to HTTPS.
 
-Production-linked Verus rails prove named single-step and finite-trace properties of the indexed kernel. Replay uses the production `step` relation.
-
-The export-only WASM component accepts canonical packed Preserves calls. It re-admits artifacts and delegates to the same production entrypoints on every call.
-
-The epoch-fenced transition wrapper admits supplied ownership facts only for the same entity, equal epoch, and non-terminal state. Choregraph does not discover or authorize the current epoch.
-
-The branchable history crates admit immutable event DAGs and generation-fenced branch plans. Explicit linear lineages delegate machine events to production replay.
-
-The optional Universal Weave adapter provides bounded metadata-only topology. Immutable history remains authoritative.
-
-If replay finds a denial, it reports the first denial and returns no dispatchable intents.
-
-A pinned Octet gate checks every workspace target. The gate treats every Octet lint as an error.
-
-The conversion-only Seaglass adapter passes the selected behavior matrix. The reviewed Lattice runner passes all 21 tests with `choregraph-seaglass` substituted for the legacy package.
-
-Active `execution-graph-core` compatibility development now lives in this workspace. The original execution-graph repository remains a frozen compatibility and rollback source.
-
-The compiler-compatibility source has this identity:
-
-- RID: `rad:zL2ncTUeASVYwcoGkEXv9JKgGbAF`
-- Revision: `81b260da2256147ec82cb5dd44c0a0c1dcb7500d`
-
-Exact-pin consumers can use Radicle or the read-only HTTPS adapter.
-
-## Owned boundary
-
-Choregraph owns these functions:
-
-- bounded canonical execution-graph and machine IR
-- deterministic graph admission and transition semantics
-- pure state transitions and effect intents
-- Verus proofs over production transition code
-- Kamacite artifact and receipt adapters
-- restricted Nickel evaluation and canonical lowering
-- Trellis-backed role choreography and endpoint projection
-- Seaglass and Lattice compatibility adapters
-- a stateless WASM component over the production kernel
-- a proof-linked epoch-fence decision over caller-supplied entity facts
-- immutable branchable event history and explicit lineage selection
-- a one-way machine-history adapter to production replay
-- optional bounded Universal Weave topology derived from history
-
-The production transition relation has one implementation. Compatibility crates must delegate to that implementation.
-
-## Excluded authority
-
-Choregraph does not perform these functions:
-
-- execute effects
-- check UCAN tokens or resolve keys
-- read clocks or open ambient files
-- schedule resources or persist runs
-- claim success for an external effect
-
-Lattice retains runtime and product authority. Basalt evaluates bounded authorization facts.
-
-`cap-root` and `cap-std` confine local file access. Kamacite binds canonical artifacts and receipts.
-
-Valence and Cairn link evidence. They do not create behavioral proofs.
-
-## Proof boundary
-
-The proof claim starts at admitted canonical machine IR. Source and evaluator receipts bind Nickel inputs to observed outputs.
-
-Those receipts do not prove arbitrary Nickel evaluation semantics.
-
-The initial theorem is:
-
-```text
-WellFormed(machine)
-&& Invariant(machine, state)
-&& step(machine, state, event) = Accept(next, effects)
-=> Invariant(machine, next)
-&& EffectsAllowed(machine, state, event, effects)
+```sh
+git clone https://github.com/OnixResearch/choregraph.git
+cd choregraph
+nix develop
 ```
 
-A denied transition must preserve state and emit no effects.
+Run the following inside that shell, from the repository root:
 
-## Implementation lifecycle
+```sh
+cargo run --locked -p choregraph-cli -- boundary
+
+work=$(mktemp -d)
+mkdir -p "$work/scratch" "$work/output"
+cargo run --locked -p choregraph-cli -- compile-nickel \
+  "$(command -v nickel)" \
+  "$PWD/fixtures/nickel" positive/minimal.ncl \
+  "$PWD/contracts/nickel" "$work/scratch" \
+  "$work/output" minimal.preserves
+
+test -s "$work/output/minimal.preserves"
+```
+
+The first command prints the component boundaries, including static `unverified` and `unproved` status labels; it does not run the proof rails. The compiler command prints `status=compiled`, source/import information, the machine's BLAKE3 identity, and its artifact size. It writes a canonical packed Preserves machine artifact to `$work/output/minimal.preserves`.
+
+The [minimal fixture](fixtures/nickel/positive/minimal.ncl) declares one node named `root`, an operation named `run`, no edges, and no effects. Compiling it does not execute `run`. Output publication refuses to replace an existing file; use a fresh directory or a new output name for another compilation.
+
+The positional arguments are:
+
+```text
+choregraph compile-nickel <evaluator> <source-root> <source-path> \
+  <contract-root> <scratch-root> <output-root> <output-path> \
+  [<import-id>=<import-root> ...]
+```
+
+Use an absolute evaluator path and absolute operator-selected roots. Source and output paths are relative to their respective roots. Declared graph imports are data: each names a configured root, relative path, media class, byte limit, and expected BLAKE3 digest. See the [declared-import fixture](fixtures/nickel/positive/declared-import.ncl) and [frontend documentation](docs/restricted-nickel-lowering.md).
+
+For a standalone CLI build:
+
+```sh
+nix build .#choregraph
+./result/bin/choregraph boundary
+```
+
+## Embedding the kernel
+
+The central API is `choregraph_core::step(machine, state, event)`. Admission produces an immutable machine; callers retain the current state and submit events explicitly.
+
+```rust
+use choregraph_core::{
+    Action, AdmissionLimits, AdmittedMachine, Decision, Event, MachineSpec, NodeSpec,
+};
+
+let spec = MachineSpec::new(vec![NodeSpec::new("build", vec![])], vec![]);
+let machine = AdmittedMachine::admit(spec, AdmissionLimits::default())
+    .expect("valid graph");
+let mut state = machine.initial_state();
+
+for action in [Action::MarkReady, Action::Start, Action::Complete] {
+    match choregraph_core::step(&machine, &state, &Event::new("build", action)) {
+        Decision::Accept { next, intents } => {
+            assert!(intents.is_empty()); // This graph declares no effects.
+            state = next;
+        }
+        Decision::Deny { reason } => panic!("event rejected: {reason:?}"),
+    }
+}
+```
+
+This example records lifecycle decisions only. A real host would perform the work between `Start` and `Complete`, submit failure when appropriate, and store accepted state changes. Use the [core crate](crates/choregraph-core) as a path dependency from a source checkout; replace the example's panic handling with application error handling.
+
+The default linear lifecycle is:
+
+```text
+Pending -> Ready -> Running -> Completed
+                       |
+                       +----> Failed
+
+Pending, Ready, or Running -> Cancelled
+```
+
+Readiness and start require completed dependencies. Completed, failed, and cancelled nodes reject further changes. A denied event returns a reason, no replacement state, and no intents.
+
+The explicit `choregraph.lifecycle.durable-suspension.v1` profile also permits `Ready` or `Running` to become `Suspended`, then return to `Ready` on a matching `ResumeSignal`. Suspension and resumption cannot request effects. There is no automatic timeout, retry, or approval decision.
+
+Other core entry points include:
+
+| API | Purpose |
+| --- | --- |
+| `AdmittedMachine::admit` / `admit_v2` | Validate and normalize graph specifications under explicit bounds. |
+| `ready_nodes`, `parallel_groups`, `critical_path`, `bottlenecks` | Inspect readiness and graph structure; they do not launch concurrent tasks. |
+| `step_concrete` | Resolve v2 effect declarations with exact references or declared runtime slots. |
+| `replay` / `replay_concrete` | Fold a bounded trace through production transitions without returning dispatchable effects. |
+| `step_epoch_fenced` | Gate a transition on caller-supplied matching entity and epoch facts and a non-terminal state. |
+
+## Architecture and supported inputs
+
+The core is functional: inputs determine outputs, and the caller owns side effects. `choregraph-core`, the history crates, and the release-linkage core use `no_std` plus `alloc`. The CLI is the imperative shell that opens files and launches the evaluator.
+
+```text
+Restricted Nickel source
+    -> CLI: capability-relative reads and bounded evaluator process
+    -> choregraph-nickel: checked evaluated data and import closure
+    -> choregraph-core: admitted machine and pure transitions
+    -> choregraph-kamacite: canonical artifacts and identity receipts
+
+Host events + admitted machine + state
+    -> step / step_concrete -> accepted state + effect intents, or denial
+
+Explicit history lineage -> choregraph-history-machine -> production replay
+Evaluated role protocol  -> choregraph-choreography -> Trellis -> local protocols
+```
+
+| Crate | Implemented responsibility |
+| --- | --- |
+| [`choregraph-core`](crates/choregraph-core) | DAG admission, lifecycle transitions, effect declarations, graph analysis, replay, and epoch fencing. |
+| [`choregraph-nickel`](crates/choregraph-nickel) | Pure validation and lowering of evaluated graph data; it does not launch Nickel itself. |
+| [`choregraph-cli`](crates/choregraph-cli) | Restricted evaluation, local artifact writing, corpus generation, and release-evidence commands. The executable is named `choregraph`. |
+| [`choregraph-kamacite`](crates/choregraph-kamacite) | Packed Preserves codecs, versioned machine/lifecycle artifacts, BLAKE3 identities, and linkage receipts. |
+| [`choregraph-choreography`](crates/choregraph-choreography) | Bounded role/ownership admission and Trellis-backed endpoint projection through `compile_evaluated`. |
+| [`choregraph-seaglass`](crates/choregraph-seaglass), [`execution-graph-core`](crates/execution-graph-core) | Compatibility APIs that delegate machine behavior to the core. |
+| [`choregraph-wasm`](crates/choregraph-wasm) | Stateless, export-only component for admission, step, concrete step, and both replay variants; each call re-admits supplied artifacts. |
+| [`choregraph-history`](crates/choregraph-history) | Immutable event identities and DAGs, branch update plans, snapshots, cursors, and explicit lineage selection. |
+| [`choregraph-history-machine`](crates/choregraph-history-machine) | Validate history bindings and delegate supported linear machine histories to production replay. |
+| [`choregraph-weave`](crates/choregraph-weave) | Optional consumer adapter for bounded Universal Weave metadata topology derived from history. |
+| [`choregraph-release`](crates/choregraph-release) | Validate local evidence bundles and candidate identity linkage. |
+
+The machine frontend accepts `choregraph.evaluated-graph.v1` and selected Lattice workflow projections (`choregraph.lattice-workflow-projection.v1` and `.v2`). V2 supports concrete effect declarations. The separate `choregraph.role-choreography.v1` profile produces protocol artifacts, not machine IR.
+
+The CLI additionally exposes `write-kamacite-corpus`, `write-release-bundle`, `verify-release-bundle`, and `validate-publication-candidate`. The release commands work with a fixed evidence layout, not arbitrary graph directories. Candidate validation does not publish anything. See [release evidence](docs/release-evidence.md) for the exact arguments and historical publication records.
+
+## Limits and verification scope
+
+- **Bounded DAGs.** Admission rejects cycles, duplicate facts, missing endpoints, malformed identifiers, unsupported profiles, and invalid effect declarations. Default core limits include 4,096 nodes, 16,384 edges, and 64 intents per transition. Default replay is bounded to 65,536 events. Callers supply explicit limits; frontend and WASM profiles impose their own ceilings.
+- **Restricted source language.** The CLI rejects Nickel file-import syntax and string interpolation before evaluation. It applies a closed contract and Rust validates the result again. This is not an unrestricted Nickel program runner. Bounded Exec limits the child process but does not provide a filesystem or network sandbox.
+- **Host-owned authority.** Effect intents are requests, not evidence of execution or success. The kernel does not check UCAN tokens, resolve keys, read clocks, persist runs, allocate workers, or discover the current ownership epoch. An epoch match only checks supplied facts.
+- **Explicit history selection.** Multi-parent history needs explicit lineage choices. The machine-history adapter rejects merges and unsupported event classes; it does not invent application merge semantics. History stores payload identities, not payload bytes. Branch plans require host persistence.
+- **Scoped proofs.** Verus rails cover named properties of the production-called indexed kernel, including transition invariants, readiness completeness, finite-trace behavior, and epoch fencing. They do not prove the whole application, identifier-map adapters, arbitrary Nickel semantics, caller-derived identities, external-role correctness, or distributed execution.
+- **Identity is not correctness.** Canonical bytes and receipts bind exact artifacts and evidence. They do not establish authorization, exactly-once effects, persistence durability, delivery, or release eligibility. Checked-in evidence describes its recorded source and toolchain; changes need fresh validation.
+
+The [single-step proof boundary](docs/single-step-verification.md), [trace proof boundary](docs/trace-replay-verification.md), and [WASM contract](docs/wasm-kernel-adapter.md) describe the precise claims and trusted surfaces. Reference designs and superseded plans are provenance, not additional shipped features.
+
+## Development and checks
+
+Run the focused foundation checks before the broader Nix checks:
+
+```sh
+nix develop -c cargo test --workspace --all-targets
+nix develop -c cargo clippy --workspace --all-targets -- --deny warnings
+nix develop -c cargo run -p choregraph-foundation-check -- --root .
+nix flake check -L
+```
+
+Additional targeted checks and examples:
+
+```sh
+nix develop -c cargo run -p choregraph-history --example deterministic-identity
+nix develop -c cargo check -p choregraph-history -p choregraph-history-machine -p choregraph-weave --target wasm32-unknown-unknown
+nix build .#choregraph-wasm-component --no-link -L
+nix build .#checks.x86_64-linux.wasm-kernel-conformance --no-link -L
+nix build .#checks.x86_64-linux.single-step-verus --no-link -L
+nix build .#checks.x86_64-linux.trace-replay-verus --no-link -L
+nix build .#checks.x86_64-linux.epoch-fence-verus --no-link -L
+nix build .#checks.x86_64-linux.octet-deny-all --no-link -L
+```
+
+The pinned Octet gate treats all its lints as errors. The full [foundation validation guide](docs/foundation-validation.md) includes fixture checks and evidence requirements. Downstream Lattice validation requires a separate Lattice checkout; see [cutover readiness](docs/lattice-cutover-readiness.md).
+
+## Further reading
+
+- [Architecture](docs/architecture.md) and [machine semantics](docs/machine-semantics.md)
+- [Restricted Nickel lowering](docs/restricted-nickel-lowering.md) and [Kamacite artifacts](docs/kamacite-profile.md)
+- [Role choreography](docs/role-choreography.md)
+- [Branchable history](docs/branchable-event-history.md) and [epoch fencing](docs/epoch-fenced-single-writer.md)
+- [Lattice authority boundary](docs/lattice-authority-boundary.md)
+- [Release evidence and historical exact-pin publications](docs/release-evidence.md)
+- [Implementation order and superseded planning provenance](docs/implementation-order.md)
 
 <!-- r[impl choregraph.history.supersession] -->
 <!-- r[impl choregraph.history.supersession.provenance] -->
 <!-- r[verify choregraph.history.verification.complete] -->
 
-Read [`docs/implementation-order.md`](docs/implementation-order.md) for the dependency order across Choregraph, execution-graph, and Lattice changes.
-
-## Workspace
-
-```text
-crates/choregraph-choreography/
-crates/choregraph-core/
-crates/choregraph-history/
-crates/choregraph-history-machine/
-crates/choregraph-kamacite/
-crates/choregraph-nickel/
-crates/choregraph-release/
-crates/choregraph-seaglass/
-crates/choregraph-wasm/
-crates/choregraph-weave/
-crates/execution-graph-core/
-crates/choregraph-cli/
-tools/choregraph-foundation-check/
-fixtures/foundation/
-evidence/
-```
-
-## Documentation
-
-- [`docs/architecture.md`](docs/architecture.md): one-way dependency boundaries.
-- [`docs/machine-semantics.md`](docs/machine-semantics.md): executable transitions and current non-claims.
-- [`docs/single-step-verification.md`](docs/single-step-verification.md): production linkage and the single-step proof boundary.
-- [`docs/readiness-completeness-baseline.md`](docs/readiness-completeness-baseline.md): pre-change proof, compatibility, and downstream readiness results.
-- [`docs/trace-replay-verification.md`](docs/trace-replay-verification.md): bounded replay, finite-trace theorems, and failure behavior.
-- [`docs/kamacite-profile.md`](docs/kamacite-profile.md): codecs, schemas, identities, and receipts.
-- [`docs/restricted-nickel-lowering.md`](docs/restricted-nickel-lowering.md): source admission, evaluation, lowering, identities, and non-claims.
-- [`docs/role-choreography.md`](docs/role-choreography.md): typed role source, Trellis projection, canonical artifacts, and authority boundaries.
-- [`docs/octet-deny-all.md`](docs/octet-deny-all.md): lint policy, strict commands, and exceptions.
-- [`docs/lattice-cutover-readiness.md`](docs/lattice-cutover-readiness.md): source order, duplicate removal, and rollback gates.
-- [`docs/lattice-authority-boundary.md`](docs/lattice-authority-boundary.md): intent handoff and retained Lattice authority.
-- [`docs/release-evidence.md`](docs/release-evidence.md): bundle roles, Valence projection, and publication checks.
-- [`docs/wasm-kernel-adapter.md`](docs/wasm-kernel-adapter.md): WIT, Preserves envelopes, limits, identities, host duties, and non-claims.
-- [`docs/epoch-fenced-single-writer.md`](docs/epoch-fenced-single-writer.md): supplied epoch facts, the proof-linked gate, Celld reference scope, and non-claims.
-- [`docs/branchable-event-history.md`](docs/branchable-event-history.md): immutable history, branch plans, explicit lineages, machine replay, weave topology, migration, and non-claims.
-
-## Checks
-
-Run all commands from the repository root:
-
-```text
-nix develop -c cargo test --workspace --all-targets
-nix develop -c cargo clippy --workspace --all-targets -- --deny warnings
-nix develop -c cargo run -p choregraph-foundation-check -- --root .
-nix develop -c cargo check -p choregraph-history -p choregraph-history-machine -p choregraph-weave --target wasm32-unknown-unknown
-nix build .#choregraph-wasm-component --no-link -L
-nix build .#checks.x86_64-linux.wasm-kernel-conformance --no-link -L
-nix build .#checks.x86_64-linux.wasm-kernel-evidence --no-link -L
-nix build .#checks.x86_64-linux.epoch-fence-verus --no-link -L
-nix build .#checks.x86_64-linux.octet-deny-all --no-link -L
-./tools/check-lattice-downstream.rs --self-test
-./tools/check-lattice-downstream.rs ../lattice .
-nix flake check -L
-```
-
-Read [`docs/foundation-validation.md`](docs/foundation-validation.md) for the complete foundation rail.
+Active `execution-graph-core` compatibility development lives in this workspace. The original execution-graph repository remains a compatibility and rollback reference. Trellis supplies the pinned role projection implementation; Lattice remains the workflow runtime consumer. Earlier Radicle publication revisions are historical candidates, not a substitute for the current GitHub source revision.
 
 ## License
 
-Choregraph preserves the source implementation license, [`AGPL-3.0-or-later`](LICENSE). This repository does not imply relicensing.
-
-## References
-
-- [Choregraph on GitHub](https://github.com/OnixResearch/choregraph) — public source repository under `AGPL-3.0-or-later`.
-- [Choregraph publication](https://git.onix.computer/zL2ncTUeASVYwcoGkEXv9JKgGbAF.git) — read-only adapter for the published candidate.
-- [execution-graph](https://git.onix.computer/z2oYsb9jGTyp68BKYhzpivY1eK58a.git) — deterministic DAG implementation and compatibility baseline.
-- [Trellis](https://github.com/OnixResearch/trellis) — verified graph, lifecycle, scheduler, replay, and choreography primitives.
-- [Kamacite](https://github.com/OnixResearch/kamacite) — canonical Preserves artifacts, source envelopes, FSM descriptors, and receipts.
-- [Lattice](https://github.com/OnixResearch/lattice) — first consumer and Seaglass compatibility target.
-- [Basalt](https://github.com/OnixResearch/basalt) — bounded Nickel and UCAN authorization boundary.
-- [Bounded Exec](https://git.onix.computer/z2CpqLFpdP36fZXYUK5ZNWxMibpCo.git) — bounded evaluator execution without sandbox or evaluator-correctness claims.
-- [cap-root](rad://z3cWBCK7VPbEmbL5MAvKJWKjCE745) — lexical path admission before capability-relative I/O.
-- [`cap-std`](https://github.com/bytecodealliance/cap-std) — capability-oriented filesystem I/O for consumer shells.
-- [Swamp](https://github.com/swamp-club/swamp) — product reference for durable workflow suspension.
-- [Celld at `553ae73f83c8`](https://github.com/denoland/celld/tree/553ae73f83c87c3f7c7a5f73c32c2211d9d7341f) — Apache-2.0 reference for per-cell ownership epochs and shard-by-construction isolation.
-- [Wyzer](https://github.com/Wyzer-Lang/wyzer) at `7f6acf0f60cf34357e06de50112eb2b1ed833a0c` — MIT-licensed reference for role-located authoring, explicit transfer, external-role declarations, structured diagnostics, and negative choreography cases.
-- [Animus](https://github.com/OnixResearch/animus) at `48baf2fc92cad29d3f929ecf0c2e5a91b5be51bd` — owner-authorized structural source for append-only session history and bounded weave adapter behavior.
-- [Universal Weave](https://github.com/transkatgirl/universal-weave) version `0.4.1` — Unlicense DAG weave used by the optional bounded topology adapter.
-- [Weft planning](../weft) at `8a89ffa9253f3d2a6d34ce635a0df95526ceab30` — superseded planning provenance for immutable replay graphs and rejected runtime scope.
-
-Choregraph adapts only Swamp's clean-room lifecycle mechanism. It does not adopt Swamp runtime code, approval authority, YAML/CEL authoring, or TypeScript loading.
-
-Choregraph uses Celld only as a bounded mechanism reference. It does not adopt Celld code, storage, leases, routing, replication, runtime authority, or distributed-correctness claims.
-
-Wyzer projection, networking, Perceus, compile-time execution, and C ABI code are not Choregraph semantic or runtime authority.
+Choregraph preserves the source implementation license, [`AGPL-3.0-or-later`](LICENSE). This repository does not imply relicensing. Vendored source provenance and license files remain under [`vendor/`](vendor).
