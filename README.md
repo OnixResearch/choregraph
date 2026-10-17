@@ -169,10 +169,11 @@ Read [`docs/foundation-validation.md`](docs/foundation-validation.md) for the co
 
 ## License
 
-Choregraph preserves the source implementation license, `AGPL-3.0-or-later`. This repository does not imply relicensing.
+Choregraph preserves the source implementation license, [`AGPL-3.0-or-later`](LICENSE). This repository does not imply relicensing.
 
 ## References
 
+- [Choregraph on GitHub](https://github.com/OnixResearch/choregraph) — public source repository under `AGPL-3.0-or-later`.
 - [Choregraph publication](https://git.onix.computer/zL2ncTUeASVYwcoGkEXv9JKgGbAF.git) — read-only adapter for the published candidate.
 - [execution-graph](https://git.onix.computer/z2oYsb9jGTyp68BKYhzpivY1eK58a.git) — deterministic DAG implementation and compatibility baseline.
 - [Trellis](https://github.com/OnixResearch/trellis) — verified graph, lifecycle, scheduler, replay, and choreography primitives.
