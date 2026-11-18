@@ -40,7 +40,7 @@ After admission, the normal machine transition can still reject invalid state, d
 
 ## Proof linkage
 
-The production decision calls `verified::epoch_fence_decision`. The Verus proof imports that exact production source. The focused Nix rail also checks this source link and runs negative fixtures for stale epochs, cross-entity mutations, and terminal mutations.
+The production decision calls `verified::primitive::ownership::epoch_fence_decision` with one immutable `EpochFenceFacts` value naming entity knowledge, entity equality, both epochs, and terminal state. Its postcondition is equality with `epoch_fence_decision_spec` over that same value. The Verus proof imports the exact production source through the `verified.rs` namespace root. The focused Nix rail recursively checks the moved proof sources for trust escapes, checks the production delegation, and runs negative fixtures for stale epochs, cross-entity mutations, and terminal mutations. The named record does not change rejection precedence or the facts supplied by the ownership wrapper.
 
 The proof establishes only the decision over supplied facts. It does not establish the truth, freshness, or monotonic allocation of those facts.
 

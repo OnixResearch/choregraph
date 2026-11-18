@@ -9,8 +9,13 @@
 // r[impl choregraph.epoch_fence.invariant]
 // r[impl choregraph.epoch_fence.decision]
 // r[impl choregraph.epoch_fence.proof]
-use crate::id::NodeId;
-use crate::model::{AdmittedMachine, Decision, Event, LocalState, MachineState};
+use crate::id::bounded::NodeId;
+use crate::model::{
+    automaton::{AdmittedMachine, MachineState},
+    dispatch::Event,
+    outcome::Decision,
+    semantics::LocalState,
+};
 
 /// Stable contract identity for the same-entity, equal-epoch, non-terminal gate.
 pub const EPOCH_FENCE_CONTRACT_IDENTITY: &str =
@@ -129,17 +134,17 @@ const fn is_terminal(state: LocalState) -> bool {
 
 const fn disposition_from_code(code: u8) -> EpochFenceDisposition {
     match code {
-        crate::verified::EPOCH_FENCE_ADMIT => EpochFenceDisposition::Admit,
-        crate::verified::EPOCH_FENCE_UNKNOWN_ENTITY => {
+        crate::verified::primitive::ownership::EPOCH_FENCE_ADMIT => EpochFenceDisposition::Admit,
+        crate::verified::primitive::ownership::EPOCH_FENCE_UNKNOWN_ENTITY => {
             EpochFenceDisposition::Reject(EpochFenceRejection::UnknownEntity)
         }
-        crate::verified::EPOCH_FENCE_ENTITY_MISMATCH => {
+        crate::verified::primitive::ownership::EPOCH_FENCE_ENTITY_MISMATCH => {
             EpochFenceDisposition::Reject(EpochFenceRejection::EntityMismatch)
         }
-        crate::verified::EPOCH_FENCE_EPOCH_MISMATCH => {
+        crate::verified::primitive::ownership::EPOCH_FENCE_EPOCH_MISMATCH => {
             EpochFenceDisposition::Reject(EpochFenceRejection::EpochMismatch)
         }
-        crate::verified::EPOCH_FENCE_TERMINAL_MUTATION => {
+        crate::verified::primitive::ownership::EPOCH_FENCE_TERMINAL_MUTATION => {
             EpochFenceDisposition::Reject(EpochFenceRejection::TerminalMutation)
         }
         _ => EpochFenceDisposition::Reject(EpochFenceRejection::UnknownEntity),
@@ -155,12 +160,14 @@ fn decision_code(
     let is_entity_known = machine.node_indices.contains_key(fence.entity());
     let is_entity_match = event.node_id == fence.entity().as_str();
     let is_entity_terminal = state.state(fence.entity()).is_some_and(is_terminal);
-    crate::verified::epoch_fence_decision(
-        is_entity_known,
-        is_entity_match,
-        fence.current_epoch().get(),
-        fence.offered_epoch().get(),
-        is_entity_terminal,
+    crate::verified::primitive::ownership::epoch_fence_decision(
+        crate::verified::primitive::ownership::EpochFenceFacts {
+            entity_known: is_entity_known,
+            entity_matches: is_entity_match,
+            current_epoch: fence.current_epoch().get(),
+            offered_epoch: fence.offered_epoch().get(),
+            terminal: is_entity_terminal,
+        },
     )
 }
 
@@ -190,7 +197,7 @@ pub fn decide_epoch_fence(
 /// Applies one epoch fence before calling the production machine transition.
 ///
 /// Rejection emits no replacement state or effect intent. Admission delegates
-/// to [`crate::step`], so this wrapper contains no second transition table.
+/// to [`crate::transition::step`], so this wrapper contains no second transition table.
 #[must_use]
 pub fn step_epoch_fenced(
     machine: &AdmittedMachine,
@@ -200,7 +207,7 @@ pub fn step_epoch_fenced(
 ) -> EpochFencedTransition {
     let fence_decision = decide_epoch_fence(machine, state, event, fence);
     let transition = if fence_decision.disposition == EpochFenceDisposition::Admit {
-        Some(crate::step(machine, state, event))
+        Some(crate::transition::step(machine, state, event))
     } else {
         None
     };

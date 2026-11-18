@@ -1,29 +1,23 @@
-// Lifecycle artifacts preserve closed canonical tables and deterministic encoded ordering.
-#![allow(
-    unknown_lints,
-    allocation_in_loop,
-    assertion_density,
-    function_length,
-    missing_const_fn,
-    non_trait_imports,
-    path_segment_repetition,
-    raw_arithmetic_overflow,
-    unbounded_collection_growth,
-    reason = "lifecycle artifacts preserve closed canonical tables and deterministic encoded ordering"
-)]
-
-// r[impl choregraph.interchange.kamacite.lifecycle]
-use crate::codec::{
-    CanonicalArtifact, CodecBoundaryError, FSM_SPEC_ROOT_LABEL, FSM_SPEC_SCHEMA_VERSION, encode,
-};
+use crate::codec::state::{FSM_SPEC_ROOT_LABEL, FSM_SPEC_SCHEMA_VERSION};
+use crate::codec::{CanonicalArtifact, CodecBoundaryError, encode};
 use crate::identity::{
     ArtifactDomain, ArtifactIdentity, KamaciteIdentity, KamaciteIdentityDomain, compute_identity,
     compute_kamacite_identity,
 };
+use crate::lifecycle::record::FsmCoverageEvidence;
+use crate::lifecycle::record::FsmDenialRow;
+use crate::lifecycle::record::FsmEvent;
+use crate::lifecycle::record::FsmGuard;
+use crate::lifecycle::record::FsmMatrixCell;
+use crate::lifecycle::record::FsmSideEffect;
+use crate::lifecycle::record::FsmState;
+use crate::lifecycle::record::FsmTransitionRow;
+use crate::lifecycle::record::LifecycleDescriptor;
 use choregraph_core::{
-    Action, LifecycleProfile, LocalState, LocalTransitionError, lifecycle_target_for_profile,
+    model::semantics::Action, model::semantics::LifecycleProfile, model::semantics::LocalState,
+    model::semantics::LocalTransitionError, transition::lifecycle_target_for_profile,
 };
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::collections::BTreeSet;
 use std::fmt::{Display, Formatter};
 
@@ -84,72 +78,6 @@ const DURABLE_ACTIONS: [Action; DURABLE_ACTION_COUNT] = [
     Action::Suspend,
     Action::ResumeSignal,
 ];
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct FsmState {
-    pub state_id: String,
-    pub label: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct FsmEvent {
-    pub event_id: String,
-    pub label: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct FsmGuard {
-    pub guard_id: String,
-    pub required_evidence_refs: Vec<String>,
-    pub non_claims: Vec<String>,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct FsmSideEffect {
-    pub effect_id: String,
-    pub class: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-pub struct FsmTransitionRow {
-    pub from_state: String,
-    pub event: String,
-    pub to_state: String,
-    pub guards: Vec<String>,
-    pub side_effect: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-pub struct FsmDenialRow {
-    pub from_state: String,
-    pub event: String,
-    pub reason: String,
-    pub guards: Vec<String>,
-    pub side_effect: String,
-    pub preserves_state: bool,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(rename = "kamacite-fsm-spec-v2")]
-pub struct LifecycleDescriptor {
-    pub schema_version: u32,
-    pub fsm_id: String,
-    pub source_envelope_identity: Option<KamaciteIdentity>,
-    pub states: Vec<FsmState>,
-    pub events: Vec<FsmEvent>,
-    pub initial_state: String,
-    pub terminal_states: Vec<String>,
-    pub intentionally_unreachable_states: Vec<String>,
-    pub determinism_policy: String,
-    pub totality_policy: String,
-    pub guards: Vec<FsmGuard>,
-    pub side_effects: Vec<FsmSideEffect>,
-    pub transitions: Vec<FsmTransitionRow>,
-    pub denials: Vec<FsmDenialRow>,
-    pub checked_laws: Vec<String>,
-    pub non_claims: Vec<String>,
-}
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LifecycleArtifact {
     pub descriptor: LifecycleDescriptor,
@@ -157,23 +85,6 @@ pub struct LifecycleArtifact {
     pub identity: KamaciteIdentity,
     pub project_identity: ArtifactIdentity,
     pub coverage: FsmCoverageEvidence,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-pub struct FsmMatrixCell {
-    pub state: String,
-    pub event: String,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct FsmCoverageEvidence {
-    pub state_universe_identity: KamaciteIdentity,
-    pub event_universe_identity: KamaciteIdentity,
-    pub transition_coverage_identity: KamaciteIdentity,
-    pub denial_coverage_identity: KamaciteIdentity,
-    pub exclusion_coverage_identity: KamaciteIdentity,
-    pub missing_cells_identity: KamaciteIdentity,
-    pub missing_cells: Vec<FsmMatrixCell>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -187,20 +98,33 @@ pub enum LifecycleError {
 
 impl Display for LifecycleError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Codec(error) => Display::fmt(error, formatter),
-            Self::Identity(message) => formatter.write_str(message),
-            Self::UnsupportedProfile => {
-                formatter.write_str("unsupported Kamacite lifecycle profile")
-            }
-            Self::ProfileMismatch => formatter
-                .write_str("lifecycle descriptor does not match the selected closed profile"),
-            Self::MatrixNotClosed { covered, expected } => {
-                write!(
-                    formatter,
-                    "lifecycle matrix covers {covered} cells, expected {expected}"
-                )
-            }
+        if let Self::Codec(error) = self {
+            return Display::fmt(error, formatter);
+        }
+        if let Self::Identity(message) = self {
+            return formatter.write_str(message);
+        }
+        if let Self::MatrixNotClosed { covered, expected } = self {
+            return write!(
+                formatter,
+                "lifecycle matrix covers {covered} cells, expected {expected}"
+            );
+        }
+        const DIAGNOSTICS: [(LifecycleError, &str); 2] = [
+            (
+                LifecycleError::UnsupportedProfile,
+                "unsupported Kamacite lifecycle profile",
+            ),
+            (
+                LifecycleError::ProfileMismatch,
+                "lifecycle descriptor does not match the selected closed profile",
+            ),
+        ];
+        if let Some((_, message)) = DIAGNOSTICS.iter().find(|(category, _)| category == self) {
+            formatter.write_str(message)
+        } else {
+            // New categories retain their exact variant and payload in diagnostics.
+            std::fmt::Debug::fmt(self, formatter)
         }
     }
 }

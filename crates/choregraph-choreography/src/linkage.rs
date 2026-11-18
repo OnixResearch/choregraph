@@ -1,178 +1,57 @@
 #![allow(
     unknown_lints,
     borrowed_argument_types,
-    fragile_exhaustive_enum_match,
     non_trait_imports,
-    reason = "the pure bundle builder grows one owned framing buffer, keeps closed identity domains exhaustive, and shows exact artifact owner types at one linkage boundary"
+    reason = "the pure bundle builder grows one owned framing buffer and shows exact artifact owner types at one linkage boundary"
 )]
 
-use crate::admission::AdmittedChoreography;
-use crate::endpoint::{LocalProtocolArtifactBody, ProjectedChoreography, project_all};
-use crate::issue::{ChoreographyDiagnostic, DiagnosticCode};
-use crate::model::{MAX_CANONICAL_OUTPUT_BYTES, SourceSpan};
-use choregraph_kamacite::{
-    CanonicalArtifact, ROLE_CHOREOGRAPHY_DIAGNOSTICS_SCHEMA, ROLE_CHOREOGRAPHY_GLOBAL_SCHEMA,
-    ROLE_CHOREOGRAPHY_LOCAL_SCHEMA, ROLE_CHOREOGRAPHY_LOCAL_SET_SCHEMA,
-    ROLE_CHOREOGRAPHY_RECEIPT_SCHEMA, ROLE_CHOREOGRAPHY_SOURCE_SCHEMA,
-    encode_role_choreography_diagnostics, encode_role_choreography_global,
-    encode_role_choreography_local, encode_role_choreography_local_set,
-    encode_role_choreography_receipt, encode_role_choreography_source,
+pub mod digest;
+pub mod evidence;
+pub mod output;
+pub mod provenance;
+
+use self::digest::{Identity, IdentityDomain, compute_identity, identity_is_valid};
+use self::evidence::{ProjectionBinding, ProjectionReceiptBody, ProjectionRole};
+use self::output::{CanonicalArtifact, CanonicalLocalArtifact};
+use self::provenance::{
+    CHOREGRAPH_TOOLCHAIN, LOWERER_IDENTITY_PREIMAGE, TRELLIS_PROOF_SET_PREIMAGE, TRELLIS_REVISION,
+    TRELLIS_SEMANTIC_COMMIT, TRELLIS_SOURCE_MANIFEST_BLAKE3, TRELLIS_TOOLCHAIN,
 };
+use crate::admission::Admitted;
+use crate::endpoint::{LocalProtocolArtifactBody, Projected, project_all};
+use crate::issue::{Diagnostic, DiagnosticCode};
+use crate::model::bounds::MAX_CANONICAL_OUTPUT_BYTES;
+use crate::model::participants::SourceSpan;
+use choregraph_kamacite::profile::{observation, protocol, source};
 use serde::{Deserialize, Serialize};
 
-pub const TRELLIS_REVISION: &str = "d65974b14978e1a44b0f5067beb9ef6d83317dc8";
-pub const TRELLIS_SEMANTIC_COMMIT: &str = "32b5b03115377d232f3c017489c1dd657b446a4f";
-pub const TRELLIS_SOURCE_MANIFEST_BLAKE3: &str =
-    "28bdef948c196d9ff84268a2028e90d7148e7950bcc4046489f5483b0421c99a";
-pub const TRELLIS_TOOLCHAIN: &str = "rust-1.96.0+vstd-0.0.0-2026-01-25-0057";
-pub const CHOREGRAPH_TOOLCHAIN: &str = "rust-1.97.1";
-pub const LOWERER_IDENTITY_PREIMAGE: &str =
-    "choregraph-choreography-v0.1.0:direct-trellis-project-endpoint";
-pub const TRELLIS_PROOF_SET_PREIMAGE: &str = concat!(
-    "successful_transfer_conserves_ownership\n",
-    "successful_transfer_rejects_stale_source\n",
-    "successful_owned_transfer_step_conserves\n",
-    "choreography_owned_transfer_projection_correspondence\n",
-);
-
-const IDENTITY_CONTEXT: &str = "choregraph role choreography artifact identity v1";
-const BLAKE3_HEX_BYTES: usize = 64;
-const BLAKE3_PREFIX: &str = "blake3:";
 const FIXED_EVIDENCE_BINDING_COUNT: usize = 4;
 const ROLE_CHOREOGRAPHY_SCHEMA_COUNT: usize = 6;
-
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum ChoreographyIdentityDomain {
-    SourceEnvelope,
-    ImportClosure,
-    EvaluatorOutput,
-    StrictDto,
-    GlobalArtifact,
-    LocalArtifact,
-    CompleteLocalSet,
-    TrellisSourceSet,
-    TrellisProofSet,
-    Lowerer,
-    SchemaSet,
-    Bounds,
-    Diagnostics,
-    Toolchain,
-    NonClaims,
-    ProjectionReceipt,
-}
-
-impl ChoreographyIdentityDomain {
-    const fn label(self) -> &'static str {
-        match self {
-            Self::SourceEnvelope => "source-envelope",
-            Self::ImportClosure => "import-closure",
-            Self::EvaluatorOutput => "evaluator-output",
-            Self::StrictDto => "strict-dto",
-            Self::GlobalArtifact => "global-artifact",
-            Self::LocalArtifact => "local-artifact",
-            Self::CompleteLocalSet => "complete-local-set",
-            Self::TrellisSourceSet => "trellis-source-set",
-            Self::TrellisProofSet => "trellis-proof-set",
-            Self::Lowerer => "lowerer",
-            Self::SchemaSet => "schema-set",
-            Self::Bounds => "bounds",
-            Self::Diagnostics => "diagnostics",
-            Self::Toolchain => "toolchain",
-            Self::NonClaims => "non-claims",
-            Self::ProjectionReceipt => "projection-receipt",
-        }
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct ChoreographyIdentity {
-    pub domain: ChoreographyIdentityDomain,
-    pub algorithm: String,
-    pub hex: String,
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum ProjectionEvidenceRole {
-    Source,
-    GlobalProtocol,
-    LocalProtocol,
-    CompleteLocalSet,
-    ProofReference,
-    ProjectionReceipt,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct ProjectionEvidenceBinding {
-    pub role: ProjectionEvidenceRole,
-    pub identity: ChoreographyIdentity,
-    pub claim: String,
-}
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 struct DiagnosticArtifactBody {
-    diagnostics: Vec<ChoreographyDiagnostic>,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct ProjectionReceiptBody {
-    pub source_envelope: ChoreographyIdentity,
-    pub import_closure: ChoreographyIdentity,
-    pub evaluator_output: ChoreographyIdentity,
-    pub strict_dto: ChoreographyIdentity,
-    pub global_artifact: ChoreographyIdentity,
-    pub local_artifacts: Vec<ChoreographyIdentity>,
-    pub complete_local_set: ChoreographyIdentity,
-    pub trellis_revision: String,
-    pub trellis_semantic_commit: String,
-    pub trellis_source_set: ChoreographyIdentity,
-    pub trellis_proof_set: ChoreographyIdentity,
-    pub lowerer: ChoreographyIdentity,
-    pub schema_set: ChoreographyIdentity,
-    pub bounds: ChoreographyIdentity,
-    pub diagnostics: ChoreographyIdentity,
-    pub toolchain: ChoreographyIdentity,
-    pub non_claims: ChoreographyIdentity,
-    pub evidence_roles: Vec<ProjectionEvidenceBinding>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct CanonicalChoreographyArtifact {
-    pub schema_version: String,
-    pub packed_bytes: Vec<u8>,
-    pub text_projection: String,
-    pub identity: ChoreographyIdentity,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct CanonicalLocalArtifact {
-    pub role: crate::model::RoleId,
-    pub artifact: CanonicalChoreographyArtifact,
+    diagnostics: Vec<Diagnostic>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ProjectionBundle {
-    pub(crate) source: CanonicalChoreographyArtifact,
-    pub(crate) global: CanonicalChoreographyArtifact,
+    pub(crate) source: CanonicalArtifact,
+    pub(crate) global: CanonicalArtifact,
     pub(crate) locals: Vec<CanonicalLocalArtifact>,
-    pub(crate) local_set: CanonicalChoreographyArtifact,
+    pub(crate) local_set: CanonicalArtifact,
     pub(crate) receipt_body: ProjectionReceiptBody,
-    pub(crate) receipt: CanonicalChoreographyArtifact,
+    pub(crate) receipt: CanonicalArtifact,
 }
 
 impl ProjectionBundle {
     #[must_use]
-    pub const fn source(&self) -> &CanonicalChoreographyArtifact {
+    pub const fn source(&self) -> &CanonicalArtifact {
         &self.source
     }
 
     #[must_use]
-    pub const fn global(&self) -> &CanonicalChoreographyArtifact {
+    pub const fn global(&self) -> &CanonicalArtifact {
         &self.global
     }
 
@@ -182,7 +61,7 @@ impl ProjectionBundle {
     }
 
     #[must_use]
-    pub const fn local_set(&self) -> &CanonicalChoreographyArtifact {
+    pub const fn local_set(&self) -> &CanonicalArtifact {
         &self.local_set
     }
 
@@ -192,54 +71,23 @@ impl ProjectionBundle {
     }
 
     #[must_use]
-    pub const fn receipt(&self) -> &CanonicalChoreographyArtifact {
+    pub const fn receipt(&self) -> &CanonicalArtifact {
         &self.receipt
     }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ProjectionMaterials {
-    source_envelope: ChoreographyIdentity,
-    evaluator_output: ChoreographyIdentity,
+    source_envelope: Identity,
+    evaluator_output: Identity,
 }
 
-fn issue(code: DiagnosticCode, note: &'static str) -> Vec<ChoreographyDiagnostic> {
-    vec![ChoreographyDiagnostic::error(
+fn issue(code: DiagnosticCode, note: &'static str) -> Vec<Diagnostic> {
+    vec![Diagnostic::error(
         code,
         SourceSpan { start: 0, end: 0 },
         note,
     )]
-}
-
-#[must_use]
-pub fn compute_identity(
-    domain: ChoreographyIdentityDomain,
-    material: &[u8],
-) -> ChoreographyIdentity {
-    let domain_label = domain.label().as_bytes();
-    let mut hasher = blake3::Hasher::new_derive_key(IDENTITY_CONTEXT);
-    hasher.update(domain_label);
-    hasher.update(&[0]);
-    hasher.update(material);
-    ChoreographyIdentity {
-        domain,
-        algorithm: String::from("blake3"),
-        hex: hasher.finalize().to_hex().to_string(),
-    }
-}
-
-#[must_use]
-pub fn identity_is_valid(
-    identity: &ChoreographyIdentity,
-    expected: ChoreographyIdentityDomain,
-) -> bool {
-    identity.domain == expected
-        && identity.algorithm == "blake3"
-        && identity.hex.len() == BLAKE3_HEX_BYTES
-        && identity
-            .hex
-            .bytes()
-            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
 }
 
 impl ProjectionMaterials {
@@ -247,11 +95,11 @@ impl ProjectionMaterials {
     pub fn reviewed(source_envelope_bytes: &[u8], evaluator_output_bytes: &[u8]) -> Self {
         Self {
             source_envelope: compute_identity(
-                ChoreographyIdentityDomain::SourceEnvelope,
+                IdentityDomain::SourceEnvelope,
                 source_envelope_bytes,
             ),
             evaluator_output: compute_identity(
-                ChoreographyIdentityDomain::EvaluatorOutput,
+                IdentityDomain::EvaluatorOutput,
                 evaluator_output_bytes,
             ),
         }
@@ -259,11 +107,11 @@ impl ProjectionMaterials {
 }
 
 fn public_artifact(
-    artifact: CanonicalArtifact,
-    domain: ChoreographyIdentityDomain,
-) -> CanonicalChoreographyArtifact {
+    artifact: choregraph_kamacite::codec::CanonicalArtifact,
+    domain: IdentityDomain,
+) -> CanonicalArtifact {
     let identity = compute_identity(domain, &artifact.packed_bytes);
-    CanonicalChoreographyArtifact {
+    CanonicalArtifact {
         schema_version: artifact.schema_version,
         packed_bytes: artifact.packed_bytes,
         text_projection: artifact.text_projection,
@@ -271,7 +119,7 @@ fn public_artifact(
     }
 }
 
-fn encode_error(note: &'static str) -> Vec<ChoreographyDiagnostic> {
+fn encode_error(note: &'static str) -> Vec<Diagnostic> {
     issue(DiagnosticCode::ArtifactEncodingFailed, note)
 }
 
@@ -279,40 +127,40 @@ fn append_digest(material: &mut Vec<u8>, value: &[u8]) {
     material.extend_from_slice(blake3::hash(value).as_bytes());
 }
 
-fn schema_identity() -> ChoreographyIdentity {
+fn schema_identity() -> Identity {
     let schemas: [(&str, &[u8]); ROLE_CHOREOGRAPHY_SCHEMA_COUNT] = [
         (
-            ROLE_CHOREOGRAPHY_SOURCE_SCHEMA,
+            source::SCHEMA,
             include_bytes!(
                 "../../../schemas/preserves/choregraph-role-choreography-source-v1.preserves"
             ),
         ),
         (
-            ROLE_CHOREOGRAPHY_GLOBAL_SCHEMA,
+            protocol::GLOBAL_SCHEMA,
             include_bytes!(
                 "../../../schemas/preserves/choregraph-role-choreography-global-v1.preserves"
             ),
         ),
         (
-            ROLE_CHOREOGRAPHY_LOCAL_SCHEMA,
+            protocol::LOCAL_SCHEMA,
             include_bytes!(
                 "../../../schemas/preserves/choregraph-role-choreography-local-v1.preserves"
             ),
         ),
         (
-            ROLE_CHOREOGRAPHY_LOCAL_SET_SCHEMA,
+            protocol::LOCAL_SET_SCHEMA,
             include_bytes!(
                 "../../../schemas/preserves/choregraph-role-choreography-local-set-v1.preserves"
             ),
         ),
         (
-            ROLE_CHOREOGRAPHY_DIAGNOSTICS_SCHEMA,
+            observation::DIAGNOSTICS_SCHEMA,
             include_bytes!(
                 "../../../schemas/preserves/choregraph-role-choreography-diagnostics-v1.preserves"
             ),
         ),
         (
-            ROLE_CHOREOGRAPHY_RECEIPT_SCHEMA,
+            observation::RECEIPT_SCHEMA,
             include_bytes!(
                 "../../../schemas/preserves/choregraph-role-choreography-receipt-v1.preserves"
             ),
@@ -329,63 +177,63 @@ fn schema_identity() -> ChoreographyIdentity {
         append_digest(&mut material, version.as_bytes());
         append_digest(&mut material, source);
     }
-    compute_identity(ChoreographyIdentityDomain::SchemaSet, &material)
+    compute_identity(IdentityDomain::SchemaSet, &material)
 }
 
-fn lowerer_identity() -> ChoreographyIdentity {
+fn lowerer_identity() -> Identity {
     let mut material = Vec::new();
     append_digest(&mut material, LOWERER_IDENTITY_PREIMAGE.as_bytes());
     append_digest(&mut material, include_bytes!("admission.rs"));
     append_digest(&mut material, include_bytes!("endpoint.rs"));
-    compute_identity(ChoreographyIdentityDomain::Lowerer, &material)
+    compute_identity(IdentityDomain::Lowerer, &material)
 }
 
-fn toolchain_identity() -> ChoreographyIdentity {
+fn toolchain_identity() -> Identity {
     let material = format!("{CHOREGRAPH_TOOLCHAIN}\n{TRELLIS_TOOLCHAIN}");
-    compute_identity(ChoreographyIdentityDomain::Toolchain, material.as_bytes())
+    compute_identity(IdentityDomain::Toolchain, material.as_bytes())
 }
 
-fn trellis_source_identity() -> ChoreographyIdentity {
+fn trellis_source_identity() -> Identity {
     compute_identity(
-        ChoreographyIdentityDomain::TrellisSourceSet,
+        IdentityDomain::TrellisSourceSet,
         format!("{TRELLIS_REVISION}\n{TRELLIS_SOURCE_MANIFEST_BLAKE3}").as_bytes(),
     )
 }
 
 fn evidence_roles(
-    source: &ChoreographyIdentity,
-    global: &ChoreographyIdentity,
-    locals: &[ChoreographyIdentity],
-    local_set: &ChoreographyIdentity,
-    proof_set: &ChoreographyIdentity,
-) -> Vec<ProjectionEvidenceBinding> {
+    source: &Identity,
+    global: &Identity,
+    locals: &[Identity],
+    local_set: &Identity,
+    proof_set: &Identity,
+) -> Vec<ProjectionBinding> {
     let linkage_claim = String::from("identity-linkage-only-no-claim-promotion");
     let mut bindings =
         Vec::with_capacity(locals.len().saturating_add(FIXED_EVIDENCE_BINDING_COUNT));
-    bindings.push(ProjectionEvidenceBinding {
-        role: ProjectionEvidenceRole::Source,
+    bindings.push(ProjectionBinding {
+        role: ProjectionRole::Source,
         identity: source.clone(),
         claim: linkage_claim.clone(),
     });
-    bindings.push(ProjectionEvidenceBinding {
-        role: ProjectionEvidenceRole::GlobalProtocol,
+    bindings.push(ProjectionBinding {
+        role: ProjectionRole::GlobalProtocol,
         identity: global.clone(),
         claim: linkage_claim.clone(),
     });
     for local in locals {
-        bindings.push(ProjectionEvidenceBinding {
-            role: ProjectionEvidenceRole::LocalProtocol,
+        bindings.push(ProjectionBinding {
+            role: ProjectionRole::LocalProtocol,
             identity: local.clone(),
             claim: linkage_claim.clone(),
         });
     }
-    bindings.push(ProjectionEvidenceBinding {
-        role: ProjectionEvidenceRole::CompleteLocalSet,
+    bindings.push(ProjectionBinding {
+        role: ProjectionRole::CompleteLocalSet,
         identity: local_set.clone(),
         claim: linkage_claim.clone(),
     });
-    bindings.push(ProjectionEvidenceBinding {
-        role: ProjectionEvidenceRole::ProofReference,
+    bindings.push(ProjectionBinding {
+        role: ProjectionRole::ProofReference,
         identity: proof_set.clone(),
         claim: linkage_claim,
     });
@@ -403,12 +251,12 @@ fn evidence_roles(
 
 fn encode_local(
     local: &LocalProtocolArtifactBody,
-) -> Result<CanonicalLocalArtifact, Vec<ChoreographyDiagnostic>> {
-    let artifact = encode_role_choreography_local(local)
+) -> Result<CanonicalLocalArtifact, Vec<Diagnostic>> {
+    let artifact = protocol::encode_local(local)
         .map_err(|_| encode_error("local protocol Preserves encoding failed"))?;
     Ok(CanonicalLocalArtifact {
         role: local.role,
-        artifact: public_artifact(artifact, ChoreographyIdentityDomain::LocalArtifact),
+        artifact: public_artifact(artifact, IdentityDomain::LocalArtifact),
     })
 }
 
@@ -430,43 +278,41 @@ fn total_artifact_bytes(bundle: &ProjectionBundle) -> usize {
 }
 
 struct EncodedProjection {
-    source: CanonicalChoreographyArtifact,
-    global: CanonicalChoreographyArtifact,
+    source: CanonicalArtifact,
+    global: CanonicalArtifact,
     locals: Vec<CanonicalLocalArtifact>,
-    local_identities: Vec<ChoreographyIdentity>,
-    local_set: CanonicalChoreographyArtifact,
-    diagnostics: CanonicalArtifact,
+    local_identities: Vec<Identity>,
+    local_set: CanonicalArtifact,
+    diagnostics: choregraph_kamacite::codec::CanonicalArtifact,
 }
 
-fn encode_projection(
-    admitted: &AdmittedChoreography,
-) -> Result<EncodedProjection, Vec<ChoreographyDiagnostic>> {
-    let ProjectedChoreography { global, locals } = project_all(admitted)?;
+fn encode_projection(admitted: &Admitted) -> Result<EncodedProjection, Vec<Diagnostic>> {
+    let Projected { global, locals } = project_all(admitted)?;
     let source = public_artifact(
-        encode_role_choreography_source(&admitted.source)
+        source::encode(&admitted.source)
             .map_err(|_| encode_error("strict DTO Preserves encoding failed"))?,
-        ChoreographyIdentityDomain::StrictDto,
+        IdentityDomain::StrictDto,
     );
     let global = public_artifact(
-        encode_role_choreography_global(&global)
+        protocol::encode_global(&global)
             .map_err(|_| encode_error("global protocol Preserves encoding failed"))?,
-        ChoreographyIdentityDomain::GlobalArtifact,
+        IdentityDomain::GlobalArtifact,
     );
     let encoded_locals: Vec<CanonicalLocalArtifact> = locals
         .locals
         .iter()
         .map(encode_local)
         .collect::<Result<_, _>>()?;
-    let local_identities: Vec<ChoreographyIdentity> = encoded_locals
+    let local_identities: Vec<Identity> = encoded_locals
         .iter()
         .map(|local| local.artifact.identity.clone())
         .collect();
     let local_set = public_artifact(
-        encode_role_choreography_local_set(&locals)
+        protocol::encode_local_set(&locals)
             .map_err(|_| encode_error("complete local set Preserves encoding failed"))?,
-        ChoreographyIdentityDomain::CompleteLocalSet,
+        IdentityDomain::CompleteLocalSet,
     );
-    let diagnostics = encode_role_choreography_diagnostics(&DiagnosticArtifactBody {
+    let diagnostics = observation::encode_diagnostics(&DiagnosticArtifactBody {
         diagnostics: Vec::new(),
     })
     .map_err(|_| encode_error("diagnostic Preserves encoding failed"))?;
@@ -487,13 +333,13 @@ fn projection_receipt(
     encoded: &EncodedProjection,
 ) -> ProjectionReceiptBody {
     let proof_set = compute_identity(
-        ChoreographyIdentityDomain::TrellisProofSet,
+        IdentityDomain::TrellisProofSet,
         TRELLIS_PROOF_SET_PREIMAGE.as_bytes(),
     );
     let receipt = ProjectionReceiptBody {
         source_envelope: materials.source_envelope.clone(),
         import_closure: compute_identity(
-            ChoreographyIdentityDomain::ImportClosure,
+            IdentityDomain::ImportClosure,
             &encoded.source.packed_bytes,
         ),
         evaluator_output: materials.evaluator_output.clone(),
@@ -507,19 +353,13 @@ fn projection_receipt(
         trellis_proof_set: proof_set.clone(),
         lowerer: lowerer_identity(),
         schema_set: schema_identity(),
-        bounds: compute_identity(
-            ChoreographyIdentityDomain::Bounds,
-            &encoded.source.packed_bytes,
-        ),
+        bounds: compute_identity(IdentityDomain::Bounds, &encoded.source.packed_bytes),
         diagnostics: compute_identity(
-            ChoreographyIdentityDomain::Diagnostics,
+            IdentityDomain::Diagnostics,
             &encoded.diagnostics.packed_bytes,
         ),
         toolchain: toolchain_identity(),
-        non_claims: compute_identity(
-            ChoreographyIdentityDomain::NonClaims,
-            &encoded.source.packed_bytes,
-        ),
+        non_claims: compute_identity(IdentityDomain::NonClaims, &encoded.source.packed_bytes),
         evidence_roles: evidence_roles(
             &encoded.source.identity,
             &encoded.global.identity,
@@ -534,16 +374,12 @@ fn projection_receipt(
 }
 
 pub fn build_projection_bundle(
-    admitted: &AdmittedChoreography,
+    admitted: &Admitted,
     materials: &ProjectionMaterials,
-) -> Result<ProjectionBundle, Vec<ChoreographyDiagnostic>> {
-    if !identity_is_valid(
-        &materials.source_envelope,
-        ChoreographyIdentityDomain::SourceEnvelope,
-    ) || !identity_is_valid(
-        &materials.evaluator_output,
-        ChoreographyIdentityDomain::EvaluatorOutput,
-    ) {
+) -> Result<ProjectionBundle, Vec<Diagnostic>> {
+    if !identity_is_valid(&materials.source_envelope, IdentityDomain::SourceEnvelope)
+        || !identity_is_valid(&materials.evaluator_output, IdentityDomain::EvaluatorOutput)
+    {
         return Err(issue(
             DiagnosticCode::IdentityMismatch,
             "source or evaluator identity is invalid",
@@ -552,9 +388,9 @@ pub fn build_projection_bundle(
     let encoded = encode_projection(admitted)?;
     let receipt_body = projection_receipt(materials, &encoded);
     let receipt = public_artifact(
-        encode_role_choreography_receipt(&receipt_body)
+        observation::encode_receipt(&receipt_body)
             .map_err(|_| encode_error("projection receipt Preserves encoding failed"))?,
-        ChoreographyIdentityDomain::ProjectionReceipt,
+        IdentityDomain::ProjectionReceipt,
     );
     let bundle = ProjectionBundle {
         source: encoded.source,
@@ -579,7 +415,7 @@ pub fn verify_projection_receipt(
     expected: &ProjectionBundle,
     candidate_body: &ProjectionReceiptBody,
     candidate_packed: &[u8],
-) -> Result<(), Vec<ChoreographyDiagnostic>> {
+) -> Result<(), Vec<Diagnostic>> {
     if candidate_body != &expected.receipt_body
         || candidate_packed != expected.receipt.packed_bytes.as_slice()
     {
@@ -589,9 +425,4 @@ pub fn verify_projection_receipt(
         ));
     }
     Ok(())
-}
-
-#[must_use]
-pub fn prefixed_identity(identity: &ChoreographyIdentity) -> String {
-    format!("{BLAKE3_PREFIX}{}", identity.hex)
 }

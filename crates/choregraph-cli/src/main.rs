@@ -11,10 +11,13 @@ use std::path::Path;
 use std::process::ExitCode;
 
 use choregraph_cli::{
-    Command, KamaciteCorpusEntry, build_kamacite_corpus, compile_nickel, parse_command,
+    Command,
+    capability::compile_nickel,
+    corpus::{KamaciteCorpusEntry, build_kamacite_corpus},
+    parse_command,
+    release::{validate_publication_candidate, verify_release_bundle_file, write_release_bundle},
     render_compilation_report, render_foundation_report, render_publication_candidate_report,
     render_release_bundle_report, render_release_verification_report,
-    validate_publication_candidate, verify_release_bundle_file, write_release_bundle,
 };
 
 // This I/O shell returns bounded errors; pure corpus validation stays in the library core.

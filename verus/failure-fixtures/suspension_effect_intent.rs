@@ -6,12 +6,9 @@ use alloc::vec::Vec;
 use vstd::prelude::*;
 
 #[path = "../../crates/choregraph-core/src/verified.rs"]
-mod production_verified;
+mod verified;
 
-use production_verified::{
-    ACTION_SUSPEND, IndexedSuspensionFact, PROFILE_DURABLE_SUSPENSION_V1, STATE_READY,
-    indexed_step_accepts_spec,
-};
+use verified::{codes::action::ACTION_SUSPEND, primitive::support::IndexedSuspensionFact, codes::profile::PROFILE_DURABLE_SUSPENSION_V1, codes::status::STATE_READY, kernel::decision::indexed_step_accepts_spec};
 
 verus! {
 

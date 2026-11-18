@@ -47,6 +47,16 @@ A Choregraph concrete intent is a request for consumer handling. It is not an au
 
 The handoff includes the declaration key, static authority fields, selected slots, declared source references, and exact canonical references.
 
+The Rust conversion boundary is `choregraph_seaglass::v2`: use
+`admit_concrete_machine`, `convert_concrete_intent` and `step_concrete_machine`
+there. Intent conversion and concrete stepping return `Result` with
+`choregraph_seaglass::lifecycle::ConversionError`. A suspended source state or
+suspension action is not representable in the legacy handoff vocabulary and
+returns `SuspendedState` or `SuspensionAction`, respectively; neither is replaced
+with a fabricated legacy value. A conversion failure returns no accepted handoff
+or partial intent list. Production transition denials remain ordinary
+`ConcreteMachineDecision::Deny` values, with their original reasons.
+
 The required Lattice sequence is:
 
 1. Bind the exact machine, workflow, run, intent content, policy, authority, persistence, and attempt identities.

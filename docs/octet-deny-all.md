@@ -2,7 +2,7 @@
 
 r[impl choregraph.quality.octet.boundary]
 
-Choregraph runs the Octet consumer suite at revision `374bd16b26cee2af34211a29bfa531c016811f51`.
+Choregraph runs the Octet consumer suite at revision `5b1e119c1dad202be7987eeff21e35770b5a4fff`. This cohort repairs trait-method and non-const-call classification in `missing_const_fn`; the complete pinned deny-all hook, including its newer domain and state-machine checks, remains authoritative.
 
 ## Commands
 

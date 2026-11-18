@@ -23,28 +23,42 @@
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 
-use crate::concrete::{
-    ConcreteDecision, ConcreteEvent, ConcreteReplayInput, concrete_effects_allowed,
-    concrete_event_size, resolve_concrete_intents,
-};
-use crate::id::{AbilityId, NodeId, OperationId, PayloadRef, RequestId, ResourceId};
+use crate::concrete::event::{ConcreteDecision, ConcreteEvent};
+use crate::concrete::replay::ConcreteReplayInput;
+use crate::concrete::{concrete_effects_allowed, concrete_event_size, resolve_concrete_intents};
+use crate::id::bounded::{AbilityId, NodeId, OperationId, RequestId, ResourceId, SuspensionClass};
+use crate::id::reference::PayloadRef;
 use crate::invariant::{effects_allowed, invariant, terminal_states_preserved};
-use crate::model::{
-    Action, AdmittedMachine, ConsumedCount, Decision, DenialReason, EffectDeclaration,
-    EffectIntent, EffectKey, EffectRequest, Event, EventIndex, LastValidState, LifecycleProfile,
-    LocalState, LocalTransitionError, MachineSchema, MachineState, ReplayDecision, ReplayFailure,
-    ReplayFailureReason, ReplayInput, SuspensionRecord, TransitionSelector,
+use crate::model::automaton::{AdmittedMachine, EffectKey, MachineState};
+use crate::model::dispatch::Event;
+use crate::model::dispatch::{EffectDeclaration, EffectIntent, EffectRequest};
+use crate::model::history::{
+    ConsumedCount, EventIndex, LastValidState, ReplayDecision, ReplayFailure, ReplayFailureReason,
+    ReplayInput,
 };
-use crate::verified::{
+use crate::model::outcome::{Decision, DenialReason};
+use crate::model::pause::{SuspensionFactSpec, SuspensionRecord};
+use crate::model::semantics::{Action, LocalState, LocalTransitionError, TransitionSelector};
+use crate::model::semantics::{LifecycleProfile, MachineSchema};
+use crate::verified::codes::action::{
     ACTION_CANCEL, ACTION_COMPLETE, ACTION_FAIL, ACTION_MARK_READY, ACTION_RESUME_SIGNAL,
-    ACTION_START, ACTION_SUSPEND, DENIAL_DEPENDENCIES_INCOMPLETE, DENIAL_DUPLICATE_EFFECT,
-    DENIAL_INVALID_STATE, DENIAL_INVALID_TRANSITION, DENIAL_INVARIANT_WOULD_BREAK,
-    DENIAL_PROFILE_ACTION, DENIAL_SUSPENSION_EFFECTS, DENIAL_SUSPENSION_FACT_ABSENT,
-    DENIAL_SUSPENSION_FACT_PRESENT, DENIAL_SUSPENSION_MISMATCH, DENIAL_TERMINAL_STATE,
-    DENIAL_UNDECLARED_EFFECT, DENIAL_UNKNOWN_NODE, IndexedDecision, IndexedSuspensionFact,
-    PROFILE_DURABLE_SUSPENSION_V1, PROFILE_LINEAR_V1, STATE_CANCELLED, STATE_COMPLETED,
-    STATE_FAILED, STATE_PENDING, STATE_READY, STATE_RUNNING, STATE_SUSPENDED,
+    ACTION_START, ACTION_SUSPEND,
 };
+use crate::verified::codes::denial::suspension::{
+    DENIAL_PROFILE_ACTION, DENIAL_SUSPENSION_EFFECTS, DENIAL_SUSPENSION_FACT_ABSENT,
+    DENIAL_SUSPENSION_FACT_PRESENT, DENIAL_SUSPENSION_MISMATCH,
+};
+use crate::verified::codes::denial::transition::{
+    DENIAL_DEPENDENCIES_INCOMPLETE, DENIAL_DUPLICATE_EFFECT, DENIAL_INVALID_STATE,
+    DENIAL_INVALID_TRANSITION, DENIAL_INVARIANT_WOULD_BREAK, DENIAL_TERMINAL_STATE,
+    DENIAL_UNDECLARED_EFFECT, DENIAL_UNKNOWN_NODE,
+};
+use crate::verified::codes::profile::{PROFILE_DURABLE_SUSPENSION_V1, PROFILE_LINEAR_V1};
+use crate::verified::codes::status::{
+    STATE_CANCELLED, STATE_COMPLETED, STATE_FAILED, STATE_PENDING, STATE_READY, STATE_RUNNING,
+    STATE_SUSPENDED,
+};
+use crate::verified::primitive::support::{IndexedDecision, IndexedSuspensionFact};
 
 const EVENT_ACTION_TAG_BYTES: usize = 1;
 
@@ -110,7 +124,7 @@ pub const fn lifecycle_target_for_profile(
     from: LocalState,
     action: Action,
 ) -> Result<LocalState, LocalTransitionError> {
-    let target = crate::verified::lifecycle_target(
+    let target = crate::verified::primitive::transition::lifecycle_target(
         profile_code(profile),
         local_state_code(from),
         action_code(action),
@@ -324,10 +338,18 @@ struct PreparedStep {
     suspensions: Vec<Option<IndexedSuspensionFact>>,
 }
 
-fn indexed_suspension_fact(fact: &crate::model::SuspensionFactSpec) -> IndexedSuspensionFact {
+fn indexed_suspension_fact(fact: &SuspensionFactSpec) -> IndexedSuspensionFact {
     IndexedSuspensionFact {
         class: Vec::from(fact.class.as_bytes()),
         reference: Vec::from(fact.reference.as_bytes()),
+    }
+}
+
+/// Takes the owned byte snapshot required by the indexed production kernel.
+fn indexed_suspension_record(record: &SuspensionRecord) -> IndexedSuspensionFact {
+    IndexedSuspensionFact {
+        class: Vec::from(record.class.as_str().as_bytes()),
+        reference: Vec::from(record.reference.as_str().as_bytes()),
     }
 }
 
@@ -340,10 +362,7 @@ fn indexed_suspensions(
         let record = state.suspension(node_id);
         match (state.state(node_id), record) {
             (Some(LocalState::Suspended), Some(record)) => {
-                suspensions.push(Some(IndexedSuspensionFact {
-                    class: Vec::from(record.class.as_str().as_bytes()),
-                    reference: Vec::from(record.reference.as_str().as_bytes()),
-                }));
+                suspensions.push(Some(indexed_suspension_record(record)));
             }
             (Some(state), None) if state != LocalState::Suspended => {
                 suspensions.push(None);
@@ -359,7 +378,7 @@ fn prepare_step(
     state: &MachineState,
     node_id: &str,
     action: Action,
-    suspension: Option<&crate::model::SuspensionFactSpec>,
+    suspension: Option<&SuspensionFactSpec>,
 ) -> Result<PreparedStep, DenialReason> {
     if !invariant(machine, state) {
         return Err(DenialReason::InvalidState);
@@ -376,7 +395,7 @@ fn prepare_step(
     let suspensions = indexed_suspensions(machine, state).ok_or(DenialReason::InvalidState)?;
     let event_fact = suspension.map(indexed_suspension_fact);
     let empty_intents = Vec::new();
-    let precheck = crate::verified::indexed_step(
+    let precheck = crate::verified::kernel::decision::indexed_step(
         &machine.dependency_indices,
         &states,
         &suspensions,
@@ -411,7 +430,7 @@ fn run_indexed_step(
     prepared: &PreparedStep,
     input: IndexedStepInput<'_>,
 ) -> IndexedDecision {
-    crate::verified::indexed_step(
+    crate::verified::kernel::decision::indexed_step(
         &machine.dependency_indices,
         &prepared.states,
         &prepared.suspensions,
@@ -427,14 +446,13 @@ fn run_indexed_step(
 /// Parses the typed suspension record for an accepted suspend event.
 fn parse_suspension_fact(
     machine: &AdmittedMachine,
-    fact: Option<&crate::model::SuspensionFactSpec>,
+    fact: Option<&SuspensionFactSpec>,
 ) -> Result<Option<SuspensionRecord>, DenialReason> {
     let Some(fact) = fact else {
         return Ok(None);
     };
-    let class =
-        crate::id::SuspensionClass::parse(fact.class.clone(), machine.limits.max_identifier_bytes)
-            .map_err(|_| DenialReason::MalformedSuspensionFact)?;
+    let class = SuspensionClass::parse(fact.class.clone(), machine.limits.max_identifier_bytes)
+        .map_err(|_| DenialReason::MalformedSuspensionFact)?;
     let reference = PayloadRef::parse(fact.reference.clone(), machine.limits.max_reference_bytes)
         .map_err(|_| DenialReason::MalformedSuspensionFact)?;
     Ok(Some(SuspensionRecord { class, reference }))

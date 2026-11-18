@@ -4,7 +4,8 @@
     reason = "the closed diagnostic DTO keeps its bounded model types together for direct safety review"
 )]
 
-use crate::model::{MAX_DIAGNOSTIC_TEXT_BYTES, MAX_DIAGNOSTICS, SourceSpan};
+use crate::model::bounds::{MAX_DIAGNOSTIC_TEXT_BYTES, MAX_DIAGNOSTICS};
+use crate::model::participants::SourceSpan;
 use serde::{Deserialize, Serialize};
 
 const FORBIDDEN_DIAGNOSTIC_FRAGMENTS: [&str; 4] = ["secret", "token", "credential", "environment"];
@@ -66,8 +67,8 @@ pub struct SafeReplacement {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct ChoreographyDiagnostic {
+#[serde(rename = "ChoreographyDiagnostic", deny_unknown_fields)]
+pub struct Diagnostic {
     pub code: DiagnosticCode,
     pub severity: DiagnosticSeverity,
     pub primary: SourceSpan,
@@ -77,7 +78,7 @@ pub struct ChoreographyDiagnostic {
     pub safe_replacement: Option<SafeReplacement>,
 }
 
-impl ChoreographyDiagnostic {
+impl Diagnostic {
     #[must_use]
     pub fn error(code: DiagnosticCode, primary: SourceSpan, note: &'static str) -> Self {
         Self {
@@ -125,7 +126,7 @@ pub fn safe_diagnostic_text(text: &str) -> bool {
 }
 
 #[must_use]
-pub fn diagnostics_are_safe(diagnostics: &[ChoreographyDiagnostic]) -> bool {
+pub fn diagnostics_are_safe(diagnostics: &[Diagnostic]) -> bool {
     diagnostics.len() <= MAX_DIAGNOSTICS
         && diagnostics.iter().all(|diagnostic| {
             span_is_valid(diagnostic.primary)
@@ -151,7 +152,7 @@ pub fn diagnostics_are_safe(diagnostics: &[ChoreographyDiagnostic]) -> bool {
         })
 }
 
-pub fn normalize_diagnostics(diagnostics: &mut [ChoreographyDiagnostic]) {
+pub fn normalize_diagnostics(diagnostics: &mut [Diagnostic]) {
     for diagnostic in diagnostics.iter_mut() {
         diagnostic.secondary.sort_unstable();
         diagnostic.secondary.dedup();
@@ -170,7 +171,7 @@ pub fn normalize_diagnostics(diagnostics: &mut [ChoreographyDiagnostic]) {
 }
 
 #[must_use]
-pub fn render_safe_diagnostics(diagnostics: &[ChoreographyDiagnostic]) -> String {
+pub fn render_safe_diagnostics(diagnostics: &[Diagnostic]) -> String {
     if !diagnostics_are_safe(diagnostics) {
         return String::from("role-choreography: unsafe diagnostic rejected");
     }

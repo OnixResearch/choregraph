@@ -21,11 +21,16 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use choregraph_core::{
-    Action, AdmissionDiagnosticCode, AdmissionLimits, AdmittedMachine, Decision, DenialReason,
-    EdgeSpec, EffectDeclarationSpec, EffectRequest, Event, LocalState, MachineSpec, MachineState,
-    NodeId, NodeSpec, PayloadRef, TransitionSelector, bottlenecks, critical_path, effects_allowed,
-    invariant, parallel_groups, ready_nodes, resume_decision, step, validate_invariant,
-    well_formed, would_create_cycle,
+    analytics::bottlenecks, analytics::critical_path, analytics::parallel_groups,
+    analytics::ready_nodes, analytics::resume_decision, analytics::would_create_cycle,
+    id::bounded::NodeId, id::reference::PayloadRef, invariant::effects_allowed,
+    invariant::invariant, invariant::validate_invariant, invariant::well_formed,
+    model::automaton::AdmittedMachine, model::automaton::MachineSpec,
+    model::automaton::MachineState, model::capacity::AdmissionLimits,
+    model::dispatch::EffectDeclarationSpec, model::dispatch::EffectRequest, model::dispatch::Event,
+    model::graph::EdgeSpec, model::graph::NodeSpec, model::outcome::AdmissionDiagnosticCode,
+    model::outcome::Decision, model::outcome::DenialReason, model::semantics::Action,
+    model::semantics::LocalState, model::semantics::TransitionSelector, transition::step,
 };
 
 const NODE_SOURCE: &str = "source";
@@ -42,9 +47,9 @@ const SMALL_IDENTIFIER_LIMIT: usize = 4;
 const SMALL_EVENT_LIMIT: usize = 5;
 const INTENT_IDENTIFIER_FIELD_COUNT: usize = 5;
 const MINIMUM_TEST_INTENT_BYTES: usize =
-    INTENT_IDENTIFIER_FIELD_COUNT + choregraph_core::BLAKE3_REFERENCE_BYTES;
+    INTENT_IDENTIFIER_FIELD_COUNT + choregraph_core::id::reference::BLAKE3_REFERENCE_BYTES;
 const SMALL_INTENT_LIMIT: usize = SMALL_IDENTIFIER_LIMIT * INTENT_IDENTIFIER_FIELD_COUNT
-    + choregraph_core::BLAKE3_REFERENCE_BYTES;
+    + choregraph_core::id::reference::BLAKE3_REFERENCE_BYTES;
 const SINGLE_NODE_LIMIT: usize = 1;
 const NO_ITEMS: usize = 0;
 
@@ -90,7 +95,12 @@ fn node_id(machine: &AdmittedMachine, expected: &str) -> NodeId {
     panic!("admitted node is missing: {expected}")
 }
 
-fn accept(decision: Decision) -> (MachineState, Vec<choregraph_core::EffectIntent>) {
+fn accept(
+    decision: Decision,
+) -> (
+    MachineState,
+    Vec<choregraph_core::model::dispatch::EffectIntent>,
+) {
     match decision {
         Decision::Accept { next, intents } => (next, intents),
         Decision::Deny { reason } => panic!("transition denied: {reason:?}"),
@@ -98,8 +108,8 @@ fn accept(decision: Decision) -> (MachineState, Vec<choregraph_core::EffectInten
 }
 
 fn admission_diagnostics(
-    result: Result<AdmittedMachine, Vec<choregraph_core::AdmissionDiagnostic>>,
-) -> Vec<choregraph_core::AdmissionDiagnostic> {
+    result: Result<AdmittedMachine, Vec<choregraph_core::model::outcome::AdmissionDiagnostic>>,
+) -> Vec<choregraph_core::model::outcome::AdmissionDiagnostic> {
     match result {
         Ok(_) => panic!("invalid machine was admitted"),
         Err(diagnostics) => diagnostics,
@@ -107,7 +117,7 @@ fn admission_diagnostics(
 }
 
 fn diagnostic_codes(
-    result: Result<AdmittedMachine, Vec<choregraph_core::AdmissionDiagnostic>>,
+    result: Result<AdmittedMachine, Vec<choregraph_core::model::outcome::AdmissionDiagnostic>>,
 ) -> BTreeSet<AdmissionDiagnosticCode> {
     admission_diagnostics(result)
         .into_iter()
@@ -116,7 +126,7 @@ fn diagnostic_codes(
 }
 
 fn blake3_reference() -> String {
-    String::from("blake3:") + &"a".repeat(choregraph_core::BLAKE3_DIGEST_HEX_BYTES)
+    String::from("blake3:") + &"a".repeat(choregraph_core::id::reference::BLAKE3_DIGEST_HEX_BYTES)
 }
 
 fn effect_machine() -> AdmittedMachine {
@@ -172,14 +182,14 @@ fn permutations<T: Clone>(values: &[T]) -> Vec<Vec<T>> {
         return vec![Vec::new()];
     }
     let mut result = Vec::new();
+    let mut remainder = values.to_vec();
     for selected in 0..values.len() {
-        let mut remainder = values.to_vec();
         let value = remainder.remove(selected);
         for mut suffix in permutations(&remainder) {
-            let mut permutation = vec![value.clone()];
-            permutation.append(&mut suffix);
-            result.push(permutation);
+            suffix.insert(0, value.clone());
+            result.push(suffix);
         }
+        remainder.insert(selected, value);
     }
     result
 }
@@ -576,7 +586,7 @@ fn admission_failure_corpus_covers_limits_and_effect_closure() {
     );
 
     let oversized_reference = String::from("blake3:")
-        + &"a".repeat(choregraph_core::BLAKE3_DIGEST_HEX_BYTES + SINGLE_NODE_LIMIT);
+        + &"a".repeat(choregraph_core::id::reference::BLAKE3_DIGEST_HEX_BYTES + SINGLE_NODE_LIMIT);
     let mut reference_spec = MachineSpec::new(
         vec![NodeSpec::new("a", vec![String::from("op")])],
         Vec::new(),
@@ -696,7 +706,7 @@ fn selected_limits_accept_the_boundary_and_reject_the_next_value() {
         max_operations: NO_ITEMS,
         max_effect_declarations: NO_ITEMS,
         max_identifier_bytes: SMALL_IDENTIFIER_LIMIT,
-        max_reference_bytes: choregraph_core::BLAKE3_REFERENCE_BYTES,
+        max_reference_bytes: choregraph_core::id::reference::BLAKE3_REFERENCE_BYTES,
         max_event_bytes: SMALL_EVENT_LIMIT,
         max_intent_bytes: SMALL_INTENT_LIMIT,
         max_intents_per_transition: NO_ITEMS,
@@ -813,7 +823,7 @@ fn resume_decisions_match_completed_failed_and_waiting_dependencies() {
     let initial = machine.initial_state();
     assert_eq!(
         resume_decision(&machine, &initial, &left),
-        choregraph_core::ResumeDecision::AwaitDependencies
+        choregraph_core::model::analysis::ResumeDecision::AwaitDependencies
     );
 
     let mut completed_entries = initial.entries().clone();
@@ -821,11 +831,11 @@ fn resume_decisions_match_completed_failed_and_waiting_dependencies() {
     let completed = MachineState::new(completed_entries);
     assert_eq!(
         resume_decision(&machine, &completed, &left),
-        choregraph_core::ResumeDecision::Execute
+        choregraph_core::model::analysis::ResumeDecision::Execute
     );
     assert_eq!(
         resume_decision(&machine, &completed, &source),
-        choregraph_core::ResumeDecision::SkipCompleted
+        choregraph_core::model::analysis::ResumeDecision::SkipCompleted
     );
 
     let mut failed_entries = initial.entries().clone();
@@ -833,7 +843,7 @@ fn resume_decisions_match_completed_failed_and_waiting_dependencies() {
     let failed = MachineState::new(failed_entries);
     assert_eq!(
         resume_decision(&machine, &failed, &left),
-        choregraph_core::ResumeDecision::BlockedByFailedDependency
+        choregraph_core::model::analysis::ResumeDecision::BlockedByFailedDependency
     );
 }
 
@@ -916,6 +926,18 @@ fn effect_intent_order_is_independent_of_declaration_and_request_order() {
 
 #[test]
 fn payload_reference_parser_accepts_only_canonical_blake3_identity() {
-    assert!(PayloadRef::parse(blake3_reference(), choregraph_core::BLAKE3_REFERENCE_BYTES).is_ok());
-    assert!(PayloadRef::parse("blake3:ABC", choregraph_core::BLAKE3_REFERENCE_BYTES).is_err());
+    assert!(
+        PayloadRef::parse(
+            blake3_reference(),
+            choregraph_core::id::reference::BLAKE3_REFERENCE_BYTES
+        )
+        .is_ok()
+    );
+    assert!(
+        PayloadRef::parse(
+            "blake3:ABC",
+            choregraph_core::id::reference::BLAKE3_REFERENCE_BYTES
+        )
+        .is_err()
+    );
 }

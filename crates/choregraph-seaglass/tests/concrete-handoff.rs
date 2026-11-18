@@ -11,13 +11,15 @@
 )]
 
 use choregraph_core::{
-    Action, AdmissionLimits, AdmittedMachine, ConcreteBindingInput, ConcreteEffectRequest,
-    ConcreteEvent, ConcreteReferenceSpec, MachineSpec, NodeSpec,
+    concrete::effect::ConcreteEffectRequest, concrete::event::ConcreteEvent,
+    concrete::reference::ConcreteBindingInput, concrete::reference::ConcreteReferenceSpec,
+    model::automaton::AdmittedMachine, model::automaton::MachineSpec,
+    model::capacity::AdmissionLimits, model::graph::NodeSpec, model::semantics::Action,
 };
-use choregraph_nickel::{LoweredSourceFormat, lower_evaluated_json, reviewed_frontend_limits};
-use choregraph_seaglass::{
+use choregraph_seaglass::lifecycle::ConversionError;
+use choregraph_seaglass::v2::{
     ConcreteIntentHandoff, ConcreteMachineDecision, ConcretePlanError, admit_concrete_machine,
-    step_concrete_machine,
+    convert_concrete_intent, step_concrete_machine,
 };
 
 #[path = "../../../fixtures/lattice-handoff/consumer.rs"]
@@ -63,7 +65,7 @@ fn must<T, E: core::fmt::Debug>(result: Result<T, E>) -> T {
 
 fn reference(identity: &str) -> ConcreteReferenceSpec {
     ConcreteReferenceSpec {
-        profile: String::from(choregraph_core::CANONICAL_REFERENCE_PROFILE_V1),
+        profile: String::from(choregraph_core::concrete::reference::CANONICAL_REFERENCE_PROFILE_V1),
         identity: String::from(identity),
     }
 }
@@ -84,23 +86,26 @@ fn request() -> ConcreteEffectRequest {
     }
 }
 
-fn concrete_handoff() -> ConcreteIntentHandoff {
-    let lowered = must(lower_evaluated_json(
+fn concrete_intents() -> (
+    choregraph_core::concrete::effect::ConcreteEffectIntent,
+    ConcreteIntentHandoff,
+) {
+    let lowered = must(choregraph_nickel::lower::lower_evaluated_json(
         LATTICE_EFFECT_V2_JSON,
         &[],
-        reviewed_frontend_limits(),
+        choregraph_nickel::profile::reviewed_frontend_limits(),
     ));
     assert_eq!(
         lowered.source_format,
-        LoweredSourceFormat::LatticeWorkflowV2
+        choregraph_nickel::lower::LoweredSourceFormat::LatticeWorkflowV2
     );
     let plan = must(admit_concrete_machine(lowered.machine));
     let initial = plan.machine().initial_state();
-    let ready = match step_concrete_machine(
+    let ready = match must(step_concrete_machine(
         &plan,
         &initial,
         &ConcreteEvent::new(NODE, Action::MarkReady),
-    ) {
+    )) {
         ConcreteMachineDecision::Accept { next, intents } => {
             assert!(intents.is_empty());
             next
@@ -110,12 +115,63 @@ fn concrete_handoff() -> ConcreteIntentHandoff {
     let mut start = ConcreteEvent::new(NODE, Action::Start);
     start.effects.push(request());
     let ConcreteMachineDecision::Accept { intents, .. } =
-        step_concrete_machine(&plan, &ready, &start)
+        must(step_concrete_machine(&plan, &ready, &start))
     else {
         panic!("declared concrete effect was denied");
     };
     assert_eq!(intents.len(), SINGLE_INTENT);
-    intents[FIRST_INTENT].clone()
+    let choregraph_core::concrete::event::ConcreteDecision::Accept {
+        intents: canonical, ..
+    } = choregraph_core::transition::step_concrete(plan.machine(), &ready, &start)
+    else {
+        panic!("canonical concrete effect was denied");
+    };
+    assert_eq!(canonical.len(), SINGLE_INTENT);
+    (
+        canonical[FIRST_INTENT].clone(),
+        intents[FIRST_INTENT].clone(),
+    )
+}
+
+fn concrete_handoff() -> ConcreteIntentHandoff {
+    let (canonical, converted) = concrete_intents();
+    assert_eq!(must(convert_concrete_intent(&canonical)), converted);
+    converted
+}
+
+#[test]
+fn intent_conversion_rejects_unrepresentable_states_and_actions() {
+    let (canonical, _) = concrete_intents();
+    let mut suspended = canonical.clone();
+    suspended.transition.from = choregraph_core::model::semantics::LocalState::Suspended;
+    assert_eq!(
+        convert_concrete_intent(&suspended),
+        Err(ConversionError::SuspendedState)
+    );
+    for action in [Action::Suspend, Action::ResumeSignal] {
+        let mut unsupported = canonical.clone();
+        unsupported.transition.action = action;
+        assert_eq!(
+            convert_concrete_intent(&unsupported),
+            Err(ConversionError::SuspensionAction)
+        );
+    }
+}
+
+#[test]
+fn concrete_denial_remains_a_machine_decision_not_a_conversion_failure() {
+    let lowered = must(choregraph_nickel::lower::lower_evaluated_json(
+        LATTICE_EFFECT_V2_JSON,
+        &[],
+        choregraph_nickel::profile::reviewed_frontend_limits(),
+    ));
+    let plan = must(admit_concrete_machine(lowered.machine));
+    let initial = plan.machine().initial_state();
+    assert!(matches!(
+        step_concrete_machine(&plan, &initial, &ConcreteEvent::new(NODE, Action::Complete)),
+        Ok(ConcreteMachineDecision::Deny { .. })
+    ));
+    assert_eq!(initial, plan.machine().initial_state());
 }
 
 fn binding_input<'a>(

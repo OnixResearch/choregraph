@@ -9,13 +9,12 @@
 
 mod codec;
 mod dispatch;
-mod schema;
+pub mod schema;
 
 pub use dispatch::{
     CLAIM_BOUNDARY, INPUT_IDENTITY_CONTEXT, MAX_OUTER_REQUEST_BYTES, MAX_OUTER_RESULT_BYTES,
     MAX_TRACE_EVENTS, decode_result, dispatch, encode_call,
 };
-pub use schema::*;
 
 #[cfg(target_arch = "wasm32")]
 mod component {

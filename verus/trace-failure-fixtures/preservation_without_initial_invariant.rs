@@ -16,17 +16,17 @@ verus! {
 proof fn replay_is_safe_without_an_initial_invariant(
     dependencies: Seq<Vec<usize>>,
     states: Seq<u8>,
-    suspensions: Seq<Option<verified::IndexedSuspensionFact>>,
+    suspensions: Seq<Option<verified::primitive::support::IndexedSuspensionFact>>,
     profile: u8,
 )
-    ensures verified::indexed_invariant_spec(
+    ensures verified::primitive::validity::indexed_invariant_spec(
         dependencies,
-        verified_trace::replay_final_states_from_spec(
+        verified_trace::specification::replay_final_states_from_spec(
             dependencies,
             states,
             suspensions,
             profile,
-            Seq::<verified_trace::IndexedReplayEvent>::empty(),
+            Seq::<verified_trace::specification::IndexedReplayEvent>::empty(),
             0,
         ),
     )

@@ -168,7 +168,7 @@ fn allowed_model() -> crate::types::WorkspaceModel {
             crate::types::SourceUnit {
                 path: String::from("crates/choregraph-core/src/analytics/mod.rs"),
                 text: String::from(
-                    "pub fn ready_nodes() { crate::verified::ready_frontier(); }\n/// Returns one deterministic resume decision\n",
+                    "pub fn ready_nodes() { crate::verified::readiness::ready_frontier(); }\n/// Returns one deterministic resume decision\n",
                 ),
             },
             crate::types::SourceUnit {
@@ -202,7 +202,7 @@ fn allowed_model() -> crate::types::WorkspaceModel {
         history_machine_sources: vec![crate::types::SourceUnit {
             path: String::from("lib.rs"),
             text: String::from(
-                "#![no_std]\nextern crate alloc;\nchoregraph_core::replay(replay_input);\nchoregraph_core::replay_concrete(replay_input);\n",
+                "#![no_std]\nextern crate alloc;\nchoregraph_core::transition::replay(replay_input);\nchoregraph_core::transition::replay_concrete(replay_input);\n",
             ),
         }],
         weave_sources: vec![crate::types::SourceUnit {
@@ -383,6 +383,18 @@ fn rejects_an_unrestricted_proof_assumption() {
 }
 
 #[test]
+fn rejects_an_unrestricted_assumption_in_a_nested_proof_module() {
+    let mut model = allowed_model();
+    model.core_sources.push(crate::types::SourceUnit {
+        path: String::from("crates/choregraph-core/src/verified/trace/theorem.rs"),
+        text: String::from(include_str!(
+            "../../../fixtures/readiness-source-link/negative/unrestricted-assumption.rs"
+        )),
+    });
+    assert!(contains_code(&model, "foundation.proof-trust-escape"));
+}
+
+#[test]
 fn rejects_reverse_dependency_direction() {
     let mut model = allowed_model();
     let mut is_changed = false;
@@ -536,7 +548,7 @@ fn rejects_history_authority_dependencies_and_duplicate_transitions() {
     ));
     model.history_machine_sources[0]
         .text
-        .push_str("\nchoregraph_core::step(machine, state, event);\n");
+        .push_str("\nchoregraph_core::transition::step(machine, state, event);\n");
     model.weave_sources[0].text.push_str("\nuse std::fs;\n");
     assert!(contains_code(
         &model,

@@ -14,11 +14,16 @@
 // r[verify choregraph.proof.single_step.readiness_transition]
 // r[verify choregraph.proof.single_step.readiness_completeness_negative]
 use choregraph_core::{
-    Action, AdmissionLimits, AdmittedMachine, DEFAULT_MAX_EDGES, DEFAULT_MAX_EFFECT_DECLARATIONS,
-    DEFAULT_MAX_EVENT_BYTES, DEFAULT_MAX_IDENTIFIER_BYTES, DEFAULT_MAX_INTENT_BYTES,
-    DEFAULT_MAX_INTENTS_PER_TRANSITION, DEFAULT_MAX_NODES, DEFAULT_MAX_OPERATIONS,
-    DEFAULT_MAX_REFERENCE_BYTES, Decision, DenialReason, EdgeSpec, Event, MachineSpec,
-    MachineState, NodeId, NodeSpec, ready_nodes, step,
+    analytics::ready_nodes, id::bounded::NodeId, model::automaton::AdmittedMachine,
+    model::automaton::MachineSpec, model::automaton::MachineState,
+    model::capacity::AdmissionLimits, model::capacity::DEFAULT_MAX_EDGES,
+    model::capacity::DEFAULT_MAX_EFFECT_DECLARATIONS, model::capacity::DEFAULT_MAX_EVENT_BYTES,
+    model::capacity::DEFAULT_MAX_IDENTIFIER_BYTES, model::capacity::DEFAULT_MAX_INTENT_BYTES,
+    model::capacity::DEFAULT_MAX_INTENTS_PER_TRANSITION, model::capacity::DEFAULT_MAX_NODES,
+    model::capacity::DEFAULT_MAX_OPERATIONS, model::capacity::DEFAULT_MAX_REFERENCE_BYTES,
+    model::dispatch::Event, model::graph::EdgeSpec, model::graph::NodeSpec,
+    model::outcome::Decision, model::outcome::DenialReason, model::semantics::Action,
+    transition::step,
 };
 
 const NODE_SOURCE: &str = "source";

@@ -7,10 +7,11 @@
 
 // r[verify choregraph.conformance.lattice]
 use choregraph_core::{
-    Action, AdmittedMachine, Decision, DenialReason, EffectRequest, Event, LocalState,
-    MachineState, ready_nodes, step,
+    analytics::ready_nodes, model::automaton::AdmittedMachine, model::automaton::MachineState,
+    model::dispatch::EffectRequest, model::dispatch::Event, model::outcome::Decision,
+    model::outcome::DenialReason, model::semantics::Action, model::semantics::LocalState,
+    transition::step,
 };
-use choregraph_nickel::{LoweredSourceFormat, lower_evaluated_json, reviewed_frontend_limits};
 
 const DIAMOND_JSON: &[u8] =
     include_bytes!("../../../fixtures/nickel/evaluated/lattice-diamond.json");
@@ -74,14 +75,14 @@ fn ready_names(machine: &AdmittedMachine, state: &MachineState) -> Vec<String> {
 
 #[test]
 fn lowers_and_executes_the_reviewed_lattice_diamond() {
-    let lowered = must(lower_evaluated_json(
+    let lowered = must(choregraph_nickel::lower::lower_evaluated_json(
         DIAMOND_JSON,
         &[],
-        reviewed_frontend_limits(),
+        choregraph_nickel::profile::reviewed_frontend_limits(),
     ));
     assert_eq!(
         lowered.source_format,
-        LoweredSourceFormat::LatticeWorkflowV1
+        choregraph_nickel::lower::LoweredSourceFormat::LatticeWorkflowV1
     );
     assert_eq!(lowered.machine.node_ids().len(), EXPECTED_NODE_COUNT);
     assert_eq!(lowered.machine.edges().len(), EXPECTED_EDGE_COUNT);
@@ -122,10 +123,10 @@ fn lowers_and_executes_the_reviewed_lattice_diamond() {
 
 #[test]
 fn rejects_premature_sink_readiness_and_undeclared_effects() {
-    let lowered = must(lower_evaluated_json(
+    let lowered = must(choregraph_nickel::lower::lower_evaluated_json(
         DIAMOND_JSON,
         &[],
-        reviewed_frontend_limits(),
+        choregraph_nickel::profile::reviewed_frontend_limits(),
     ));
     let machine = lowered.machine;
     let initial = machine.initial_state();

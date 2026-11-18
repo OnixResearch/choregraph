@@ -16,20 +16,20 @@ verus! {
 proof fn first_denial_is_reported_after_its_event(
     dependencies: Seq<Vec<usize>>,
     states: Seq<u8>,
-    suspensions: Seq<Option<verified::IndexedSuspensionFact>>,
+    suspensions: Seq<Option<verified::primitive::support::IndexedSuspensionFact>>,
     profile: u8,
-    events: Seq<verified_trace::IndexedReplayEvent>,
+    events: Seq<verified_trace::specification::IndexedReplayEvent>,
 )
     requires
         events.len() > 0,
-        !verified_trace::replay_event_accepts_spec(
+        !verified_trace::specification::replay_event_accepts_spec(
             dependencies,
             states,
             suspensions,
             profile,
             events[0],
         ),
-    ensures verified_trace::replay_failure_index_from_spec(
+    ensures verified_trace::specification::replay_failure_index_from_spec(
         dependencies,
         states,
         suspensions,

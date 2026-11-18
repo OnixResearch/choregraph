@@ -8,22 +8,11 @@ extern crate alloc;
 // r[impl choregraph.history.boundary.pure]
 // r[verify choregraph.history.boundary.rejects_authority]
 // r[verify choregraph.history.supersession.rejects_dependency]
-mod dag;
-mod identity;
-mod model;
-mod refs;
-mod traversal;
-
-pub use dag::{Admission, HistoryGraph};
-pub use identity::{DIGEST_BYTES, Digest, EventId};
-pub use model::{
-    EventClass, EventDraft, HISTORY_EVENT_VERSION_V1, HistoryError, HistoryEvent, HistoryLimits,
-    MergeEnvelope, MetadataIdentity, ParentLink,
-};
-pub use refs::{
-    BranchRef, Cursor, ReferenceMutationPlan, Snapshot, plan_branch_advance, validate_cursor,
-};
-pub use traversal::{ParentChoices, Projection, ProjectionKind, ancestor_closure, linear_lineage};
+pub mod dag;
+pub mod identity;
+pub mod model;
+pub mod refs;
+pub mod traversal;
 
 /// The bounded semantic claim of this crate.
 pub const HISTORY_CLAIM: &str =

@@ -3,16 +3,16 @@
     unknown_lints,
     fragile_exhaustive_enum_match,
     function_length,
-    non_trait_imports,
     reason = "bounded diagnostics keep stable exhaustive codes and one redaction path"
 )]
 
 // r[impl choregraph.nickel.diagnostics]
-use serde::{Deserialize, Serialize};
 
 pub const MAX_SAFE_SUMMARY_BYTES: usize = 160;
 
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(
+    Clone, Copy, Debug, serde::Deserialize, Eq, Ord, PartialEq, PartialOrd, serde::Serialize,
+)]
 #[serde(rename_all = "kebab-case")]
 pub enum FrontendIssueCode {
     NickelSourceTooLarge,
@@ -66,7 +66,7 @@ pub enum FrontendIssueCode {
     AtomicPublicationRejected,
 }
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Serialize)]
 pub struct FrontendIssue {
     pub(crate) code: FrontendIssueCode,
     pub(crate) summary: &'static str,

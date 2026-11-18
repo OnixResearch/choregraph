@@ -15,8 +15,10 @@
 use std::collections::BTreeMap;
 
 use choregraph_history::{
-    DIGEST_BYTES, Digest, EventClass, EventDraft, HistoryGraph, HistoryLimits, Projection,
-    linear_lineage,
+    dag::Graph,
+    identity::{DIGEST_BYTES, Digest},
+    model::{EventClass, EventDraft, Limits},
+    traversal::{Projection, linear_lineage},
 };
 
 const MAX_EVENTS: u32 = 8;
@@ -50,16 +52,15 @@ fn digest(seed: u8) -> Digest {
     Digest::from_bytes([seed; DIGEST_BYTES])
 }
 
-fn graph_and_projection() -> (HistoryGraph, Projection) {
-    let limits = HistoryLimits::new(
-        MAX_EVENTS,
-        MAX_PARENTS,
-        MAX_METADATA,
-        MAX_LABEL,
-        MAX_PROJECTION,
-    )
-    .expect("limits");
-    let graph = HistoryGraph::new(limits).expect("graph");
+fn graph_and_projection() -> (Graph, Projection) {
+    let limits = Limits {
+        max_events: MAX_EVENTS,
+        max_parents: MAX_PARENTS,
+        max_metadata_entries: MAX_METADATA,
+        max_label_bytes: MAX_LABEL,
+        max_projection_events: MAX_PROJECTION,
+    };
+    let graph = Graph::new(limits).expect("graph");
     let admitted = graph
         .admit(EventDraft::v1(
             EventClass::Application,
@@ -95,7 +96,7 @@ fn animus_fixture_returns_only_opaque_structural_history() {
 }
 
 fn validate_lattice_binding(
-    graph: &HistoryGraph,
+    graph: &Graph,
     binding: LatticeHistoryBinding,
 ) -> Result<(), &'static str> {
     if binding.history_identity != graph.identity() {

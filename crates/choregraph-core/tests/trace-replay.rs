@@ -19,10 +19,16 @@
 use std::collections::BTreeMap;
 
 use choregraph_core::{
-    Action, AdmissionLimits, AdmittedMachine, BoundedTrace, ConsumedCount, Decision, DenialReason,
-    EdgeSpec, EffectDeclarationSpec, EffectRequest, Event, EventIndex, LocalState, MachineSpec,
-    MachineState, NodeSpec, ReplayBindings, ReplayDecision, ReplayFailureReason, ReplayInput,
-    ReplayLimits, TraceBinding, TransitionSelector, invariant, replay, step,
+    invariant::invariant, model::automaton::AdmittedMachine, model::automaton::MachineSpec,
+    model::automaton::MachineState, model::capacity::AdmissionLimits,
+    model::dispatch::EffectDeclarationSpec, model::dispatch::EffectRequest, model::dispatch::Event,
+    model::graph::EdgeSpec, model::graph::NodeSpec, model::history::BoundedTrace,
+    model::history::ConsumedCount, model::history::EventIndex, model::history::ReplayBindings,
+    model::history::ReplayDecision, model::history::ReplayFailureReason,
+    model::history::ReplayInput, model::history::ReplayLimits, model::history::TraceBinding,
+    model::outcome::Decision, model::outcome::DenialReason, model::semantics::Action,
+    model::semantics::LocalState, model::semantics::TransitionSelector, transition::replay,
+    transition::step,
 };
 
 const NODE_SOURCE: &str = "source";
@@ -103,14 +109,20 @@ fn effect_machine() -> AdmittedMachine {
 
 fn bindings() -> ReplayBindings {
     ReplayBindings::new(
-        TraceBinding::from_bytes([MACHINE_BINDING_BYTE; choregraph_core::TRACE_BINDING_BYTES]),
-        TraceBinding::from_bytes([STATE_BINDING_BYTE; choregraph_core::TRACE_BINDING_BYTES]),
+        TraceBinding::from_bytes(
+            [MACHINE_BINDING_BYTE; choregraph_core::model::history::TRACE_BINDING_BYTES],
+        ),
+        TraceBinding::from_bytes(
+            [STATE_BINDING_BYTE; choregraph_core::model::history::TRACE_BINDING_BYTES],
+        ),
     )
 }
 
 fn stale_machine_bindings() -> ReplayBindings {
     ReplayBindings::new(
-        TraceBinding::from_bytes([STALE_BINDING_BYTE; choregraph_core::TRACE_BINDING_BYTES]),
+        TraceBinding::from_bytes(
+            [STALE_BINDING_BYTE; choregraph_core::model::history::TRACE_BINDING_BYTES],
+        ),
         bindings().initial_state,
     )
 }
@@ -118,7 +130,9 @@ fn stale_machine_bindings() -> ReplayBindings {
 fn stale_state_bindings() -> ReplayBindings {
     ReplayBindings::new(
         bindings().machine,
-        TraceBinding::from_bytes([STALE_BINDING_BYTE; choregraph_core::TRACE_BINDING_BYTES]),
+        TraceBinding::from_bytes(
+            [STALE_BINDING_BYTE; choregraph_core::model::history::TRACE_BINDING_BYTES],
+        ),
     )
 }
 

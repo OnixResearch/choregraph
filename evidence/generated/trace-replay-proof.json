@@ -68,7 +68,7 @@
     "solver_blake3": "42e48a26bf3b38ca33d84749f4317cc179791de0d578d4d98a67f51782b54331",
     "sources": [
       {
-        "blake3": "e0b24ca120e5b1afb35202d4e7aa7235fd29f3fadc9514933847b13e32b8dce5",
+        "blake3": "64ca131ba9bf317079109083ac6a5c84a374424b33081d2a1996642c345ad78f",
         "path": "Cargo.lock",
         "role": "resolved Rust dependency identity"
       },
@@ -78,7 +78,7 @@
         "role": "reviewed project claim boundary"
       },
       {
-        "blake3": "b2c7874666d71c528c5ce6ca07016d0e57b6f215cedb03350d6b884efa9c05cc",
+        "blake3": "913b564a4797e32a1fe4421d4869f27ee98ca517c0625b3213ea09761d8cfd95",
         "path": "config/toolchain.ncl",
         "role": "reviewed toolchain identity"
       },
@@ -88,47 +88,47 @@
         "role": "erased vstd dependency contract"
       },
       {
-        "blake3": "46a856dd917648d909170f54f4fc70713cae7bb44dc621527609764c67fe9273",
+        "blake3": "820549c379f2d011cd1b374d57930c6fb5035fb6672fdf2b01a4ed612ca0bbf1",
         "path": "crates/choregraph-core/src/concrete.rs",
         "role": "production v2 replay event and intent boundary"
       },
       {
-        "blake3": "60f30828f6a4efe49f11a5cd14e7747b840189cae75c1607de08f4be371ada03",
+        "blake3": "361d463ca5bd725bba0a01f0147f0c0f3d8564e906b1dfe0cc7fad9d7e7f0f03",
         "path": "crates/choregraph-core/src/lib.rs",
         "role": "production module and public replay linkage"
       },
       {
-        "blake3": "7e379a958051bdf1d095da0d9ea4329a3b232f4825e5c1f1d96067ede3c0bf61",
+        "blake3": "9c71a510408c83e5b6ebbea845d2d4bd5fb7966d9490565b4287e932d11a469c",
         "path": "crates/choregraph-core/src/model.rs",
         "role": "bounded trace, binding, count, and failure types"
       },
       {
-        "blake3": "0ceb97566ae5308a1fff9d560fd56c330819e5f359673035ea36365c89c5ac83",
+        "blake3": "9d8c6d178139361738ca14a325a320afc9107c5b0c4feb2542c1161a614a8ff6",
         "path": "crates/choregraph-core/src/transition.rs",
         "role": "public replay fold over the production step relation"
       },
       {
-        "blake3": "e451e74bbb1b9124f0a47c4459cc79bfbbb6ceda802fbee3f971b6a867f06a76",
+        "blake3": "b010b26797d52b95c9db0ec6c66f1d40813a78c8300371b660b512fd1993c965",
         "path": "crates/choregraph-core/src/verified.rs",
         "role": "verified primitives and module linkage"
       },
       {
-        "blake3": "940e78df77cbdb4ee549f56197d42e5142d735112c4fd683e75e42559b8de442",
+        "blake3": "3fe79821068bde8cd2556986a0b01a6f09d9bac83a7d7d5a52b758578dc1a70e",
         "path": "crates/choregraph-core/src/verified/kernel.rs",
         "role": "production-called verified single-step kernel"
       },
       {
-        "blake3": "ce26c81b5f2f6b08c5adbb64c4cd55641ec5cf1951457f508f716195397a74b9",
+        "blake3": "5ef37907840372363edf5d6be6699dbb927dff9fbb65c9a3f21ca3238909852e",
         "path": "crates/choregraph-core/src/verified/readiness.rs",
         "role": "verified dependency readiness included by the replay proof root"
       },
       {
-        "blake3": "9599b74608ae6cf33de0d8e85f1ca80000af1d02b51e35a1c74e65f070399d8a",
+        "blake3": "89b358d694901d69d2c5fdebb008a73ac418ed2cb96578c8af2445f5204f21bd",
         "path": "crates/choregraph-core/src/verified/trace.rs",
         "role": "production trace specifications and finite induction theorems"
       },
       {
-        "blake3": "cb1687418a1b758700b003026c3e066d069ef53d13c7f27100cbcddd35666a32",
+        "blake3": "7dd5b98a58e89d8a579775b1c4c2d6c020cea46c8e3194075084d41abdaa7caa",
         "path": "crates/choregraph-core/tests/trace-replay.rs",
         "role": "public replay fixtures and repeated-step parity properties"
       },
@@ -148,7 +148,7 @@
         "role": "reviewed selected-source baseline"
       },
       {
-        "blake3": "5918bc107086795f588d45d197899745b70043e4c8915efc6a93c88e5554cf38",
+        "blake3": "b1754325e3bb1f575cde31c75800eff522a37288e2b3e3f5b5ad8f17d7e35499",
         "path": "flake.nix",
         "role": "maintained positive, negative, trust, and evidence gate"
       },
@@ -158,29 +158,269 @@
         "role": "positive proof root that includes production proof sources"
       },
       {
-        "blake3": "c795a2d1fe81b8a106e9e2d884324c45d1697606d5a27490d68f321e6c830769",
+        "blake3": "28c90cd4aaf4bb1de774456735353db23ba33e5c713a8ce4c245d618a113a37e",
         "path": "verus/trace-failure-fixtures/empty_trace_mutation.rs",
         "role": "negative empty-trace mutation fixture"
       },
       {
-        "blake3": "c7d5a262a567a01decb15a905a4ef9252292ba259205b45e2b656653fabb5c24",
+        "blake3": "55fd297ee783afd03436d92713bb0fcca8e41fcbff671f32b97b5abe63451efa",
         "path": "verus/trace-failure-fixtures/failure_index_skips_denial.rs",
         "role": "negative first-failure index fixture"
       },
       {
-        "blake3": "f761278218ec17fe048b6306458be9ea964d2330c9dedfe5eb3ee33f9e4e2425",
+        "blake3": "5f7881f844df71e070803a5f2a2ad36f09b1efda1a34fc05e2db209b4f5b038a",
         "path": "verus/trace-failure-fixtures/preservation_without_initial_invariant.rs",
         "role": "negative missing initial-invariant fixture"
       },
       {
-        "blake3": "9d47173dbeda220b681deed6e096a9da6f9393c1ae0566d86818bd11512546d7",
+        "blake3": "ef2868ec47d264cc88c3ab6f5d354ca1efc8fe9acd528b92c9048532a1cd4236",
         "path": "verus/trace-failure-fixtures/replay_with_dispatch_intent.rs",
         "role": "negative dispatch-authority fixture"
       },
       {
-        "blake3": "13291f4afd5ba61eccde31a4e039db5babde6c410c657b5771224766667f20cc",
+        "blake3": "363e965807f298366e633ef8cda0c8600bd9ac531f13c1be2d72d214a929331e",
         "path": "verus/trace-failure-fixtures/suspended_trace_drops_fact.rs",
         "role": "negative suspension-fact replay fixture"
+      },
+      {
+        "blake3": "83e4d722a54b9ec4bfffe0984f39ee8e57410e04ea1f9e4e371dcfc56944c153",
+        "path": "crates/choregraph-core/src/admission.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "c70b59e1a90badbab1249c59f8471b9b965f70da9a311d74eb4aca3b34cc5fe1",
+        "path": "crates/choregraph-core/src/analytics/mod.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "22dc9fd98919fe75c1d85b13517d18bf22cc0b857dcee59c3b8f441046c0cd25",
+        "path": "crates/choregraph-core/src/boundary.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "0d7fd859c037ace5cb9af0300fc2b9aafc2b087c6a5824205be307dfa38efeed",
+        "path": "crates/choregraph-core/src/concrete/effect.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "d2d3d4dfc2dc4081d810d45f7ef49881d5ad667f316099d66e3c4e1b71ad530c",
+        "path": "crates/choregraph-core/src/concrete/event.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "e703018dec1ecfa60762c730a0eb1ba79d008f6ac667fbd60e13a0494552117a",
+        "path": "crates/choregraph-core/src/concrete/machine.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "cecf64e525a80857c605003e9a81b394096426569a80d854eeaba69a306bf313",
+        "path": "crates/choregraph-core/src/concrete/reference.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "5b4fe54c25748fecac5ae2702e861edb4fce514da8475dbfc2748bd57f509a4d",
+        "path": "crates/choregraph-core/src/concrete/replay.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "99a0d54542d8f68f767172ffa965b5e8620809866c33807054e43800bc80b0ff",
+        "path": "crates/choregraph-core/src/id.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "59c08bf219531624efd96f6aa7974d283e2214a5b4db915b710f275efe82188d",
+        "path": "crates/choregraph-core/src/id/bounded.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "63817140746ea2ab0db2056ea9da921d2026ff32061eee26f21a4f6aae37944c",
+        "path": "crates/choregraph-core/src/id/domains.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "8f0e75add17ea67253de65c716b68f4eb9efbe4a4b9391dc9bc4836bb6d452a6",
+        "path": "crates/choregraph-core/src/id/reference.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "8774cdce7edf40f04a68ae845ed0e7124cbddddc6c7a2f2aa31fdc97712bef99",
+        "path": "crates/choregraph-core/src/invariant.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "c8b043046e8206a82319ae9a04830fd75989108f55cbd8fda159722ac6cad599",
+        "path": "crates/choregraph-core/src/model/analysis.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "eb484f15e22ec1b75e995cdebd781564704376d432810b59cb08b2d6f4529e46",
+        "path": "crates/choregraph-core/src/model/automaton.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "8a17cdcdfc538376e8a10e2a9cae71755f0d2e4e40cf00982fcfeb3cdfce9548",
+        "path": "crates/choregraph-core/src/model/capacity.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "f17ec2d2de27798f8d7d62d1ccedd39036a95b65722061cd54faaca80528c300",
+        "path": "crates/choregraph-core/src/model/dispatch.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "c09d90e818f66726547529cb999a03cd73a1d7b07d6be3be2e751fb05b9f38a2",
+        "path": "crates/choregraph-core/src/model/graph.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "71cbf18f32c8dbac48273c15b00f2ea8902e50078c47ddb782462429b99ee41b",
+        "path": "crates/choregraph-core/src/model/history.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "cb69664e2468d313768112cbccf99ac124481cdff2dcac68f3e539393061bb48",
+        "path": "crates/choregraph-core/src/model/outcome.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "8d0d6bbcdf6e821126b2672b57bdfe22b94d26ae8ff59d11a3152b91b7bc3cc3",
+        "path": "crates/choregraph-core/src/model/pause.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "206ed3d32c41c8f2225dbb41ef47350a9857ee807e77d01d140ac1adc3306fec",
+        "path": "crates/choregraph-core/src/model/semantics.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "2a915df3b08d4ace07591516e7abf870294a7a93e017e3cce7200cf791f0a501",
+        "path": "crates/choregraph-core/src/ownership/mod.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "ddf69829fc81ee1f3812664fe57f10571af644f8d80101593b6e7514b8791243",
+        "path": "crates/choregraph-core/src/verified/codes.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "f5eb60e80ff2323e931ce24ed342b498b92117fb1af8bf274258104ffbacc50a",
+        "path": "crates/choregraph-core/src/verified/codes/action.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "0b5d7b69c7dfce76ec89af734038aa4aa632d82ed1604a3b8199595500f14b04",
+        "path": "crates/choregraph-core/src/verified/codes/denial.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "9d0ca1068b3a254603832012597b58b37c4583c3d23e943b257c2573db854bcd",
+        "path": "crates/choregraph-core/src/verified/codes/denial/suspension.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "d8cfc4cdfc680cf508b41e55ab34ef40dc8548e0364694331c5f2c3c2e4f52ca",
+        "path": "crates/choregraph-core/src/verified/codes/denial/transition.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "a037e48fa6ed4ddc03257a61c0aef7eb4556d040c51db32e6a8d595f258adefa",
+        "path": "crates/choregraph-core/src/verified/codes/profile.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "c1f44c669d270468f073a6c300c52bf107a465b0bac8013431ec8ac5c3584f57",
+        "path": "crates/choregraph-core/src/verified/codes/status.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "70f98598e1be11a97867421bfa617090e289059ee3ce29034c3e843e770f8efc",
+        "path": "crates/choregraph-core/src/verified/kernel/decision.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "6d5e6e439e982656c27b88237106c0d928c66ab26babcdbaa17a8ebe0ed6de92",
+        "path": "crates/choregraph-core/src/verified/kernel/snapshot.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "5047dfd1edc9420872caf004f1600ed6f6139e88c68796be0d79e00307fe3632",
+        "path": "crates/choregraph-core/src/verified/kernel/target.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "3b769426a94feb4c06df3dfe994b95c67c1b6bf18cfd7934fda0aec4723b23cf",
+        "path": "crates/choregraph-core/src/verified/kernel/theorem.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "9363729a6f94532d0d5586777bd9885f9fc6e1b67f8b2f7425f8c09baddb5a0f",
+        "path": "crates/choregraph-core/src/verified/primitive.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "e14bb1d90d62313deff940a95a35576d606c1b7b1656baad99ca7f53b1491750",
+        "path": "crates/choregraph-core/src/verified/primitive/matching.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "ed8dec62a885a3ce277b117bc60c1e4943f07073b60ce1f69b5b02732938bfe3",
+        "path": "crates/choregraph-core/src/verified/primitive/membership.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "00b0bb46e23ca43c1e30bac7fd095009a2d211d004d59c06d898c7a910a47058",
+        "path": "crates/choregraph-core/src/verified/primitive/ownership.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "5cfcb696e93cfcd4626743865826b6f0d051343201ece45dcf83ad4bcc803bc9",
+        "path": "crates/choregraph-core/src/verified/primitive/support.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "92675113af8a6690befb0b42c65d330f7e9391e0c1e6569f8f17b42ace6f181c",
+        "path": "crates/choregraph-core/src/verified/primitive/transition.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "1d39160c3c0be1dc85727da6b19956bfc60f5c392518be78dd3f094cd8c1ffbd",
+        "path": "crates/choregraph-core/src/verified/primitive/validity.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "022c97236544c95b6774b4bd1b640b3f8bb28989429df2b444ec75ff395c03e1",
+        "path": "crates/choregraph-core/src/verified/topology.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "ed5f8541fa702e1bfc22b2359de6462400862d2f17ccaac74e4755cee2c581dd",
+        "path": "crates/choregraph-core/src/verified/topology/admission.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "825d8e0e87de04bac0555591ab4e2b53929108b5df8ab635ada2cb4fa1b4dc60",
+        "path": "crates/choregraph-core/src/verified/topology/bounds.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "0d9ec7a0bccfee995670aea8be64fc4188dd01a2d44b6c9dd56a401ffb7f1088",
+        "path": "crates/choregraph-core/src/verified/topology/cardinality.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "e4232e8cc9d7101a91592c889d7d1a5aa2aa5266b916c44536829e84cbedc1b1",
+        "path": "crates/choregraph-core/src/verified/topology/precedence.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "f2eea3b57fdc654cbab178ee20d4cc424bff38990a6f670dec7ec57a6af839ce",
+        "path": "crates/choregraph-core/src/verified/trace/specification.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
+      },
+      {
+        "blake3": "40846e70f75aecf578c19090d6c2d1402e6493e42108ec3fc045448aec563af7",
+        "path": "crates/choregraph-core/src/verified/trace/theorem.rs",
+        "role": "production core module in the bound source closure; theorem and adapter boundaries remain explicit"
       }
     ],
     "status": "verified",

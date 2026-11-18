@@ -49,13 +49,17 @@ The source-link gate rejects these changes:
 The production proof sources are:
 
 - `crates/choregraph-core/src/verified.rs`;
-- `crates/choregraph-core/src/verified/kernel.rs`;
+- `crates/choregraph-core/src/verified/codes/` for state, action, profile, and denial encodings;
+- `crates/choregraph-core/src/verified/primitive.rs` and its `primitive/{ownership,matching,transition,validity,membership,support}.rs` for focused facts, predicates, and executable witnesses;
+- `crates/choregraph-core/src/verified/kernel.rs` and its `kernel/` children for transition targets, suspension relations, decisions, and theorems;
 - `crates/choregraph-core/src/verified/readiness.rs`;
-- `crates/choregraph-core/src/verified/topology.rs`;
+- `crates/choregraph-core/src/verified/topology.rs` and its `topology/` children for cardinality, precedence, bounds, and admission obligations;
 - `crates/choregraph-core/src/analytics/mod.rs`;
 - `crates/choregraph-core/src/transition.rs`;
 - `crates/choregraph-core/src/admission.rs`;
 - `crates/choregraph-core/src/invariant.rs`.
+
+The namespace roots expose focused child modules, not compatibility reexports. Production callers name those owners directly. `binding::concrete_binding_accepts` receives a binding mode and one immutable `ConcreteBindingFacts` record naming slot equality, source equality, exact-reference equality, and slot/source absence. The executable predicate and its named specification consume the same record and preserve the exact-binding and slot-binding conditions. Trust guards recursively cover the split production proof sources; source moves do not expand the trusted surface.
 
 The proof adapts finite lifecycle, readiness, topological-order, filtered-collection, uniqueness, and source-order shapes from Trellis revision `aead4527bfc3c714e71669bce656719dd2a6b2e2`.
 
@@ -96,6 +100,15 @@ The generated canonical JSON is `evidence/generated/single-step-proof.json`. Its
 The manifest binds production sources, proof sources, negative fixtures, theorem names, Verus, Z3, rustc, vstd, the Nix closure, and Trellis inputs.
 
 A source change makes the maintained gate fail until the manifest and proof run are current.
+
+The `verified` status applies only to the recorded source bytes. A digest
+mismatch is not permission to re-pin a source: first qualify the changed
+inputs and retain successful positive proof, expected-failure fixture, and
+production-linkage/trust-guard observations. Refresh the reviewed Nickel
+manifest only from that evidence, then regenerate its JSON with
+`nickel export --format json evidence/single-step-proof.ncl | jq -S .`
+and record the generated file's plain BLAKE3 digest. The complete Nix gate
+must subsequently pass with those exact inputs.
 
 ## Trust boundary
 

@@ -13,20 +13,35 @@
 )]
 
 use choregraph_core::{
-    Action, AdmissionLimits, AdmittedMachine, CANONICAL_REFERENCE_PROFILE_V1, ConcreteBindingInput,
-    ConcreteDecision, ConcreteEffectDeclarationSpec, ConcreteEffectIntent, ConcreteEffectRequest,
-    ConcreteEvent, ConcreteReferenceSpec, DURABLE_SUSPENSION_V1, EdgeSpec, EffectDeclarationSpec,
-    LocalState, MachineSpec, MachineSpecV2, NodeSpec, ReferenceBindingSpec,
-    SuspensionDeclarationSpec, TransitionSelector, step_concrete,
+    concrete::effect::ConcreteEffectDeclarationSpec, concrete::effect::ConcreteEffectIntent,
+    concrete::effect::ConcreteEffectRequest, concrete::event::ConcreteDecision,
+    concrete::event::ConcreteEvent, concrete::machine::MachineSpecV2,
+    concrete::reference::CANONICAL_REFERENCE_PROFILE_V1, concrete::reference::ConcreteBindingInput,
+    concrete::reference::ConcreteReferenceSpec, concrete::reference::ReferenceBindingSpec,
+    model::automaton::AdmittedMachine, model::automaton::MachineSpec,
+    model::capacity::AdmissionLimits, model::dispatch::EffectDeclarationSpec,
+    model::graph::EdgeSpec, model::graph::NodeSpec, model::pause::SuspensionDeclarationSpec,
+    model::semantics::Action, model::semantics::DURABLE_SUSPENSION_V1,
+    model::semantics::LocalState, model::semantics::TransitionSelector, transition::step_concrete,
 };
 use choregraph_kamacite::{
-    AggregateMachineDescriptor, ArtifactDomain, IdentityMaterials, KamaciteIdentityDomain,
-    TraceObservation, build_artifact_set, build_concrete_intent_artifact,
-    build_concrete_intent_receipt, build_concrete_machine_artifact,
-    build_durable_lifecycle_artifact, build_receipt_bundle, compute_identity,
-    compute_kamacite_identity, durable_machine_descriptor, encode_concrete_intent_receipt_body,
-    encode_durable_machine_descriptor, encode_fsm_receipt_body, encode_link_receipt_body,
-    encode_machine_descriptor,
+    aggregate::assembly::{
+        IdentityMaterials, build_artifact_set, durable_machine_descriptor,
+        encode_durable_machine_descriptor, encode_machine_descriptor,
+    },
+    aggregate::record::AggregateMachineDescriptor,
+    concrete::conversion::{
+        build_concrete_intent_artifact, build_concrete_intent_receipt,
+        build_concrete_machine_artifact, encode_concrete_intent_receipt_body,
+    },
+    identity::{
+        ArtifactDomain, KamaciteIdentityDomain, compute_identity, compute_kamacite_identity,
+    },
+    lifecycle::conversion::build_durable_lifecycle_artifact,
+    receipt::record::TraceObservation,
+    receipt::validation::{
+        build_receipt_bundle, encode_fsm_receipt_body, encode_link_receipt_body,
+    },
 };
 use std::collections::BTreeSet;
 
@@ -42,17 +57,33 @@ const CONCRETE_DECLARATION: &str = "request/main";
 const SOURCE_ENVELOPE: &[u8] = b"canonical-source-envelope-v1";
 const PROOF_SET: &[u8] = b"proof-set-status-pending-v1";
 const MATERIAL_LENGTH_BYTES: usize = size_of::<u64>();
-pub(crate) const KAMACITE_AGGREGATE_SOURCE: &[u8] =
-    include_bytes!("../../choregraph-kamacite/src/aggregate.rs");
 const ADAPTER_SOURCES: &[&[u8]] = &[
     include_bytes!("../../choregraph-kamacite/src/lib.rs"),
-    KAMACITE_AGGREGATE_SOURCE,
-    include_bytes!("../../choregraph-kamacite/src/codec.rs"),
-    include_bytes!("../../choregraph-kamacite/src/concrete.rs"),
+    include_bytes!("../../choregraph-kamacite/src/aggregate/mod.rs"),
+    include_bytes!("../../choregraph-kamacite/src/aggregate/record.rs"),
+    include_bytes!("../../choregraph-kamacite/src/aggregate/assembly.rs"),
+    include_bytes!("../../choregraph-kamacite/src/aggregate/policy.rs"),
+    include_bytes!("../../choregraph-kamacite/src/boundary.rs"),
+    include_bytes!("../../choregraph-kamacite/src/codec/mod.rs"),
+    include_bytes!("../../choregraph-kamacite/src/codec/state.rs"),
+    include_bytes!("../../choregraph-kamacite/src/codec/effect.rs"),
+    include_bytes!("../../choregraph-kamacite/src/codec/graph.rs"),
+    include_bytes!("../../choregraph-kamacite/src/concrete/mod.rs"),
+    include_bytes!("../../choregraph-kamacite/src/concrete/record.rs"),
+    include_bytes!("../../choregraph-kamacite/src/concrete/conversion.rs"),
     include_bytes!("../../choregraph-kamacite/src/identity.rs"),
-    include_bytes!("../../choregraph-kamacite/src/lifecycle.rs"),
-    include_bytes!("../../choregraph-kamacite/src/receipt.rs"),
+    include_bytes!("../../choregraph-kamacite/src/lifecycle/mod.rs"),
+    include_bytes!("../../choregraph-kamacite/src/lifecycle/record.rs"),
+    include_bytes!("../../choregraph-kamacite/src/lifecycle/conversion.rs"),
+    include_bytes!("../../choregraph-kamacite/src/profile/mod.rs"),
+    include_bytes!("../../choregraph-kamacite/src/profile/source.rs"),
+    include_bytes!("../../choregraph-kamacite/src/profile/protocol.rs"),
+    include_bytes!("../../choregraph-kamacite/src/profile/observation.rs"),
+    include_bytes!("../../choregraph-kamacite/src/receipt/mod.rs"),
+    include_bytes!("../../choregraph-kamacite/src/receipt/record.rs"),
+    include_bytes!("../../choregraph-kamacite/src/receipt/validation.rs"),
     include_bytes!("../../../vendor/kamacite-core-selected/preserves/codec.rs"),
+    include_bytes!("../../../vendor/kamacite-core-selected/preserves/tests.rs"),
 ];
 const GENERATOR_SOURCES: &[&[u8]] = &[include_bytes!("corpus.rs")];
 const TOOLCHAIN_SOURCES: &[&[u8]] = &[
@@ -204,15 +235,19 @@ fn successful_trace() -> Vec<TraceObservation> {
     ]
 }
 
-fn framed_material(sources: &[&[u8]]) -> Result<Vec<u8>, String> {
+fn framed_material(sources: &[&[u8]]) -> Result<Vec<u8>, &'static str> {
     let mut material = Vec::new();
     for source in sources {
-        let source_length = u64::try_from(source.len())
-            .map_err(|_| String::from("identity source length exceeds u64"))?;
+        let source_length =
+            u64::try_from(source.len()).map_err(|_| "identity source length exceeds u64")?;
         material.extend_from_slice(&source_length.to_le_bytes()[..MATERIAL_LENGTH_BYTES]);
         material.extend_from_slice(source);
     }
     Ok(material)
+}
+
+pub(crate) fn adapter_material() -> Result<Vec<u8>, String> {
+    framed_material(ADAPTER_SOURCES).map_err(String::from)
 }
 
 fn noncanonical_equivalent(canonical: &[u8]) -> Result<Vec<u8>, String> {
@@ -242,7 +277,7 @@ fn machine_variant(
 pub fn build_kamacite_corpus() -> Result<Vec<KamaciteCorpusEntry>, String> {
     let machine = diamond_machine()?;
     let generator_material = framed_material(GENERATOR_SOURCES)?;
-    let adapter_material = framed_material(ADAPTER_SOURCES)?;
+    let adapter_material = adapter_material()?;
     let toolchain_material = framed_material(TOOLCHAIN_SOURCES)?;
     let set = build_artifact_set(
         &machine,

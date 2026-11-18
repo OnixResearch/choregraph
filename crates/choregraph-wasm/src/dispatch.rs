@@ -15,29 +15,43 @@
 use std::collections::BTreeMap;
 
 use choregraph_core::{
-    Action, AdmittedMachine, BoundedTrace, ConcreteBindingInput, ConcreteBoundedTrace,
-    ConcreteDecision, ConcreteEffectIntent, ConcreteEffectRequest, ConcreteEvent,
-    ConcreteReferenceSpec, ConcreteReplayInput, Decision, DenialReason, EffectIntent,
-    EffectRequest, Event, LocalState, MachineState, NodeId, PayloadRef, ReplayBindings,
-    ReplayDecision, ReplayFailureReason, ReplayInput, ReplayLimits, SuspensionClass,
-    SuspensionFactSpec, SuspensionRecord, TRACE_BINDING_BYTES, TraceBinding, replay,
-    replay_concrete, step, step_concrete,
+    concrete::effect::ConcreteEffectIntent, concrete::effect::ConcreteEffectRequest,
+    concrete::event::ConcreteDecision, concrete::event::ConcreteEvent,
+    concrete::reference::ConcreteBindingInput, concrete::reference::ConcreteReferenceSpec,
+    concrete::replay::ConcreteBoundedTrace, concrete::replay::ConcreteReplayInput,
+    id::bounded::NodeId, id::bounded::SuspensionClass, id::reference::PayloadRef,
+    model::automaton::AdmittedMachine, model::automaton::MachineState,
+    model::dispatch::EffectIntent, model::dispatch::EffectRequest, model::dispatch::Event,
+    model::history::BoundedTrace, model::history::ReplayBindings, model::history::ReplayDecision,
+    model::history::ReplayFailureReason, model::history::ReplayInput, model::history::ReplayLimits,
+    model::history::TRACE_BINDING_BYTES, model::history::TraceBinding, model::outcome::Decision,
+    model::outcome::DenialReason, model::pause::SuspensionFactSpec, model::pause::SuspensionRecord,
+    model::semantics::Action, model::semantics::LocalState, transition::replay,
+    transition::replay_concrete, transition::step, transition::step_concrete,
 };
 use choregraph_kamacite::{
-    ArtifactDomain, ArtifactIdentity, validate_concrete_machine_artifact,
-    validate_durable_lifecycle_artifact, validate_durable_machine_artifact,
-    validate_lifecycle_artifact, validate_machine_artifact,
+    aggregate::assembly::{validate_durable_machine_artifact, validate_machine_artifact},
+    concrete::conversion::validate_concrete_machine_artifact,
+    identity::{ArtifactDomain, ArtifactIdentity},
+    lifecycle::conversion::{validate_durable_lifecycle_artifact, validate_lifecycle_artifact},
 };
 
 use crate::codec::{decode_preserves, encode_preserves};
 use crate::schema::{
-    ABI_VERSION, ActionTag, AdapterErrorCode, AdapterErrorValue, AdapterStage, CALL_ROOT_LABEL,
-    CALL_SCHEMA_VERSION, ConcreteBindingValue, ConcreteEffectRequestValue, ConcreteEventValue,
-    DenialCode, DenialValue, EffectRequestValue, EventValue, IntentValue, KernelCall, KernelResult,
-    MachineArtifactKind, MachineArtifacts, OperationRequest, Outcome, RESULT_ROOT_LABEL,
-    RESULT_SCHEMA_VERSION, ReplayBindingPairValue, ReplayBindingsValue, ReplayFailureReasonValue,
-    ReplayFailureValue, StateEntryValue, StateTag, StateValue, SuspensionFactValue,
-    SuspensionValue, TransitionValue,
+    decision::{DenialCode, DenialValue, IntentValue, KernelResult, Outcome, TransitionValue},
+    diagnostic::{AdapterErrorCode, AdapterErrorValue, AdapterStage},
+    history::{
+        ReplayBindingPairValue, ReplayBindingsValue, ReplayFailureReasonValue, ReplayFailureValue,
+    },
+    input::{KernelCall, MachineArtifactKind, MachineArtifacts, OperationRequest},
+    invocation::{
+        ActionTag, ConcreteBindingValue, ConcreteEffectRequestValue, ConcreteEventValue,
+        EffectRequestValue, EventValue, SuspensionFactValue,
+    },
+    profile::{
+        ABI_VERSION, CALL_ROOT_LABEL, CALL_SCHEMA_VERSION, RESULT_ROOT_LABEL, RESULT_SCHEMA_VERSION,
+    },
+    snapshot::{StateEntryValue, StateTag, StateValue, SuspensionValue},
 };
 
 pub const MAX_OUTER_REQUEST_BYTES: usize = 1_048_576;
@@ -78,8 +92,8 @@ pub fn dispatch(request: &[u8]) -> Vec<u8> {
             });
         }
     };
-    let operation = Some(call.operation.tag());
-    if call.abi_version != ABI_VERSION {
+    let operation = call.operation.tag();
+    if operation.is_none() || call.abi_version != ABI_VERSION {
         return encode_result(KernelResult {
             abi_version: ABI_VERSION,
             operation,

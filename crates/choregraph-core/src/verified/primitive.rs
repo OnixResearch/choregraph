@@ -1,0 +1,12 @@
+#[path = "primitive/matching.rs"]
+pub(crate) mod matching;
+#[path = "primitive/membership.rs"]
+pub(crate) mod membership;
+#[path = "primitive/ownership.rs"]
+pub(crate) mod ownership;
+#[path = "primitive/support.rs"]
+pub(crate) mod support;
+#[path = "primitive/transition.rs"]
+pub(crate) mod transition;
+#[path = "primitive/validity.rs"]
+pub(crate) mod validity;

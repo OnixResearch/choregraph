@@ -6,9 +6,9 @@
     reason = "the bounded conversion preserves the selected recursive Trellis protocol shape and keeps exact local and Trellis owner types visible at the endpoint boundary"
 )]
 
-use crate::admission::AdmittedChoreography;
-use crate::issue::{ChoreographyDiagnostic, DiagnosticCode};
-use crate::model::{
+use crate::admission::Admitted;
+use crate::issue::{Diagnostic, DiagnosticCode};
+use crate::model::participants::{
     LabelId, PayloadTag, RoleDeclaration, RoleId, RoleKind, SourceSpan, ValueDeclaration, ValueId,
 };
 use serde::{Deserialize, Serialize};
@@ -117,13 +117,13 @@ pub struct LocalProtocolSetBody {
 }
 
 #[derive(Debug)]
-pub struct ProjectedChoreography {
+pub struct Projected {
     pub global: GlobalProtocolArtifactBody,
     pub locals: LocalProtocolSetBody,
 }
 
-fn issue(code: DiagnosticCode, note: &'static str) -> Vec<ChoreographyDiagnostic> {
-    vec![ChoreographyDiagnostic::error(
+fn issue(code: DiagnosticCode, note: &'static str) -> Vec<Diagnostic> {
+    vec![Diagnostic::error(
         code,
         SourceSpan { start: 0, end: 0 },
         note,
@@ -243,7 +243,7 @@ fn local_protocol(local: &LocalChoreo) -> LocalProtocol {
     }
 }
 
-fn exact_role_kind(source: &AdmittedChoreography, role: RoleId) -> Option<RoleKind> {
+fn exact_role_kind(source: &Admitted, role: RoleId) -> Option<RoleKind> {
     source
         .source
         .roles
@@ -252,9 +252,7 @@ fn exact_role_kind(source: &AdmittedChoreography, role: RoleId) -> Option<RoleKi
         .map(|declaration| declaration.kind.clone())
 }
 
-pub fn project_all(
-    admitted: &AdmittedChoreography,
-) -> Result<ProjectedChoreography, Vec<ChoreographyDiagnostic>> {
+pub fn project_all(admitted: &Admitted) -> Result<Projected, Vec<Diagnostic>> {
     let mut locals = Vec::with_capacity(admitted.roles.len());
     for role in &admitted.roles {
         let Some(role_kind) = exact_role_kind(admitted, *role) else {
@@ -280,7 +278,7 @@ pub fn project_all(
             .zip(&admitted.roles)
             .all(|(local, role)| local.role == *role)
     );
-    Ok(ProjectedChoreography {
+    Ok(Projected {
         global: GlobalProtocolArtifactBody {
             roles: admitted.source.roles.clone(),
             values: admitted.source.values.clone(),
@@ -293,7 +291,7 @@ pub fn project_all(
 pub fn validate_complete_set(
     expected_roles: &[RoleId],
     local_set: &LocalProtocolSetBody,
-) -> Result<(), Vec<ChoreographyDiagnostic>> {
+) -> Result<(), Vec<Diagnostic>> {
     if local_set.locals.len() != expected_roles.len() {
         return Err(issue(
             DiagnosticCode::IncompleteLocalSet,

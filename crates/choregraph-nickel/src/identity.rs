@@ -3,21 +3,19 @@
     unknown_lints,
     assertion_density,
     fragile_exhaustive_enum_match,
-    non_trait_imports,
-    numeric_units,
     path_segment_repetition,
     reason = "translation identity keeps explicit domains and fixed framed-byte arithmetic"
 )]
 
 // r[impl choregraph.nickel.identity]
 // r[impl choregraph.nickel.claim_boundary]
-use crate::diagnostic::{FrontendFailure, FrontendIssueCode};
-use serde::{Deserialize, Serialize};
 
 const IDENTITY_CONTEXT: &str = "choregraph nickel translation identity v1";
 const LENGTH_FRAME_BYTES: usize = size_of::<u64>();
 
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(
+    Clone, Copy, Debug, serde::Deserialize, Eq, Ord, PartialEq, PartialOrd, serde::Serialize,
+)]
 #[serde(rename_all = "kebab-case")]
 pub enum TranslationDomain {
     Source,
@@ -47,14 +45,14 @@ impl TranslationDomain {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, serde::Deserialize, Eq, PartialEq, serde::Serialize)]
 pub struct TranslationIdentity {
     pub domain: TranslationDomain,
     pub algorithm: String,
     pub hex: String,
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, serde::Deserialize, Eq, PartialEq, serde::Serialize)]
 pub struct TranslationIdentityChain {
     pub source: TranslationIdentity,
     pub import_closure: TranslationIdentity,
@@ -80,7 +78,7 @@ pub struct TranslationMaterials<'a> {
     pub toolchain: &'a [u8],
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, serde::Deserialize, Eq, PartialEq, serde::Serialize)]
 pub struct SourceReceipt {
     pub schema: String,
     pub source: TranslationIdentity,
@@ -89,7 +87,7 @@ pub struct SourceReceipt {
     pub non_claims: Vec<String>,
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, serde::Deserialize, Eq, PartialEq, serde::Serialize)]
 pub struct EvaluatorReceipt {
     pub schema: String,
     pub identities: TranslationIdentityChain,
@@ -106,17 +104,20 @@ pub struct TranslationReceipts {
 fn compute(
     domain: TranslationDomain,
     material: &[u8],
-) -> Result<TranslationIdentity, FrontendFailure> {
+) -> Result<TranslationIdentity, crate::diagnostic::FrontendFailure> {
     if material.is_empty() {
-        return Err(FrontendFailure::one(
-            FrontendIssueCode::EmptyIdentityMaterial,
+        return Err(crate::diagnostic::FrontendFailure::one(
+            crate::diagnostic::FrontendIssueCode::EmptyIdentityMaterial,
         ));
     }
     let label = domain.label().as_bytes();
-    let label_length = u64::try_from(label.len())
-        .map_err(|_| FrontendFailure::one(FrontendIssueCode::EmptyIdentityMaterial))?;
+    let label_length_bytes = u64::try_from(label.len()).map_err(|_| {
+        crate::diagnostic::FrontendFailure::one(
+            crate::diagnostic::FrontendIssueCode::EmptyIdentityMaterial,
+        )
+    })?;
     let mut hasher = blake3::Hasher::new_derive_key(IDENTITY_CONTEXT);
-    hasher.update(&label_length.to_le_bytes()[..LENGTH_FRAME_BYTES]);
+    hasher.update(&label_length_bytes.to_le_bytes()[..LENGTH_FRAME_BYTES]);
     hasher.update(label);
     hasher.update(material);
     Ok(TranslationIdentity {
@@ -128,7 +129,7 @@ fn compute(
 
 pub fn build_translation_receipts(
     materials: TranslationMaterials<'_>,
-) -> Result<TranslationReceipts, FrontendFailure> {
+) -> Result<TranslationReceipts, crate::diagnostic::FrontendFailure> {
     let identities = TranslationIdentityChain {
         source: compute(TranslationDomain::Source, materials.source)?,
         import_closure: compute(TranslationDomain::ImportClosure, materials.import_closure)?,
@@ -180,11 +181,11 @@ pub fn build_translation_receipts(
 pub fn validate_translation_receipts(
     receipts: &TranslationReceipts,
     materials: TranslationMaterials<'_>,
-) -> Result<(), FrontendFailure> {
+) -> Result<(), crate::diagnostic::FrontendFailure> {
     let expected = build_translation_receipts(materials)?;
     if receipts != &expected {
-        return Err(FrontendFailure::one(
-            FrontendIssueCode::StaleTranslationReceipt,
+        return Err(crate::diagnostic::FrontendFailure::one(
+            crate::diagnostic::FrontendIssueCode::StaleTranslationReceipt,
         ));
     }
     Ok(())

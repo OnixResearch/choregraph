@@ -17,26 +17,9 @@ use crate::selected_kamacite_codec::{
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
-pub const MACHINE_SCHEMA_VERSION: &str = "choregraph.machine-preserves.v1";
-pub const MACHINE_ROOT_LABEL: &str = "choregraph-machine-v1";
-pub const DURABLE_MACHINE_ROOT_LABEL: &str = "choregraph-machine-durable-v1";
-pub const CONCRETE_MACHINE_SCHEMA_VERSION: &str = "choregraph.machine-preserves.v2";
-pub const CONCRETE_MACHINE_ROOT_LABEL: &str = "choregraph-machine-v2";
-pub const CONCRETE_INTENT_SCHEMA_VERSION: &str = "choregraph.concrete-intent-preserves.v2";
-pub const CONCRETE_INTENT_ROOT_LABEL: &str = "choregraph-concrete-intent-v2";
-pub const CONCRETE_INTENT_RECEIPT_SCHEMA_VERSION: &str =
-    "choregraph.concrete-intent-receipt-preserves.v1";
-pub const CONCRETE_INTENT_RECEIPT_ROOT_LABEL: &str = "choregraph-concrete-intent-receipt-v1";
-pub const ADMITTED_IR_SCHEMA_VERSION: &str = "choregraph.admitted-ir-preserves.v1";
-pub const ADMITTED_IR_ROOT_LABEL: &str = "choregraph-admitted-ir-v1";
-pub const PROFILE_SCHEMA_VERSION: &str = "choregraph.kamacite-profile-preserves.v1";
-pub const PROFILE_ROOT_LABEL: &str = "choregraph-kamacite-profile-v1";
-pub const LINK_RECEIPT_SCHEMA_VERSION: &str = "choregraph.link-receipt-preserves.v1";
-pub const LINK_RECEIPT_ROOT_LABEL: &str = "choregraph-link-receipt-v1";
-pub const FSM_SPEC_SCHEMA_VERSION: &str = "kamacite.fsm-spec.v2";
-pub const FSM_SPEC_ROOT_LABEL: &str = "kamacite-fsm-spec-v2";
-pub const FSM_RECEIPT_SCHEMA_VERSION: &str = "kamacite.fsm-receipt.v3";
-pub const FSM_RECEIPT_ROOT_LABEL: &str = "kamacite-fsm-receipt-v3";
+pub mod effect;
+pub mod graph;
+pub mod state;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CanonicalArtifact {
@@ -54,11 +37,18 @@ pub enum CodecBoundaryError {
 
 impl std::fmt::Display for CodecBoundaryError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::JsonProjectionIsNotAuthority => {
-                formatter.write_str("JSON projection cannot replace canonical packed Preserves")
-            }
-            Self::Preserves(message) => formatter.write_str(message),
+        if let Self::Preserves(message) = self {
+            return formatter.write_str(message);
+        }
+        const DIAGNOSTICS: [(CodecBoundaryError, &str); 1] = [(
+            CodecBoundaryError::JsonProjectionIsNotAuthority,
+            "JSON projection cannot replace canonical packed Preserves",
+        )];
+        if let Some((_, message)) = DIAGNOSTICS.iter().find(|(category, _)| category == self) {
+            formatter.write_str(message)
+        } else {
+            // New categories retain their exact variant and payload in diagnostics.
+            std::fmt::Debug::fmt(self, formatter)
         }
     }
 }

@@ -18,16 +18,19 @@
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 
-use crate::model::{
-    AdmittedMachine, Edge, EffectDeclaration, EffectIntent, EffectKey, Event, InvariantIssue,
-    LifecycleProfile, LocalState, MachineSchema, MachineState, TransitionSelector,
-};
 use crate::transition::{lifecycle_target, lifecycle_target_for_profile};
+use crate::{
+    model::automaton::AdmittedMachine, model::automaton::EffectKey, model::automaton::MachineState,
+    model::dispatch::EffectDeclaration, model::dispatch::EffectIntent, model::dispatch::Event,
+    model::graph::Edge, model::outcome::InvariantIssue, model::semantics::LifecycleProfile,
+    model::semantics::LocalState, model::semantics::MachineSchema,
+    model::semantics::TransitionSelector,
+};
 
 fn dependencies_complete(
     machine: &AdmittedMachine,
     state: &MachineState,
-    node_id: &crate::NodeId,
+    node_id: &crate::id::bounded::NodeId,
 ) -> bool {
     let Some(dependencies) = machine.dependencies.get(node_id) else {
         return false;
@@ -115,7 +118,7 @@ fn indexed_views_match(machine: &AdmittedMachine) -> bool {
 }
 
 fn topology_matches(machine: &AdmittedMachine) -> bool {
-    crate::verified_topology::admitted_graph_valid(
+    crate::verified_topology::admission::admitted_graph_valid(
         &machine.edge_indices,
         machine.nodes.len(),
         &machine.topological_indices,
@@ -171,7 +174,8 @@ fn effects_match(machine: &AdmittedMachine) -> bool {
         }
         if matches!(
             declaration.transition.action,
-            crate::Action::Suspend | crate::Action::ResumeSignal
+            crate::model::semantics::Action::Suspend
+                | crate::model::semantics::Action::ResumeSignal
         ) {
             return false;
         }
@@ -392,7 +396,10 @@ fn declaration_matches_intent(declaration: &EffectDeclaration, intent: &EffectIn
         && declaration.payload == intent.payload
 }
 
-fn request_matches_intent(request: &crate::EffectRequest, intent: &EffectIntent) -> bool {
+fn request_matches_intent(
+    request: &crate::model::dispatch::EffectRequest,
+    intent: &EffectIntent,
+) -> bool {
     request.operation == intent.operation.as_str()
         && request.resource == intent.resource.as_str()
         && request.ability == intent.ability.as_str()
@@ -411,7 +418,8 @@ pub fn effects_allowed(
     if !invariant(machine, state) || intents.len() != event.effects.len() {
         return false;
     }
-    let Ok(node_id) = crate::NodeId::parse(&event.node_id, machine.limits.max_identifier_bytes)
+    let Ok(node_id) =
+        crate::id::bounded::NodeId::parse(&event.node_id, machine.limits.max_identifier_bytes)
     else {
         return false;
     };

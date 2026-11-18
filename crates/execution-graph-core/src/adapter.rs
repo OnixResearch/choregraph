@@ -16,18 +16,20 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use choregraph_core::{
-    Action as ChoregraphAction, AdmissionDiagnostic as ChoregraphDiagnostic,
-    AdmissionDiagnosticCode as ChoregraphDiagnosticCode, AdmissionLimits, AdmittedMachine,
-    EdgeSpec, LocalState, MachineSpec, MachineState, NodeId, NodeSpec,
-    ResumeDecision as ChoregraphResumeDecision,
+    id::bounded::NodeId, model::analysis::ResumeDecision as ChoregraphResumeDecision,
+    model::automaton::AdmittedMachine, model::automaton::MachineSpec,
+    model::automaton::MachineState, model::capacity::AdmissionLimits, model::graph::EdgeSpec,
+    model::graph::NodeSpec, model::outcome::AdmissionDiagnostic as ChoregraphDiagnostic,
+    model::outcome::AdmissionDiagnosticCode as ChoregraphDiagnosticCode,
+    model::semantics::Action as ChoregraphAction, model::semantics::LocalState,
 };
 
-use crate::{
-    Bottleneck, ExecutionGraph, ExecutionGroup, GraphDiagnostic, GraphDiagnosticCode,
-    ResumeDecision, StepAction, StepState, StepTransitionError,
-};
+use crate::admission::{Diagnostic, DiagnosticCode};
+use crate::aggregate::ResumeDecision;
+use crate::lifecycle::{StepAction, StepState, StepTransitionError};
+use crate::structure::{Bottleneck, Group, Topology};
 
-pub(crate) fn machine_spec(graph: &ExecutionGraph) -> MachineSpec {
+pub(crate) fn machine_spec(graph: &Topology) -> MachineSpec {
     let nodes = graph
         .nodes
         .iter()
@@ -41,23 +43,21 @@ pub(crate) fn machine_spec(graph: &ExecutionGraph) -> MachineSpec {
     MachineSpec::new(nodes, edges)
 }
 
-pub(crate) fn admit_machine(
-    graph: &ExecutionGraph,
-) -> Result<AdmittedMachine, Vec<GraphDiagnostic>> {
+pub(crate) fn admit_machine(graph: &Topology) -> Result<AdmittedMachine, Vec<Diagnostic>> {
     AdmittedMachine::admit(machine_spec(graph), AdmissionLimits::default()).map_err(map_diagnostics)
 }
 
-fn diagnostic_code(code: ChoregraphDiagnosticCode) -> GraphDiagnosticCode {
+fn diagnostic_code(code: ChoregraphDiagnosticCode) -> DiagnosticCode {
     match code {
         ChoregraphDiagnosticCode::EmptyIdentifier
         | ChoregraphDiagnosticCode::IdentifierTooLong
-        | ChoregraphDiagnosticCode::MalformedIdentifier => GraphDiagnosticCode::EmptyNodeId,
-        ChoregraphDiagnosticCode::DuplicateNode => GraphDiagnosticCode::DuplicateNodeId,
-        ChoregraphDiagnosticCode::DuplicateEdge => GraphDiagnosticCode::DuplicateEdge,
-        ChoregraphDiagnosticCode::MissingSource => GraphDiagnosticCode::MissingSourceNode,
-        ChoregraphDiagnosticCode::MissingTarget => GraphDiagnosticCode::MissingTargetNode,
-        ChoregraphDiagnosticCode::SelfLoop => GraphDiagnosticCode::SelfLoop,
-        ChoregraphDiagnosticCode::CycleDetected => GraphDiagnosticCode::CycleDetected,
+        | ChoregraphDiagnosticCode::MalformedIdentifier => DiagnosticCode::EmptyNodeId,
+        ChoregraphDiagnosticCode::DuplicateNode => DiagnosticCode::DuplicateNodeId,
+        ChoregraphDiagnosticCode::DuplicateEdge => DiagnosticCode::DuplicateEdge,
+        ChoregraphDiagnosticCode::MissingSource => DiagnosticCode::MissingSourceNode,
+        ChoregraphDiagnosticCode::MissingTarget => DiagnosticCode::MissingTargetNode,
+        ChoregraphDiagnosticCode::SelfLoop => DiagnosticCode::SelfLoop,
+        ChoregraphDiagnosticCode::CycleDetected => DiagnosticCode::CycleDetected,
         ChoregraphDiagnosticCode::InconsistentLimits
         | ChoregraphDiagnosticCode::TooManyNodes
         | ChoregraphDiagnosticCode::TooManyEdges
@@ -84,26 +84,26 @@ fn diagnostic_code(code: ChoregraphDiagnosticCode) -> GraphDiagnosticCode {
         | ChoregraphDiagnosticCode::ReferenceTooLong
         | ChoregraphDiagnosticCode::IntentTooLarge
         | ChoregraphDiagnosticCode::TooManyIntentsForTransition
-        | ChoregraphDiagnosticCode::NormalizationInvariant => GraphDiagnosticCode::GraphTooLarge,
+        | ChoregraphDiagnosticCode::NormalizationInvariant => DiagnosticCode::GraphTooLarge,
     }
 }
 
-fn diagnostic_message(code: GraphDiagnosticCode) -> &'static str {
+fn diagnostic_message(code: DiagnosticCode) -> &'static str {
     match code {
-        GraphDiagnosticCode::EmptyNodeId => "execution graph node id is invalid",
-        GraphDiagnosticCode::DuplicateNodeId => "execution graph node id must be unique",
-        GraphDiagnosticCode::DuplicateEdge => "execution graph edge must be unique",
-        GraphDiagnosticCode::MissingSourceNode => "execution graph edge source node is missing",
-        GraphDiagnosticCode::MissingTargetNode => "execution graph edge target node is missing",
-        GraphDiagnosticCode::SelfLoop => "execution graph edge cannot connect a node to itself",
-        GraphDiagnosticCode::CycleDetected => "execution graph contains a cycle",
-        GraphDiagnosticCode::GraphTooLarge => "execution graph exceeds the supported bounds",
+        DiagnosticCode::EmptyNodeId => "execution graph node id is invalid",
+        DiagnosticCode::DuplicateNodeId => "execution graph node id must be unique",
+        DiagnosticCode::DuplicateEdge => "execution graph edge must be unique",
+        DiagnosticCode::MissingSourceNode => "execution graph edge source node is missing",
+        DiagnosticCode::MissingTargetNode => "execution graph edge target node is missing",
+        DiagnosticCode::SelfLoop => "execution graph edge cannot connect a node to itself",
+        DiagnosticCode::CycleDetected => "execution graph contains a cycle",
+        DiagnosticCode::GraphTooLarge => "execution graph exceeds the supported bounds",
     }
 }
 
-fn map_diagnostic(diagnostic: ChoregraphDiagnostic) -> GraphDiagnostic {
+fn map_diagnostic(diagnostic: ChoregraphDiagnostic) -> Diagnostic {
     let code = diagnostic_code(diagnostic.code);
-    GraphDiagnostic {
+    Diagnostic {
         code,
         node_id: diagnostic.subject,
         related_node_id: diagnostic.related,
@@ -111,7 +111,7 @@ fn map_diagnostic(diagnostic: ChoregraphDiagnostic) -> GraphDiagnostic {
     }
 }
 
-fn map_diagnostics(diagnostics: Vec<ChoregraphDiagnostic>) -> Vec<GraphDiagnostic> {
+fn map_diagnostics(diagnostics: Vec<ChoregraphDiagnostic>) -> Vec<Diagnostic> {
     diagnostics.into_iter().map(map_diagnostic).collect()
 }
 
@@ -139,10 +139,10 @@ pub(crate) fn dependents(machine: &AdmittedMachine, node_id: &str) -> Vec<String
         .unwrap_or_default()
 }
 
-pub(crate) fn execution_groups(machine: &AdmittedMachine) -> Vec<ExecutionGroup> {
-    choregraph_core::parallel_groups(machine)
+pub(crate) fn parallel_groups(machine: &AdmittedMachine) -> Vec<Group> {
+    choregraph_core::analytics::parallel_groups(machine)
         .into_iter()
-        .map(|group| ExecutionGroup {
+        .map(|group| Group {
             node_ids: node_strings(&group.node_ids),
             level: level_to_u32(group.level),
             can_parallelize: group.can_parallelize,
@@ -163,11 +163,11 @@ fn level_to_u32(level: usize) -> u32 {
 }
 
 pub(crate) fn critical_path(machine: &AdmittedMachine) -> Vec<String> {
-    node_strings(&choregraph_core::critical_path(machine))
+    node_strings(&choregraph_core::analytics::critical_path(machine))
 }
 
 pub(crate) fn bottlenecks(machine: &AdmittedMachine) -> Vec<Bottleneck> {
-    choregraph_core::bottlenecks(machine)
+    choregraph_core::analytics::bottlenecks(machine)
         .into_iter()
         .map(|bottleneck| Bottleneck {
             node_id: bottleneck.node_id.to_string(),
@@ -213,14 +213,14 @@ pub(crate) fn transition(
     from: StepState,
     action: StepAction,
 ) -> Result<StepState, StepTransitionError> {
-    match choregraph_core::lifecycle_target(to_local_state(from), to_action(action)) {
+    match choregraph_core::transition::lifecycle_target(to_local_state(from), to_action(action)) {
         Ok(target) => {
             from_local_state(target).ok_or(StepTransitionError::InvalidTransition { from, action })
         }
-        Err(choregraph_core::LocalTransitionError::Terminal { .. }) => {
+        Err(choregraph_core::model::semantics::LocalTransitionError::Terminal { .. }) => {
             Err(StepTransitionError::TerminalState { from, action })
         }
-        Err(choregraph_core::LocalTransitionError::Invalid { .. }) => {
+        Err(choregraph_core::model::semantics::LocalTransitionError::Invalid { .. }) => {
             Err(StepTransitionError::InvalidTransition { from, action })
         }
     }
@@ -228,8 +228,11 @@ pub(crate) fn transition(
 
 pub(crate) fn is_terminal(state: StepState) -> bool {
     matches!(
-        choregraph_core::lifecycle_target(to_local_state(state), ChoregraphAction::Cancel),
-        Err(choregraph_core::LocalTransitionError::Terminal { .. })
+        choregraph_core::transition::lifecycle_target(
+            to_local_state(state),
+            ChoregraphAction::Cancel
+        ),
+        Err(choregraph_core::model::semantics::LocalTransitionError::Terminal { .. })
     )
 }
 
@@ -254,7 +257,7 @@ pub(crate) fn ready_nodes(
     states: &BTreeMap<String, StepState>,
 ) -> Vec<String> {
     let state = machine_state(machine, states);
-    match choregraph_core::ready_nodes(machine, &state) {
+    match choregraph_core::analytics::ready_nodes(machine, &state) {
         Ok(nodes) => node_strings(&nodes),
         Err(_) => Vec::new(),
     }
@@ -269,7 +272,7 @@ pub(crate) fn resume_decision(
         return ResumeDecision::AwaitDependencies;
     };
     let state = machine_state(machine, states);
-    match choregraph_core::resume_decision(machine, &state, &node_id) {
+    match choregraph_core::analytics::resume_decision(machine, &state, &node_id) {
         ChoregraphResumeDecision::Execute => ResumeDecision::Execute,
         ChoregraphResumeDecision::AwaitDependencies | ChoregraphResumeDecision::AwaitSignal => {
             ResumeDecision::AwaitDependencies
@@ -293,7 +296,7 @@ pub(crate) fn would_create_cycle(machine: &AdmittedMachine, source: &str, target
     ) else {
         return false;
     };
-    choregraph_core::would_create_cycle(machine, &source, &target)
+    choregraph_core::analytics::would_create_cycle(machine, &source, &target)
 }
 
 fn parse_node(machine: &AdmittedMachine, node_id: &str) -> Option<NodeId> {
@@ -319,7 +322,7 @@ mod tests {
     fn suspension_admission_diagnostics_map_to_a_bounded_compatibility_failure() {
         assert_eq!(
             diagnostic_code(ChoregraphDiagnosticCode::MalformedSuspensionReference),
-            GraphDiagnosticCode::GraphTooLarge
+            DiagnosticCode::GraphTooLarge
         );
     }
 }

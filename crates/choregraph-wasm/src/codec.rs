@@ -8,7 +8,7 @@
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
-use choregraph_kamacite::{CanonicalArtifact, CodecBoundaryError};
+use choregraph_kamacite::codec::{CanonicalArtifact, CodecBoundaryError};
 
 #[allow(
     unknown_lints,

@@ -11,7 +11,15 @@
 // r[verify choregraph.conformance.cutover]
 // r[verify choregraph.conformance.authority]
 // r[verify choregraph.conformance.validation]
-const ADAPTER_SOURCE: &str = include_str!("../src/lib.rs");
+const ADAPTER_SOURCE: &str = concat!(
+    include_str!("../src/lib.rs"),
+    include_str!("../src/admission.rs"),
+    include_str!("../src/aggregate.rs"),
+    include_str!("../src/boundary.rs"),
+    include_str!("../src/lifecycle.rs"),
+    include_str!("../src/topology.rs"),
+    include_str!("../src/v2.rs"),
+);
 const ADAPTER_MANIFEST: &str = include_str!("../Cargo.toml");
 const DOWNSTREAM_CHECK_SOURCE: &str = include_str!("../../../tools/check-lattice-downstream.rs");
 const REVIEWED_LATTICE_REVISION: &str = "c8d56ad83a57287064edb85f58808f53e4bf4536";
@@ -22,17 +30,17 @@ const REQUIRED_PRODUCTION_DEPENDENCY: &str = "choregraph-core.workspace = true";
 const EXPECTED_PRODUCTION_DEPENDENCY_COUNT: usize = 1;
 
 const REQUIRED_DELEGATE_CALLS: &[&str] = &[
-    "choregraph_core::AdmittedMachine::admit",
-    "choregraph_core::parallel_groups",
-    "choregraph_core::critical_path",
-    "choregraph_core::bottlenecks",
-    "choregraph_core::lifecycle_target",
-    "choregraph_core::validate_invariant",
-    "choregraph_core::ready_nodes",
-    "choregraph_core::resume_decision",
-    "choregraph_core::step",
-    "choregraph_core::step_concrete",
-    "choregraph_core::would_create_cycle",
+    "choregraph_core::model::automaton::AdmittedMachine::admit",
+    "choregraph_core::analytics::parallel_groups",
+    "choregraph_core::analytics::critical_path",
+    "choregraph_core::analytics::bottlenecks",
+    "choregraph_core::transition::lifecycle_target",
+    "choregraph_core::invariant::validate_invariant",
+    "choregraph_core::analytics::ready_nodes",
+    "choregraph_core::analytics::resume_decision",
+    "choregraph_core::transition::step",
+    "choregraph_core::transition::step_concrete",
+    "choregraph_core::analytics::would_create_cycle",
 ];
 const FORBIDDEN_AUTHORITY_TOKENS: &[&str] = &[
     "std::fs",

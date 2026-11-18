@@ -5,29 +5,11 @@
     fragile_exhaustive_enum_match,
     function_length,
     missing_const_fn,
-    non_trait_imports,
-    numeric_units,
     path_segment_repetition,
     reason = "lowering preserves explicit closed-schema matches and established diagnostic paths"
 )]
 
 // r[impl choregraph.nickel.lowerer]
-use crate::diagnostic::{FrontendFailure, FrontendIssueCode};
-use crate::imports::{ObservedImport, ValidatedImportClosure, validate_import_closure};
-use crate::model::{
-    CHOREGRAPH_EVALUATED_SCHEMA, EvaluatedConcreteReference, EvaluatedEffect,
-    EvaluatedLatticeEffectV2, EvaluatedLimits, EvaluatedReferenceBinding, EvaluatedSource,
-    EvaluatedSuspension, LATTICE_EVALUATED_SCHEMA, LATTICE_V2_EVALUATED_SCHEMA, LatticeNode,
-    LatticeNodeConfig, LatticeNodeConfigV2, LatticePortDirection,
-};
-use crate::profile::FrontendLimits;
-use choregraph_core::{
-    Action, AdmissionLimits, AdmittedMachine, ConcreteEffectDeclarationSpec, ConcreteReferenceSpec,
-    DURABLE_SUSPENSION_V1, EdgeSpec, EffectDeclarationSpec, LINEAR_LIFECYCLE_V1, LocalState,
-    MachineSpec, MachineSpecV2, NodeSpec, ReferenceBindingSpec, SuspensionDeclarationSpec,
-    TransitionSelector,
-};
-use std::collections::{BTreeMap, BTreeSet};
 
 const LATTICE_NODE_PREFIX: &str = "lattice-node/";
 const LATTICE_OPERATION_PREFIX: &str = "lattice/";
@@ -54,29 +36,29 @@ pub enum LoweredSourceFormat {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LoweringOutput {
-    pub machine: AdmittedMachine,
-    pub import_closure: ValidatedImportClosure,
+    pub machine: choregraph_core::model::automaton::AdmittedMachine,
+    pub import_closure: crate::imports::ValidatedImportClosure,
     pub source_format: LoweredSourceFormat,
 }
 
 enum LoweredMachineSpec {
-    V1(MachineSpec),
-    V2(MachineSpecV2),
+    V1(choregraph_core::model::automaton::MachineSpec),
+    V2(choregraph_core::concrete::machine::MachineSpecV2),
 }
 
-fn fail(code: FrontendIssueCode) -> FrontendFailure {
-    FrontendFailure::one(code)
+fn fail(code: crate::diagnostic::FrontendIssueCode) -> crate::diagnostic::FrontendFailure {
+    crate::diagnostic::FrontendFailure::one(code)
 }
 
-fn to_usize(value: u64) -> Result<usize, FrontendFailure> {
-    usize::try_from(value).map_err(|_| fail(FrontendIssueCode::InvalidLimits))
+fn to_usize(value: u64) -> Result<usize, crate::diagnostic::FrontendFailure> {
+    usize::try_from(value).map_err(|_| fail(crate::diagnostic::FrontendIssueCode::InvalidLimits))
 }
 
 fn admission_limits(
-    requested: EvaluatedLimits,
-    ceiling: AdmissionLimits,
-) -> Result<AdmissionLimits, FrontendFailure> {
-    let limits = AdmissionLimits {
+    requested: crate::model::graph::EvaluatedLimits,
+    ceiling: choregraph_core::model::capacity::AdmissionLimits,
+) -> Result<choregraph_core::model::capacity::AdmissionLimits, crate::diagnostic::FrontendFailure> {
+    let limits = choregraph_core::model::capacity::AdmissionLimits {
         max_nodes: to_usize(requested.max_nodes)?,
         max_edges: to_usize(requested.max_edges)?,
         max_operations: to_usize(requested.max_operations)?,
@@ -108,20 +90,26 @@ fn admission_limits(
         .iter()
         .any(|(value, maximum)| *value == 0 || value > maximum)
     {
-        return Err(fail(FrontendIssueCode::MachineLimitExceedsProfile));
+        return Err(fail(
+            crate::diagnostic::FrontendIssueCode::MachineLimitExceedsProfile,
+        ));
     }
     Ok(limits)
 }
 
-fn state(value: &str) -> Result<LocalState, FrontendFailure> {
+fn state(
+    value: &str,
+) -> Result<choregraph_core::model::semantics::LocalState, crate::diagnostic::FrontendFailure> {
     match value {
-        "pending" => Ok(LocalState::Pending),
-        "ready" => Ok(LocalState::Ready),
-        "running" => Ok(LocalState::Running),
-        "completed" => Ok(LocalState::Completed),
-        "failed" => Ok(LocalState::Failed),
-        "cancelled" => Ok(LocalState::Cancelled),
-        _ => Err(fail(FrontendIssueCode::MachineAdmissionRejected)),
+        "pending" => Ok(choregraph_core::model::semantics::LocalState::Pending),
+        "ready" => Ok(choregraph_core::model::semantics::LocalState::Ready),
+        "running" => Ok(choregraph_core::model::semantics::LocalState::Running),
+        "completed" => Ok(choregraph_core::model::semantics::LocalState::Completed),
+        "failed" => Ok(choregraph_core::model::semantics::LocalState::Failed),
+        "cancelled" => Ok(choregraph_core::model::semantics::LocalState::Cancelled),
+        _ => Err(fail(
+            crate::diagnostic::FrontendIssueCode::MachineAdmissionRejected,
+        )),
     }
 }
 
@@ -131,8 +119,10 @@ fn valid_events<const COUNT: usize>(mut events: Vec<String>, expected: [&str; CO
     events.len() == COUNT && events.iter().map(String::as_str).eq(expected)
 }
 
-fn suspension_declaration(input: EvaluatedSuspension) -> SuspensionDeclarationSpec {
-    SuspensionDeclarationSpec {
+fn suspension_declaration(
+    input: crate::model::graph::EvaluatedSuspension,
+) -> choregraph_core::model::pause::SuspensionDeclarationSpec {
+    choregraph_core::model::pause::SuspensionDeclarationSpec {
         node_id: input.node_id,
         class: input.class,
         reference: input.reference,
@@ -147,40 +137,61 @@ struct SourceProfile<'a> {
     allow_suspension: bool,
 }
 
-fn validate_source_profile(profile: SourceProfile<'_>) -> Result<(), FrontendFailure> {
+fn validate_source_profile(
+    profile: SourceProfile<'_>,
+) -> Result<(), crate::diagnostic::FrontendFailure> {
     if profile.observed_schema != profile.expected_schema {
-        return Err(fail(FrontendIssueCode::UnsupportedSchema));
+        return Err(fail(
+            crate::diagnostic::FrontendIssueCode::UnsupportedSchema,
+        ));
     }
-    if profile.lifecycle_profile == LINEAR_LIFECYCLE_V1 {
+    if profile.lifecycle_profile == choregraph_core::model::semantics::LINEAR_LIFECYCLE_V1 {
         if !valid_events(profile.events, LIFECYCLE_EVENTS) {
-            return Err(fail(FrontendIssueCode::UnsupportedEvents));
+            return Err(fail(
+                crate::diagnostic::FrontendIssueCode::UnsupportedEvents,
+            ));
         }
         return Ok(());
     }
-    if profile.lifecycle_profile == DURABLE_SUSPENSION_V1 && profile.allow_suspension {
+    if profile.lifecycle_profile == choregraph_core::model::semantics::DURABLE_SUSPENSION_V1
+        && profile.allow_suspension
+    {
         if !valid_events(profile.events, DURABLE_EVENTS) {
-            return Err(fail(FrontendIssueCode::UnsupportedEvents));
+            return Err(fail(
+                crate::diagnostic::FrontendIssueCode::UnsupportedEvents,
+            ));
         }
         return Ok(());
     }
-    Err(fail(FrontendIssueCode::UnsupportedLifecycle))
+    Err(fail(
+        crate::diagnostic::FrontendIssueCode::UnsupportedLifecycle,
+    ))
 }
 
-fn action(value: &str) -> Result<Action, FrontendFailure> {
+fn action(
+    value: &str,
+) -> Result<choregraph_core::model::semantics::Action, crate::diagnostic::FrontendFailure> {
     match value {
-        "mark-ready" => Ok(Action::MarkReady),
-        "start" => Ok(Action::Start),
-        "complete" => Ok(Action::Complete),
-        "fail" => Ok(Action::Fail),
-        "cancel" => Ok(Action::Cancel),
-        _ => Err(fail(FrontendIssueCode::MachineAdmissionRejected)),
+        "mark-ready" => Ok(choregraph_core::model::semantics::Action::MarkReady),
+        "start" => Ok(choregraph_core::model::semantics::Action::Start),
+        "complete" => Ok(choregraph_core::model::semantics::Action::Complete),
+        "fail" => Ok(choregraph_core::model::semantics::Action::Fail),
+        "cancel" => Ok(choregraph_core::model::semantics::Action::Cancel),
+        _ => Err(fail(
+            crate::diagnostic::FrontendIssueCode::MachineAdmissionRejected,
+        )),
     }
 }
 
-fn effect(input: EvaluatedEffect) -> Result<EffectDeclarationSpec, FrontendFailure> {
-    Ok(EffectDeclarationSpec {
+fn effect(
+    input: crate::model::graph::EvaluatedEffect,
+) -> Result<
+    choregraph_core::model::dispatch::EffectDeclarationSpec,
+    crate::diagnostic::FrontendFailure,
+> {
+    Ok(choregraph_core::model::dispatch::EffectDeclarationSpec {
         node_id: input.node_id,
-        transition: TransitionSelector {
+        transition: choregraph_core::model::semantics::TransitionSelector {
             from: state(&input.from_state)?,
             action: action(&input.action)?,
         },
@@ -192,30 +203,40 @@ fn effect(input: EvaluatedEffect) -> Result<EffectDeclarationSpec, FrontendFailu
     })
 }
 
-fn concrete_reference(input: EvaluatedConcreteReference) -> ConcreteReferenceSpec {
-    ConcreteReferenceSpec {
+fn concrete_reference(
+    input: crate::model::projection::EvaluatedConcreteReference,
+) -> choregraph_core::concrete::reference::ConcreteReferenceSpec {
+    choregraph_core::concrete::reference::ConcreteReferenceSpec {
         profile: input.profile,
         identity: input.identity,
     }
 }
 
-fn reference_binding(input: EvaluatedReferenceBinding) -> ReferenceBindingSpec {
+fn reference_binding(
+    input: crate::model::projection::EvaluatedReferenceBinding,
+) -> choregraph_core::concrete::reference::ReferenceBindingSpec {
     match input {
-        EvaluatedReferenceBinding::Exact { reference } => ReferenceBindingSpec::Exact {
-            reference: concrete_reference(reference),
-        },
-        EvaluatedReferenceBinding::Slot {
+        crate::model::projection::EvaluatedReferenceBinding::Exact { reference } => {
+            choregraph_core::concrete::reference::ReferenceBindingSpec::Exact {
+                reference: concrete_reference(reference),
+            }
+        }
+        crate::model::projection::EvaluatedReferenceBinding::Slot {
             slot_id,
             source_ref,
-        } => ReferenceBindingSpec::Slot {
+        } => choregraph_core::concrete::reference::ReferenceBindingSpec::Slot {
             slot_id,
             source_ref,
         },
     }
 }
 
-fn binding_source_is_local(node_id: u64, binding: &EvaluatedReferenceBinding) -> bool {
-    let EvaluatedReferenceBinding::Slot { source_ref, .. } = binding else {
+fn binding_source_is_local(
+    node_id: u64,
+    binding: &crate::model::projection::EvaluatedReferenceBinding,
+) -> bool {
+    let crate::model::projection::EvaluatedReferenceBinding::Slot { source_ref, .. } = binding
+    else {
         return true;
     };
     let node_prefix = format!("node/{node_id}/");
@@ -236,63 +257,84 @@ fn lattice_operation(value: &str) -> String {
 }
 
 fn lower_lattice(
-    nodes: Vec<LatticeNode>,
-    edges: Vec<crate::model::LatticePortEdge>,
-    configs: Vec<LatticeNodeConfig>,
-) -> Result<(Vec<NodeSpec>, Vec<EdgeSpec>), FrontendFailure> {
-    let node_ids = nodes.iter().map(|node| node.id).collect::<BTreeSet<_>>();
+    nodes: Vec<crate::model::projection::LatticeNode>,
+    edges: Vec<crate::model::projection::LatticePortEdge>,
+    configs: Vec<crate::model::projection::LatticeNodeConfig>,
+) -> Result<
+    (
+        Vec<choregraph_core::model::graph::NodeSpec>,
+        Vec<choregraph_core::model::graph::EdgeSpec>,
+    ),
+    crate::diagnostic::FrontendFailure,
+> {
+    let node_ids = nodes
+        .iter()
+        .map(|node| node.id)
+        .collect::<std::collections::BTreeSet<_>>();
     if node_ids.len() != nodes.len() {
-        return Err(fail(FrontendIssueCode::MachineAdmissionRejected));
+        return Err(fail(
+            crate::diagnostic::FrontendIssueCode::MachineAdmissionRejected,
+        ));
     }
-    let mut ports = BTreeMap::new();
+    let mut ports = std::collections::BTreeMap::new();
     for node in &nodes {
         for port in &node.ports {
             if ports.insert(port.id, (node.id, port.direction)).is_some() {
-                return Err(fail(FrontendIssueCode::DuplicateLatticePort));
+                return Err(fail(
+                    crate::diagnostic::FrontendIssueCode::DuplicateLatticePort,
+                ));
             }
         }
     }
-    let mut operations = BTreeMap::new();
+    let mut operations = std::collections::BTreeMap::new();
     for config in configs {
         if !node_ids.contains(&config.node_id) {
-            return Err(fail(FrontendIssueCode::UnknownLatticeConfigNode));
+            return Err(fail(
+                crate::diagnostic::FrontendIssueCode::UnknownLatticeConfigNode,
+            ));
         }
         if operations
             .insert(config.node_id, config.operation)
             .is_some()
         {
-            return Err(fail(FrontendIssueCode::DuplicateLatticeConfig));
+            return Err(fail(
+                crate::diagnostic::FrontendIssueCode::DuplicateLatticeConfig,
+            ));
         }
     }
     let mut lowered_nodes = Vec::with_capacity(nodes.len());
     for node in nodes {
         let operation = operations
             .remove(&node.id)
-            .ok_or_else(|| fail(FrontendIssueCode::MissingLatticeConfig))?;
-        lowered_nodes.push(NodeSpec::new(
+            .ok_or_else(|| fail(crate::diagnostic::FrontendIssueCode::MissingLatticeConfig))?;
+        lowered_nodes.push(choregraph_core::model::graph::NodeSpec::new(
             lattice_node_id(node.id),
             vec![lattice_operation(&operation)],
         ));
     }
     if !operations.is_empty() {
-        return Err(fail(FrontendIssueCode::UnknownLatticeConfigNode));
+        return Err(fail(
+            crate::diagnostic::FrontendIssueCode::UnknownLatticeConfigNode,
+        ));
     }
     let mut lowered_edges = Vec::with_capacity(edges.len());
     for edge in edges {
         let (source_node, source_direction) = ports
             .get(&edge.source)
             .copied()
-            .ok_or_else(|| fail(FrontendIssueCode::MissingLatticePort))?;
+            .ok_or_else(|| fail(crate::diagnostic::FrontendIssueCode::MissingLatticePort))?;
         let (target_node, target_direction) = ports
             .get(&edge.target)
             .copied()
-            .ok_or_else(|| fail(FrontendIssueCode::MissingLatticePort))?;
-        if source_direction != LatticePortDirection::Output
-            || target_direction != LatticePortDirection::Input
+            .ok_or_else(|| fail(crate::diagnostic::FrontendIssueCode::MissingLatticePort))?;
+        if source_direction != crate::model::projection::LatticePortDirection::Output
+            || target_direction != crate::model::projection::LatticePortDirection::Input
         {
-            return Err(fail(FrontendIssueCode::WrongLatticePortDirection));
+            return Err(fail(
+                crate::diagnostic::FrontendIssueCode::WrongLatticePortDirection,
+            ));
         }
-        lowered_edges.push(EdgeSpec::new(
+        lowered_edges.push(choregraph_core::model::graph::EdgeSpec::new(
             lattice_node_id(source_node),
             lattice_node_id(target_node),
         ));
@@ -301,63 +343,75 @@ fn lower_lattice(
 }
 
 fn lower_lattice_v2(
-    nodes: Vec<LatticeNode>,
-    edges: Vec<crate::model::LatticePortEdge>,
-    configs: Vec<LatticeNodeConfigV2>,
-    effects: Vec<EvaluatedLatticeEffectV2>,
-) -> Result<MachineSpecV2, FrontendFailure> {
-    let mut operations = BTreeMap::new();
-    let mut effectful_nodes = BTreeSet::new();
+    nodes: Vec<crate::model::projection::LatticeNode>,
+    edges: Vec<crate::model::projection::LatticePortEdge>,
+    configs: Vec<crate::model::projection::LatticeNodeConfigV2>,
+    effects: Vec<crate::model::projection::EvaluatedLatticeEffectV2>,
+) -> Result<choregraph_core::concrete::machine::MachineSpecV2, crate::diagnostic::FrontendFailure> {
+    let mut operations = std::collections::BTreeMap::new();
+    let mut effectful_nodes = std::collections::BTreeSet::new();
     let mut legacy_configs = Vec::with_capacity(configs.len());
     for config in configs {
         if operations
             .insert(config.node_id, config.operation.clone())
             .is_some()
         {
-            return Err(fail(FrontendIssueCode::DuplicateLatticeConfig));
+            return Err(fail(
+                crate::diagnostic::FrontendIssueCode::DuplicateLatticeConfig,
+            ));
         }
         if config.effectful {
             effectful_nodes.insert(config.node_id);
         }
-        legacy_configs.push(LatticeNodeConfig {
+        legacy_configs.push(crate::model::projection::LatticeNodeConfig {
             node_id: config.node_id,
             operation: config.operation,
         });
     }
     let (nodes, edges) = lower_lattice(nodes, edges, legacy_configs)?;
-    let mut declared_effectful_nodes = BTreeSet::new();
+    let mut declared_effectful_nodes = std::collections::BTreeSet::new();
     let mut lowered_effects = Vec::with_capacity(effects.len());
     for effect in effects {
         let Some(operation) = operations.get(&effect.node_id) else {
-            return Err(fail(FrontendIssueCode::UnknownLatticeEffectNode));
+            return Err(fail(
+                crate::diagnostic::FrontendIssueCode::UnknownLatticeEffectNode,
+            ));
         };
         if !effectful_nodes.contains(&effect.node_id) {
-            return Err(fail(FrontendIssueCode::UnknownLatticeEffectNode));
+            return Err(fail(
+                crate::diagnostic::FrontendIssueCode::UnknownLatticeEffectNode,
+            ));
         }
         if !binding_source_is_local(effect.node_id, &effect.request_binding)
             || !binding_source_is_local(effect.node_id, &effect.payload_binding)
         {
-            return Err(fail(FrontendIssueCode::InvalidLatticeSourceRef));
+            return Err(fail(
+                crate::diagnostic::FrontendIssueCode::InvalidLatticeSourceRef,
+            ));
         }
         declared_effectful_nodes.insert(effect.node_id);
-        lowered_effects.push(ConcreteEffectDeclarationSpec {
-            declaration_key: effect.declaration_key,
-            node_id: lattice_node_id(effect.node_id),
-            transition: TransitionSelector {
-                from: state(&effect.from_state)?,
-                action: action(&effect.action)?,
+        lowered_effects.push(
+            choregraph_core::concrete::effect::ConcreteEffectDeclarationSpec {
+                declaration_key: effect.declaration_key,
+                node_id: lattice_node_id(effect.node_id),
+                transition: choregraph_core::model::semantics::TransitionSelector {
+                    from: state(&effect.from_state)?,
+                    action: action(&effect.action)?,
+                },
+                operation: lattice_operation(operation),
+                resource: effect.resource,
+                ability: effect.ability,
+                request_binding: reference_binding(effect.request_binding),
+                payload_binding: reference_binding(effect.payload_binding),
             },
-            operation: lattice_operation(operation),
-            resource: effect.resource,
-            ability: effect.ability,
-            request_binding: reference_binding(effect.request_binding),
-            payload_binding: reference_binding(effect.payload_binding),
-        });
+        );
     }
     if declared_effectful_nodes != effectful_nodes {
-        return Err(fail(FrontendIssueCode::MissingLatticeEffect));
+        return Err(fail(
+            crate::diagnostic::FrontendIssueCode::MissingLatticeEffect,
+        ));
     }
-    let mut spec = MachineSpecV2::new(nodes, edges);
+    let mut spec = choregraph_core::concrete::machine::MachineSpecV2::new(nodes, edges);
     spec.effects = lowered_effects;
     Ok(spec)
 }
@@ -365,28 +419,31 @@ fn lower_lattice_v2(
 pub fn parse_evaluated_json(
     evaluated_json: &[u8],
     max_evaluated_bytes: u64,
-) -> Result<EvaluatedSource, FrontendFailure> {
+) -> Result<crate::model::admission::EvaluatedSource, crate::diagnostic::FrontendFailure> {
     let evaluated_bytes = u64::try_from(evaluated_json.len())
-        .map_err(|_| fail(FrontendIssueCode::EvaluatedInputTooLarge))?;
+        .map_err(|_| fail(crate::diagnostic::FrontendIssueCode::EvaluatedInputTooLarge))?;
     if evaluated_json.is_empty() || evaluated_bytes > max_evaluated_bytes {
-        return Err(fail(FrontendIssueCode::EvaluatedInputTooLarge));
+        return Err(fail(
+            crate::diagnostic::FrontendIssueCode::EvaluatedInputTooLarge,
+        ));
     }
     serde_json::from_slice(evaluated_json)
-        .map_err(|_| fail(FrontendIssueCode::MalformedEvaluatedValue))
+        .map_err(|_| fail(crate::diagnostic::FrontendIssueCode::MalformedEvaluatedValue))
 }
 
 pub fn lower_evaluated_json(
     evaluated_json: &[u8],
-    observations: &[ObservedImport<'_>],
-    frontend_limits: FrontendLimits,
-) -> Result<LoweringOutput, FrontendFailure> {
+    observations: &[crate::imports::ObservedImport<'_>],
+    frontend_limits: crate::profile::FrontendLimits,
+) -> Result<LoweringOutput, crate::diagnostic::FrontendFailure> {
     let max_evaluated_bytes = u64::try_from(frontend_limits.max_evaluated_bytes)
-        .map_err(|_| fail(FrontendIssueCode::EvaluatedInputTooLarge))?;
+        .map_err(|_| fail(crate::diagnostic::FrontendIssueCode::EvaluatedInputTooLarge))?;
     let source = parse_evaluated_json(evaluated_json, max_evaluated_bytes)?;
-    let import_closure = validate_import_closure(source.imports(), observations, frontend_limits)?;
+    let import_closure =
+        crate::imports::validate_import_closure(source.imports()?, observations, frontend_limits)?;
 
     let (spec, limits, source_format) = match source {
-        EvaluatedSource::Choregraph {
+        crate::model::admission::EvaluatedSource::Choregraph {
             schema,
             lifecycle_profile,
             events,
@@ -399,27 +456,31 @@ pub fn lower_evaluated_json(
         } => {
             validate_source_profile(SourceProfile {
                 observed_schema: &schema,
-                expected_schema: CHOREGRAPH_EVALUATED_SCHEMA,
+                expected_schema: crate::model::admission::CHOREGRAPH_EVALUATED_SCHEMA,
                 lifecycle_profile: &lifecycle_profile,
                 events,
                 allow_suspension: true,
             })?;
             let admission_limits = admission_limits(limits, frontend_limits.machine_ceiling)?;
-            let mut spec = MachineSpec::new(
+            let mut spec = choregraph_core::model::automaton::MachineSpec::new(
                 nodes
                     .into_iter()
-                    .map(|node| NodeSpec::new(node.id, node.operations))
+                    .map(|node| {
+                        choregraph_core::model::graph::NodeSpec::new(node.id, node.operations)
+                    })
                     .collect(),
                 edges
                     .into_iter()
-                    .map(|edge| EdgeSpec::new(edge.source, edge.target))
+                    .map(|edge| {
+                        choregraph_core::model::graph::EdgeSpec::new(edge.source, edge.target)
+                    })
                     .collect(),
             );
             spec.lifecycle_profile = lifecycle_profile;
             spec.effects = effects
                 .into_iter()
                 .map(effect)
-                .collect::<Result<Vec<_>, FrontendFailure>>()?;
+                .collect::<Result<Vec<_>, crate::diagnostic::FrontendFailure>>()?;
             spec.suspensions = suspensions
                 .into_iter()
                 .map(suspension_declaration)
@@ -430,7 +491,7 @@ pub fn lower_evaluated_json(
                 LoweredSourceFormat::ChoregraphV1,
             )
         }
-        EvaluatedSource::LatticeWorkflow {
+        crate::model::admission::EvaluatedSource::LatticeWorkflow {
             schema,
             lifecycle_profile,
             events,
@@ -442,7 +503,7 @@ pub fn lower_evaluated_json(
         } => {
             validate_source_profile(SourceProfile {
                 observed_schema: &schema,
-                expected_schema: LATTICE_EVALUATED_SCHEMA,
+                expected_schema: crate::model::admission::LATTICE_EVALUATED_SCHEMA,
                 lifecycle_profile: &lifecycle_profile,
                 events,
                 allow_suspension: false,
@@ -450,12 +511,14 @@ pub fn lower_evaluated_json(
             let admission_limits = admission_limits(limits, frontend_limits.machine_ceiling)?;
             let (nodes, edges) = lower_lattice(nodes, edges, configs)?;
             (
-                LoweredMachineSpec::V1(MachineSpec::new(nodes, edges)),
+                LoweredMachineSpec::V1(choregraph_core::model::automaton::MachineSpec::new(
+                    nodes, edges,
+                )),
                 admission_limits,
                 LoweredSourceFormat::LatticeWorkflowV1,
             )
         }
-        EvaluatedSource::LatticeWorkflowV2 {
+        crate::model::admission::EvaluatedSource::LatticeWorkflowV2 {
             schema,
             lifecycle_profile,
             events,
@@ -468,7 +531,7 @@ pub fn lower_evaluated_json(
         } => {
             validate_source_profile(SourceProfile {
                 observed_schema: &schema,
-                expected_schema: LATTICE_V2_EVALUATED_SCHEMA,
+                expected_schema: crate::model::admission::LATTICE_V2_EVALUATED_SCHEMA,
                 lifecycle_profile: &lifecycle_profile,
                 events,
                 allow_suspension: false,
@@ -483,10 +546,14 @@ pub fn lower_evaluated_json(
         }
     };
     let machine = match spec {
-        LoweredMachineSpec::V1(spec) => AdmittedMachine::admit(spec, limits),
-        LoweredMachineSpec::V2(spec) => AdmittedMachine::admit_v2(spec, limits),
+        LoweredMachineSpec::V1(spec) => {
+            choregraph_core::model::automaton::AdmittedMachine::admit(spec, limits)
+        }
+        LoweredMachineSpec::V2(spec) => {
+            choregraph_core::model::automaton::AdmittedMachine::admit_v2(spec, limits)
+        }
     }
-    .map_err(|_| fail(FrontendIssueCode::MachineAdmissionRejected))?;
+    .map_err(|_| fail(crate::diagnostic::FrontendIssueCode::MachineAdmissionRejected))?;
     Ok(LoweringOutput {
         machine,
         import_closure,

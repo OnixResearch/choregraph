@@ -19,17 +19,21 @@
 use std::collections::BTreeMap;
 
 use choregraph_core::{
-    Action, AdmissionLimits, AdmittedMachine, ConsumedCount, Event, MachineSpec, MachineSpecV2,
-    NodeSpec, ReplayBindings, ReplayDecision, ReplayLimits, TraceBinding,
+    concrete::machine::MachineSpecV2, model::automaton::AdmittedMachine,
+    model::automaton::MachineSpec, model::capacity::AdmissionLimits, model::dispatch::Event,
+    model::graph::NodeSpec, model::history::ConsumedCount, model::history::ReplayBindings,
+    model::history::ReplayDecision, model::history::ReplayLimits, model::history::TraceBinding,
+    model::semantics::Action,
 };
 use choregraph_history::{
-    DIGEST_BYTES, Digest, EventClass, EventDraft, HistoryGraph, HistoryLimits, ParentLink,
-    linear_lineage,
+    dag::Graph,
+    identity::{DIGEST_BYTES, Digest},
+    model::{EventClass, EventDraft, Limits, ParentLink},
+    traversal::linear_lineage,
 };
 use choregraph_history_machine::{
-    BoundEventV1, BoundEventV2, MachineHistoryError, ReplayHistoryInputV1, ReplayHistoryInputV2,
-    concrete_event_payload_identity, machine_event_payload_identity, replay_history,
-    replay_history_concrete,
+    BoundEventV1, BoundEventV2, Error, ReplayInputV1, ReplayInputV2,
+    concrete_event_payload_identity, event_payload_identity, replay, replay_concrete,
 };
 
 const MAX_EVENTS: u32 = 16;
@@ -53,29 +57,32 @@ fn digest(seed: u8) -> Digest {
     Digest::from_bytes([seed; DIGEST_BYTES])
 }
 
-fn limits() -> HistoryLimits {
-    match HistoryLimits::new(
-        MAX_EVENTS,
-        MAX_PARENTS,
-        MAX_METADATA,
-        MAX_LABEL,
-        MAX_PROJECTION,
-    ) {
-        Ok(value) => value,
-        Err(error) => panic!("history limits failed: {error:?}"),
+fn limits() -> Limits {
+    Limits {
+        max_events: MAX_EVENTS,
+        max_parents: MAX_PARENTS,
+        max_metadata_entries: MAX_METADATA,
+        max_label_bytes: MAX_LABEL,
+        max_projection_events: MAX_PROJECTION,
     }
 }
 
 fn bindings() -> ReplayBindings {
     ReplayBindings::new(
-        TraceBinding::from_bytes([MACHINE_BINDING_BYTE; choregraph_core::TRACE_BINDING_BYTES]),
-        TraceBinding::from_bytes([STATE_BINDING_BYTE; choregraph_core::TRACE_BINDING_BYTES]),
+        TraceBinding::from_bytes(
+            [MACHINE_BINDING_BYTE; choregraph_core::model::history::TRACE_BINDING_BYTES],
+        ),
+        TraceBinding::from_bytes(
+            [STATE_BINDING_BYTE; choregraph_core::model::history::TRACE_BINDING_BYTES],
+        ),
     )
 }
 
 fn stale_bindings() -> ReplayBindings {
     ReplayBindings::new(
-        TraceBinding::from_bytes([STALE_BINDING_BYTE; choregraph_core::TRACE_BINDING_BYTES]),
+        TraceBinding::from_bytes(
+            [STALE_BINDING_BYTE; choregraph_core::model::history::TRACE_BINDING_BYTES],
+        ),
         bindings().initial_state,
     )
 }
@@ -104,25 +111,23 @@ fn events_v1() -> Vec<Event> {
     ]
 }
 
-fn history_v1(events: &[Event], schema: Digest) -> (HistoryGraph, Vec<BoundEventV1>) {
-    let mut graph = match HistoryGraph::new(limits()) {
+fn history_v1(events: &[Event], schema: Digest) -> (Graph, Vec<BoundEventV1>) {
+    let mut graph = match Graph::new(limits()) {
         Ok(value) => value,
         Err(error) => panic!("history graph failed: {error:?}"),
     };
     let mut parent = None;
     let mut bound = Vec::new();
-    for event in events {
+    let roles =
+        std::iter::once(None).chain(events.iter().skip(1).map(|_| Some("previous".to_owned())));
+    for (event, role) in events.iter().zip(roles) {
         let parents = parent
-            .map(|event| {
-                vec![ParentLink {
-                    event,
-                    role: "previous".to_owned(),
-                }]
-            })
+            .zip(role)
+            .map(|(event, role)| vec![ParentLink { event, role }])
             .unwrap_or_default();
         let draft = EventDraft::v1(
             EventClass::MachineV1,
-            machine_event_payload_identity(event),
+            event_payload_identity(event),
             parents,
             schema,
         );
@@ -153,7 +158,7 @@ fn aggregate_lineage_delegates_to_production_replay_without_intents() {
         .expect("non-empty bound events");
     let lineage = linear_lineage(&graph, head, &BTreeMap::new(), MAX_PROJECTION)
         .expect("linear machine lineage");
-    let decision = replay_history(ReplayHistoryInputV1 {
+    let decision = replay(ReplayInputV1 {
         graph: &graph,
         lineage: &lineage,
         machine: &machine,
@@ -187,7 +192,7 @@ fn stale_machine_schema_binding_payload_and_event_class_fail_before_replay() {
     let head = bound.last().map(|event| event.history_event).expect("head");
     let lineage = linear_lineage(&graph, head, &BTreeMap::new(), MAX_PROJECTION).expect("lineage");
     let base = |supplied_machine_identity, expected_schema_identity, trace_bindings| {
-        replay_history(ReplayHistoryInputV1 {
+        replay(ReplayInputV1 {
             graph: &graph,
             lineage: &lineage,
             machine: &machine,
@@ -205,20 +210,20 @@ fn stale_machine_schema_binding_payload_and_event_class_fail_before_replay() {
     };
     assert_eq!(
         base(digest(STALE_MACHINE_SEED), schema, bindings()),
-        Err(MachineHistoryError::StaleMachineIdentity)
+        Err(Error::StaleMachineIdentity)
     );
     assert!(matches!(
         base(digest(MACHINE_SEED), digest(STALE_SCHEMA_SEED), bindings()),
-        Err(MachineHistoryError::StaleSchemaIdentity { .. })
+        Err(Error::StaleSchemaIdentity { .. })
     ));
     assert_eq!(
         base(digest(MACHINE_SEED), schema, stale_bindings()),
-        Err(MachineHistoryError::StaleBinding)
+        Err(Error::StaleBinding)
     );
 
     let mut changed = bound.clone();
     changed[0].event.node_id = "other".to_owned();
-    let payload_result = replay_history(ReplayHistoryInputV1 {
+    let payload_result = replay(ReplayInputV1 {
         graph: &graph,
         lineage: &lineage,
         machine: &machine,
@@ -235,14 +240,14 @@ fn stale_machine_schema_binding_payload_and_event_class_fail_before_replay() {
     });
     assert!(matches!(
         payload_result,
-        Err(MachineHistoryError::PayloadIdentityMismatch { .. })
+        Err(Error::PayloadIdentityMismatch { .. })
     ));
 
-    let application_graph = HistoryGraph::new(limits()).expect("application graph");
+    let application_graph = Graph::new(limits()).expect("application graph");
     let application = application_graph
         .admit(EventDraft::v1(
             EventClass::Application,
-            machine_event_payload_identity(&events[0]),
+            event_payload_identity(&events[0]),
             Vec::new(),
             schema,
         ))
@@ -258,7 +263,7 @@ fn stale_machine_schema_binding_payload_and_event_class_fail_before_replay() {
         MAX_PROJECTION,
     )
     .expect("application lineage");
-    let unsupported = replay_history(ReplayHistoryInputV1 {
+    let unsupported = replay(ReplayInputV1 {
         graph: &application.graph,
         lineage: &application_lineage,
         machine: &machine,
@@ -275,7 +280,7 @@ fn stale_machine_schema_binding_payload_and_event_class_fail_before_replay() {
     });
     assert!(matches!(
         unsupported,
-        Err(MachineHistoryError::UnsupportedEventClass { .. })
+        Err(Error::UnsupportedEventClass { .. })
     ));
 }
 
@@ -284,8 +289,8 @@ fn concrete_lineage_delegates_to_production_concrete_replay() {
     let machine = machine_v2();
     let initial_state = machine.initial_state();
     let schema = digest(SCHEMA_V2_SEED);
-    let event = choregraph_core::ConcreteEvent::new(NODE, Action::MarkReady);
-    let graph = HistoryGraph::new(limits()).expect("graph");
+    let event = choregraph_core::concrete::event::ConcreteEvent::new(NODE, Action::MarkReady);
+    let graph = Graph::new(limits()).expect("graph");
     let admission = graph
         .admit(EventDraft::v1(
             EventClass::MachineV2,
@@ -301,7 +306,7 @@ fn concrete_lineage_delegates_to_production_concrete_replay() {
     }];
     let lineage =
         linear_lineage(&graph, admission.event, &BTreeMap::new(), MAX_PROJECTION).expect("lineage");
-    let result = replay_history_concrete(ReplayHistoryInputV2 {
+    let result = replay_concrete(ReplayInputV2 {
         graph: &graph,
         lineage: &lineage,
         machine: &machine,

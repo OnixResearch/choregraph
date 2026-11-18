@@ -35,14 +35,14 @@ const HISTORY_FORBIDDEN_SOURCE_TOKENS: &[&str] = &[
 ];
 
 const HISTORY_MACHINE_REQUIRED_DELEGATION_TOKENS: &[&str] = &[
-    "choregraph_core::replay(replay_input)",
-    "choregraph_core::replay_concrete(replay_input)",
+    "choregraph_core::transition::replay(replay_input)",
+    "choregraph_core::transition::replay_concrete(replay_input)",
 ];
 
 const HISTORY_MACHINE_FORBIDDEN_TRANSITION_TOKENS: &[&str] = &[
-    "choregraph_core::step(",
-    "choregraph_core::step_concrete(",
-    "crate::verified::indexed_step",
+    "choregraph_core::transition::step(",
+    "choregraph_core::transition::step_concrete(",
+    "crate::verified::kernel::decision::indexed_step",
     "(LocalState::Pending, Action::MarkReady)",
 ];
 
@@ -72,25 +72,21 @@ const WASM_FORBIDDEN_SOURCE_TOKENS: &[&str] = &[
     "MachineSpec::new",
     "MachineSpecV2::new",
     "NodeSpec::new",
-    "crate::verified::indexed_step",
+    "crate::verified::kernel::decision::indexed_step",
     "(LocalState::Pending, Action::MarkReady)",
 ];
 
 const READINESS_SOURCE_SUFFIX: &str = "analytics/mod.rs";
 const READINESS_FUNCTION_START: &str = "pub fn ready_nodes(";
 const READINESS_FUNCTION_END: &str = "/// Returns one deterministic resume decision";
-const READINESS_REQUIRED_DELEGATION: &str = "crate::verified::ready_frontier(";
+const READINESS_REQUIRED_DELEGATION: &str = "crate::verified::readiness::ready_frontier(";
 const READINESS_FORBIDDEN_COPY_TOKENS: &[&str] = &[
     "for node_id in &machine.topological_order",
     "LocalState::Pending",
     "dependencies_complete(machine, state, node_id)",
 ];
-const PROOF_SOURCE_SUFFIXES: &[&str] = &[
-    "verified.rs",
-    "verified/kernel.rs",
-    "verified/readiness.rs",
-    "verified/topology.rs",
-];
+const PROOF_SOURCE_FILE_SUFFIX: &str = "verified.rs";
+const PROOF_SOURCE_DIRECTORY: &str = "verified";
 const PROOF_TRUST_FORBIDDEN_TOKENS: &[&str] = &[
     "#[verifier::external_body]",
     "assume_specification",
@@ -124,14 +120,14 @@ fn validate_markers(markers: Markers) -> Vec<crate::types::ValidationIssue> {
         issues.push(crate::validator::issue(crate::validator::IssueFacts {
             code: "foundation.core-no-std",
             subject: crate::validator::CORE_PACKAGE,
-            detail: String::from("core source does not declare no_std"),
+            detail: "core source does not declare no_std".into(),
         }));
     }
     if !markers.uses_alloc {
         issues.push(crate::validator::issue(crate::validator::IssueFacts {
             code: "foundation.core-alloc",
             subject: crate::validator::CORE_PACKAGE,
-            detail: String::from("core source does not declare alloc"),
+            detail: "core source does not declare alloc".into(),
         }));
     }
     issues
@@ -149,7 +145,7 @@ fn validate_tokens(model: &crate::types::WorkspaceModel) -> Vec<crate::types::Va
                 issues.push(crate::validator::issue(crate::validator::IssueFacts {
                     code: "foundation.forbidden-core-source",
                     subject: &source.path,
-                    detail: format!("forbidden source token: {token}"),
+                    detail: format!("forbidden source token: {token}").into(),
                 }));
             }
         }
@@ -180,14 +176,14 @@ fn validate_no_std_boundary(
         issues.push(crate::validator::issue(crate::validator::IssueFacts {
             code: "foundation.history-no-std",
             subject: package,
-            detail: String::from("history boundary does not declare no_std"),
+            detail: "history boundary does not declare no_std".into(),
         }));
     }
     if !text.contains("extern crate alloc") {
         issues.push(crate::validator::issue(crate::validator::IssueFacts {
             code: "foundation.history-alloc",
             subject: package,
-            detail: String::from("history boundary does not declare alloc"),
+            detail: "history boundary does not declare alloc".into(),
         }));
     }
     issues
@@ -207,7 +203,7 @@ fn validate_forbidden_history_tokens(
                 issues.push(crate::validator::issue(crate::validator::IssueFacts {
                     code: "foundation.forbidden-history-source",
                     subject: &source.path,
-                    detail: format!("{package} contains forbidden authority token: {token}"),
+                    detail: format!("{package} contains forbidden authority token: {token}").into(),
                 }));
             }
         }
@@ -230,7 +226,7 @@ fn validate_history_machine_delegation(
             issues.push(crate::validator::issue(crate::validator::IssueFacts {
                 code: "foundation.history-missing-replay-delegation",
                 subject: "choregraph-history-machine",
-                detail: format!("required production replay delegation is absent: {token}"),
+                detail: format!("required production replay delegation is absent: {token}").into(),
             }));
         }
     }
@@ -239,7 +235,7 @@ fn validate_history_machine_delegation(
             issues.push(crate::validator::issue(crate::validator::IssueFacts {
                 code: "foundation.history-duplicate-transition",
                 subject: "choregraph-history-machine",
-                detail: format!("forbidden transition implementation token: {token}"),
+                detail: format!("forbidden transition implementation token: {token}").into(),
             }));
         }
     }
@@ -256,7 +252,7 @@ fn validate_wasm_delegation(
             issues.push(crate::validator::issue(crate::validator::IssueFacts {
                 code: "foundation.wasm-missing-delegation",
                 subject: "choregraph-wasm",
-                detail: format!("required production delegation is absent: {token}"),
+                detail: format!("required production delegation is absent: {token}").into(),
             }));
         }
     }
@@ -277,7 +273,7 @@ fn validate_wasm_forbidden_tokens(
                 issues.push(crate::validator::issue(crate::validator::IssueFacts {
                     code: "foundation.forbidden-wasm-source",
                     subject: &source.path,
-                    detail: format!("forbidden WASM adapter token: {token}"),
+                    detail: format!("forbidden WASM adapter token: {token}").into(),
                 }));
             }
         }
@@ -298,7 +294,7 @@ fn validate_wit_export(text: &str) -> Option<crate::types::ValidationIssue> {
         Some(crate::validator::issue(crate::validator::IssueFacts {
             code: "foundation.wasm-export-surface",
             subject: "kernel.wit",
-            detail: String::from("WIT must expose only the selected byte call"),
+            detail: "WIT must expose only the selected byte call".into(),
         }))
     }
 }
@@ -311,7 +307,7 @@ fn validate_wit_imports(text: &str) -> Option<crate::types::ValidationIssue> {
         Some(crate::validator::issue(crate::validator::IssueFacts {
             code: "foundation.wasm-host-import",
             subject: "kernel.wit",
-            detail: String::from("WIT must not declare a host import"),
+            detail: "WIT must not declare a host import".into(),
         }))
     } else {
         None
@@ -349,14 +345,14 @@ fn validate_readiness_delegation(
         return vec![crate::validator::issue(crate::validator::IssueFacts {
             code: "foundation.readiness-source-missing",
             subject: READINESS_SOURCE_SUFFIX,
-            detail: String::from("production readiness source is absent"),
+            detail: std::borrow::Cow::Borrowed("production readiness source is absent"),
         })];
     };
     let Some(start) = source.text.find(READINESS_FUNCTION_START) else {
         return vec![crate::validator::issue(crate::validator::IssueFacts {
             code: "foundation.readiness-function-missing",
             subject: &source.path,
-            detail: String::from("production ready_nodes function is absent"),
+            detail: std::borrow::Cow::Borrowed("production ready_nodes function is absent"),
         })];
     };
     let function_source = &source.text[start..];
@@ -364,25 +360,22 @@ fn validate_readiness_delegation(
         return vec![crate::validator::issue(crate::validator::IssueFacts {
             code: "foundation.readiness-function-boundary",
             subject: &source.path,
-            detail: String::from("production ready_nodes boundary marker is absent"),
+            detail: std::borrow::Cow::Borrowed("production ready_nodes boundary marker is absent"),
         })];
     };
     let function_source = &function_source[..end];
     let maximum_issue_count = READINESS_FORBIDDEN_COPY_TOKENS.len().saturating_add(1);
     let mut issues = Vec::with_capacity(maximum_issue_count);
     if !function_source.contains(READINESS_REQUIRED_DELEGATION) {
-        issues.push(crate::validator::issue(crate::validator::IssueFacts {
-            code: "foundation.readiness-delegation-missing",
-            subject: &source.path,
-            detail: format!("required production readiness delegation is absent: {READINESS_REQUIRED_DELEGATION}"),
-        }));
+        issues.push(crate::validator::issue(crate::validator::IssueFacts { code: "foundation.readiness-delegation-missing", subject: &source.path, detail: format!("required production readiness delegation is absent: {READINESS_REQUIRED_DELEGATION}").into() }));
     }
     for token in READINESS_FORBIDDEN_COPY_TOKENS {
         if function_source.contains(token) {
             issues.push(crate::validator::issue(crate::validator::IssueFacts {
                 code: "foundation.readiness-copy",
                 subject: &source.path,
-                detail: format!("production ready_nodes contains copied decision token: {token}"),
+                detail: format!("production ready_nodes contains copied decision token: {token}")
+                    .into(),
             }));
         }
     }
@@ -393,25 +386,27 @@ fn validate_readiness_delegation(
 fn validate_proof_trust_surface(
     model: &crate::types::WorkspaceModel,
 ) -> Vec<crate::types::ValidationIssue> {
-    debug_assert!(!PROOF_SOURCE_SUFFIXES.is_empty());
+    debug_assert!(!PROOF_SOURCE_FILE_SUFFIX.is_empty());
     debug_assert!(!PROOF_TRUST_FORBIDDEN_TOKENS.is_empty());
-    let maximum_issue_count = PROOF_SOURCE_SUFFIXES
-        .len()
+    let proof_sources = model.core_sources.iter().filter(|source| {
+        source.path.ends_with(PROOF_SOURCE_FILE_SUFFIX)
+            || source
+                .path
+                .split('/')
+                .any(|component| component == PROOF_SOURCE_DIRECTORY)
+    });
+    let maximum_issue_count = proof_sources
+        .clone()
+        .count()
         .saturating_mul(PROOF_TRUST_FORBIDDEN_TOKENS.len());
     let mut issues = Vec::with_capacity(maximum_issue_count);
-    for source in &model.core_sources {
-        if !PROOF_SOURCE_SUFFIXES
-            .iter()
-            .any(|suffix| source.path.ends_with(suffix))
-        {
-            continue;
-        }
+    for source in proof_sources {
         for token in PROOF_TRUST_FORBIDDEN_TOKENS {
             if source.text.contains(token) {
                 issues.push(crate::validator::issue(crate::validator::IssueFacts {
                     code: "foundation.proof-trust-escape",
                     subject: &source.path,
-                    detail: format!("proof source contains forbidden trust token: {token}"),
+                    detail: format!("proof source contains forbidden trust token: {token}").into(),
                 }));
             }
         }

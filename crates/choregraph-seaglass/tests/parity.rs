@@ -50,108 +50,144 @@ fn legacy_diamond() -> legacy_execution_graph::ExecutionGraph {
     )
 }
 
-fn choregraph_diamond() -> choregraph_seaglass::ExecutionGraph {
-    choregraph_seaglass::ExecutionGraph::new(
+fn choregraph_diamond() -> choregraph_seaglass::topology::ExecutionGraph {
+    choregraph_seaglass::topology::ExecutionGraph::new(
         vec![
-            choregraph_seaglass::ExecutionNode::new(NODE_D),
-            choregraph_seaglass::ExecutionNode::new(NODE_C),
-            choregraph_seaglass::ExecutionNode::new(NODE_B),
-            choregraph_seaglass::ExecutionNode::new(NODE_A),
+            choregraph_seaglass::topology::ExecutionNode::new(NODE_D),
+            choregraph_seaglass::topology::ExecutionNode::new(NODE_C),
+            choregraph_seaglass::topology::ExecutionNode::new(NODE_B),
+            choregraph_seaglass::topology::ExecutionNode::new(NODE_A),
         ],
         vec![
-            choregraph_seaglass::ExecutionEdge::new(NODE_A, NODE_C),
-            choregraph_seaglass::ExecutionEdge::new(NODE_C, NODE_D),
-            choregraph_seaglass::ExecutionEdge::new(NODE_A, NODE_B),
-            choregraph_seaglass::ExecutionEdge::new(NODE_B, NODE_D),
+            choregraph_seaglass::topology::ExecutionEdge::new(NODE_A, NODE_C),
+            choregraph_seaglass::topology::ExecutionEdge::new(NODE_C, NODE_D),
+            choregraph_seaglass::topology::ExecutionEdge::new(NODE_A, NODE_B),
+            choregraph_seaglass::topology::ExecutionEdge::new(NODE_B, NODE_D),
         ],
     )
 }
 
 const fn compatibility_code(
     code: legacy_execution_graph::GraphDiagnosticCode,
-) -> choregraph_seaglass::GraphDiagnosticCode {
+) -> choregraph_seaglass::admission::GraphDiagnosticCode {
     match code {
         legacy_execution_graph::GraphDiagnosticCode::EmptyNodeId => {
-            choregraph_seaglass::GraphDiagnosticCode::EmptyNodeId
+            choregraph_seaglass::admission::GraphDiagnosticCode::EmptyNodeId
         }
         legacy_execution_graph::GraphDiagnosticCode::DuplicateNodeId => {
-            choregraph_seaglass::GraphDiagnosticCode::DuplicateNodeId
+            choregraph_seaglass::admission::GraphDiagnosticCode::DuplicateNodeId
         }
         legacy_execution_graph::GraphDiagnosticCode::DuplicateEdge => {
-            choregraph_seaglass::GraphDiagnosticCode::DuplicateEdge
+            choregraph_seaglass::admission::GraphDiagnosticCode::DuplicateEdge
         }
         legacy_execution_graph::GraphDiagnosticCode::MissingSourceNode => {
-            choregraph_seaglass::GraphDiagnosticCode::MissingSourceNode
+            choregraph_seaglass::admission::GraphDiagnosticCode::MissingSourceNode
         }
         legacy_execution_graph::GraphDiagnosticCode::MissingTargetNode => {
-            choregraph_seaglass::GraphDiagnosticCode::MissingTargetNode
+            choregraph_seaglass::admission::GraphDiagnosticCode::MissingTargetNode
         }
         legacy_execution_graph::GraphDiagnosticCode::SelfLoop => {
-            choregraph_seaglass::GraphDiagnosticCode::SelfLoop
+            choregraph_seaglass::admission::GraphDiagnosticCode::SelfLoop
         }
         legacy_execution_graph::GraphDiagnosticCode::CycleDetected => {
-            choregraph_seaglass::GraphDiagnosticCode::CycleDetected
+            choregraph_seaglass::admission::GraphDiagnosticCode::CycleDetected
         }
         legacy_execution_graph::GraphDiagnosticCode::GraphTooLarge => {
-            choregraph_seaglass::GraphDiagnosticCode::GraphTooLarge
+            choregraph_seaglass::admission::GraphDiagnosticCode::GraphTooLarge
         }
     }
 }
 
-const fn legacy_state(state: choregraph_seaglass::StepState) -> legacy_execution_graph::StepState {
+const fn legacy_state(
+    state: choregraph_seaglass::lifecycle::StepState,
+) -> legacy_execution_graph::StepState {
     match state {
-        choregraph_seaglass::StepState::Pending => legacy_execution_graph::StepState::Pending,
-        choregraph_seaglass::StepState::Ready => legacy_execution_graph::StepState::Ready,
-        choregraph_seaglass::StepState::Running => legacy_execution_graph::StepState::Running,
-        choregraph_seaglass::StepState::Completed => legacy_execution_graph::StepState::Completed,
-        choregraph_seaglass::StepState::Failed => legacy_execution_graph::StepState::Failed,
-        choregraph_seaglass::StepState::Cancelled => legacy_execution_graph::StepState::Cancelled,
+        choregraph_seaglass::lifecycle::StepState::Pending => {
+            legacy_execution_graph::StepState::Pending
+        }
+        choregraph_seaglass::lifecycle::StepState::Ready => {
+            legacy_execution_graph::StepState::Ready
+        }
+        choregraph_seaglass::lifecycle::StepState::Running => {
+            legacy_execution_graph::StepState::Running
+        }
+        choregraph_seaglass::lifecycle::StepState::Completed => {
+            legacy_execution_graph::StepState::Completed
+        }
+        choregraph_seaglass::lifecycle::StepState::Failed => {
+            legacy_execution_graph::StepState::Failed
+        }
+        choregraph_seaglass::lifecycle::StepState::Cancelled => {
+            legacy_execution_graph::StepState::Cancelled
+        }
     }
 }
 
 const fn legacy_action(
-    action: choregraph_seaglass::StepAction,
+    action: choregraph_seaglass::lifecycle::StepAction,
 ) -> legacy_execution_graph::StepAction {
     match action {
-        choregraph_seaglass::StepAction::MarkReady => legacy_execution_graph::StepAction::MarkReady,
-        choregraph_seaglass::StepAction::Start => legacy_execution_graph::StepAction::Start,
-        choregraph_seaglass::StepAction::Complete => legacy_execution_graph::StepAction::Complete,
-        choregraph_seaglass::StepAction::Fail => legacy_execution_graph::StepAction::Fail,
-        choregraph_seaglass::StepAction::Cancel => legacy_execution_graph::StepAction::Cancel,
+        choregraph_seaglass::lifecycle::StepAction::MarkReady => {
+            legacy_execution_graph::StepAction::MarkReady
+        }
+        choregraph_seaglass::lifecycle::StepAction::Start => {
+            legacy_execution_graph::StepAction::Start
+        }
+        choregraph_seaglass::lifecycle::StepAction::Complete => {
+            legacy_execution_graph::StepAction::Complete
+        }
+        choregraph_seaglass::lifecycle::StepAction::Fail => {
+            legacy_execution_graph::StepAction::Fail
+        }
+        choregraph_seaglass::lifecycle::StepAction::Cancel => {
+            legacy_execution_graph::StepAction::Cancel
+        }
     }
 }
 
 const fn compatibility_state(
     state: legacy_execution_graph::StepState,
-) -> choregraph_seaglass::StepState {
+) -> choregraph_seaglass::lifecycle::StepState {
     match state {
-        legacy_execution_graph::StepState::Pending => choregraph_seaglass::StepState::Pending,
-        legacy_execution_graph::StepState::Ready => choregraph_seaglass::StepState::Ready,
-        legacy_execution_graph::StepState::Running => choregraph_seaglass::StepState::Running,
-        legacy_execution_graph::StepState::Completed => choregraph_seaglass::StepState::Completed,
-        legacy_execution_graph::StepState::Failed => choregraph_seaglass::StepState::Failed,
-        legacy_execution_graph::StepState::Cancelled => choregraph_seaglass::StepState::Cancelled,
+        legacy_execution_graph::StepState::Pending => {
+            choregraph_seaglass::lifecycle::StepState::Pending
+        }
+        legacy_execution_graph::StepState::Ready => {
+            choregraph_seaglass::lifecycle::StepState::Ready
+        }
+        legacy_execution_graph::StepState::Running => {
+            choregraph_seaglass::lifecycle::StepState::Running
+        }
+        legacy_execution_graph::StepState::Completed => {
+            choregraph_seaglass::lifecycle::StepState::Completed
+        }
+        legacy_execution_graph::StepState::Failed => {
+            choregraph_seaglass::lifecycle::StepState::Failed
+        }
+        legacy_execution_graph::StepState::Cancelled => {
+            choregraph_seaglass::lifecycle::StepState::Cancelled
+        }
     }
 }
 
 const fn compatibility_resume(
     decision: legacy_execution_graph::ResumeDecision,
-) -> choregraph_seaglass::ResumeDecision {
+) -> choregraph_seaglass::aggregate::ResumeDecision {
     match decision {
         legacy_execution_graph::ResumeDecision::Execute => {
-            choregraph_seaglass::ResumeDecision::Execute
+            choregraph_seaglass::aggregate::ResumeDecision::Execute
         }
         legacy_execution_graph::ResumeDecision::AwaitDependencies => {
-            choregraph_seaglass::ResumeDecision::AwaitDependencies
+            choregraph_seaglass::aggregate::ResumeDecision::AwaitDependencies
         }
         legacy_execution_graph::ResumeDecision::SkipCompleted => {
-            choregraph_seaglass::ResumeDecision::SkipCompleted
+            choregraph_seaglass::aggregate::ResumeDecision::SkipCompleted
         }
         legacy_execution_graph::ResumeDecision::RejectTerminalMutation => {
-            choregraph_seaglass::ResumeDecision::RejectTerminalMutation
+            choregraph_seaglass::aggregate::ResumeDecision::RejectTerminalMutation
         }
         legacy_execution_graph::ResumeDecision::BlockedByFailedDependency => {
-            choregraph_seaglass::ResumeDecision::BlockedByFailedDependency
+            choregraph_seaglass::aggregate::ResumeDecision::BlockedByFailedDependency
         }
     }
 }
@@ -161,7 +197,9 @@ fn diamond_admission_queries_groups_and_analytics_match() {
     let legacy_graph = legacy_diamond();
     let compatibility_graph = choregraph_diamond();
     let legacy_plan = must(legacy_execution_graph::admit_graph(&legacy_graph));
-    let compatibility_plan = must(choregraph_seaglass::admit_graph(&compatibility_graph));
+    let compatibility_plan = must(choregraph_seaglass::admission::admit_graph(
+        &compatibility_graph,
+    ));
 
     assert_eq!(
         compatibility_plan.graph().nodes.len(),
@@ -223,8 +261,8 @@ fn empty_graph_is_an_exact_no_work_plan() {
     let legacy_plan = must(legacy_execution_graph::admit_graph(
         &legacy_execution_graph::ExecutionGraph::new(Vec::new(), Vec::new()),
     ));
-    let compatibility_plan = must(choregraph_seaglass::admit_graph(
-        &choregraph_seaglass::ExecutionGraph::new(Vec::new(), Vec::new()),
+    let compatibility_plan = must(choregraph_seaglass::admission::admit_graph(
+        &choregraph_seaglass::topology::ExecutionGraph::new(Vec::new(), Vec::new()),
     ));
     assert_eq!(
         compatibility_plan.topological_order,
@@ -253,17 +291,17 @@ fn malformed_graph_diagnostic_classes_match() {
             legacy_execution_graph::ExecutionEdge::new(NODE_A, MISSING_NODE),
         ],
     );
-    let compatibility_graph = choregraph_seaglass::ExecutionGraph::new(
+    let compatibility_graph = choregraph_seaglass::topology::ExecutionGraph::new(
         vec![
-            choregraph_seaglass::ExecutionNode::new(NODE_A),
-            choregraph_seaglass::ExecutionNode::new(NODE_A),
-            choregraph_seaglass::ExecutionNode::new(""),
+            choregraph_seaglass::topology::ExecutionNode::new(NODE_A),
+            choregraph_seaglass::topology::ExecutionNode::new(NODE_A),
+            choregraph_seaglass::topology::ExecutionNode::new(""),
         ],
         vec![
-            choregraph_seaglass::ExecutionEdge::new(NODE_A, NODE_A),
-            choregraph_seaglass::ExecutionEdge::new(NODE_A, MISSING_NODE),
-            choregraph_seaglass::ExecutionEdge::new(MISSING_NODE, NODE_A),
-            choregraph_seaglass::ExecutionEdge::new(NODE_A, MISSING_NODE),
+            choregraph_seaglass::topology::ExecutionEdge::new(NODE_A, NODE_A),
+            choregraph_seaglass::topology::ExecutionEdge::new(NODE_A, MISSING_NODE),
+            choregraph_seaglass::topology::ExecutionEdge::new(MISSING_NODE, NODE_A),
+            choregraph_seaglass::topology::ExecutionEdge::new(NODE_A, MISSING_NODE),
         ],
     );
 
@@ -271,7 +309,7 @@ fn malformed_graph_diagnostic_classes_match() {
         .into_iter()
         .map(|item| compatibility_code(item.code))
         .collect::<BTreeSet<_>>();
-    let compatibility_codes = choregraph_seaglass::validate_graph(&compatibility_graph)
+    let compatibility_codes = choregraph_seaglass::admission::validate_graph(&compatibility_graph)
         .into_iter()
         .map(|item| item.code)
         .collect::<BTreeSet<_>>();
@@ -291,18 +329,18 @@ fn cycle_rejection_and_cycle_probes_match() {
             legacy_execution_graph::ExecutionEdge::new(NODE_B, NODE_A),
         ],
     );
-    let compatibility_cycle = choregraph_seaglass::ExecutionGraph::new(
+    let compatibility_cycle = choregraph_seaglass::topology::ExecutionGraph::new(
         vec![
-            choregraph_seaglass::ExecutionNode::new(NODE_A),
-            choregraph_seaglass::ExecutionNode::new(NODE_B),
+            choregraph_seaglass::topology::ExecutionNode::new(NODE_A),
+            choregraph_seaglass::topology::ExecutionNode::new(NODE_B),
         ],
         vec![
-            choregraph_seaglass::ExecutionEdge::new(NODE_A, NODE_B),
-            choregraph_seaglass::ExecutionEdge::new(NODE_B, NODE_A),
+            choregraph_seaglass::topology::ExecutionEdge::new(NODE_A, NODE_B),
+            choregraph_seaglass::topology::ExecutionEdge::new(NODE_B, NODE_A),
         ],
     );
     assert_eq!(
-        choregraph_seaglass::validate_graph(&compatibility_cycle)[0].code,
+        choregraph_seaglass::admission::validate_graph(&compatibility_cycle)[0].code,
         compatibility_code(legacy_execution_graph::validate_graph(&legacy_cycle)[0].code)
     );
 
@@ -313,19 +351,25 @@ fn cycle_rejection_and_cycle_probes_match() {
         ],
         vec![legacy_execution_graph::ExecutionEdge::new(NODE_A, NODE_B)],
     );
-    let compatibility_graph = choregraph_seaglass::ExecutionGraph::new(
+    let compatibility_graph = choregraph_seaglass::topology::ExecutionGraph::new(
         vec![
-            choregraph_seaglass::ExecutionNode::new(NODE_A),
-            choregraph_seaglass::ExecutionNode::new(NODE_B),
+            choregraph_seaglass::topology::ExecutionNode::new(NODE_A),
+            choregraph_seaglass::topology::ExecutionNode::new(NODE_B),
         ],
-        vec![choregraph_seaglass::ExecutionEdge::new(NODE_A, NODE_B)],
+        vec![choregraph_seaglass::topology::ExecutionEdge::new(
+            NODE_A, NODE_B,
+        )],
     );
     assert_eq!(
-        choregraph_seaglass::would_create_cycle(&compatibility_graph, NODE_B, NODE_A),
+        choregraph_seaglass::topology::would_create_cycle(&compatibility_graph, NODE_B, NODE_A),
         legacy_execution_graph::would_create_cycle(&legacy_graph, NODE_B, NODE_A)
     );
     assert_eq!(
-        choregraph_seaglass::would_create_cycle(&compatibility_graph, NODE_A, MISSING_NODE),
+        choregraph_seaglass::topology::would_create_cycle(
+            &compatibility_graph,
+            NODE_A,
+            MISSING_NODE
+        ),
         legacy_execution_graph::would_create_cycle(&legacy_graph, NODE_A, MISSING_NODE)
     );
 }
@@ -333,19 +377,19 @@ fn cycle_rejection_and_cycle_probes_match() {
 #[test]
 fn lifecycle_matrix_matches_the_legacy_kernel() {
     let states = [
-        choregraph_seaglass::StepState::Pending,
-        choregraph_seaglass::StepState::Ready,
-        choregraph_seaglass::StepState::Running,
-        choregraph_seaglass::StepState::Completed,
-        choregraph_seaglass::StepState::Failed,
-        choregraph_seaglass::StepState::Cancelled,
+        choregraph_seaglass::lifecycle::StepState::Pending,
+        choregraph_seaglass::lifecycle::StepState::Ready,
+        choregraph_seaglass::lifecycle::StepState::Running,
+        choregraph_seaglass::lifecycle::StepState::Completed,
+        choregraph_seaglass::lifecycle::StepState::Failed,
+        choregraph_seaglass::lifecycle::StepState::Cancelled,
     ];
     let actions = [
-        choregraph_seaglass::StepAction::MarkReady,
-        choregraph_seaglass::StepAction::Start,
-        choregraph_seaglass::StepAction::Complete,
-        choregraph_seaglass::StepAction::Fail,
-        choregraph_seaglass::StepAction::Cancel,
+        choregraph_seaglass::lifecycle::StepAction::MarkReady,
+        choregraph_seaglass::lifecycle::StepAction::Start,
+        choregraph_seaglass::lifecycle::StepAction::Complete,
+        choregraph_seaglass::lifecycle::StepAction::Fail,
+        choregraph_seaglass::lifecycle::StepAction::Cancel,
     ];
 
     for state in states {
@@ -357,24 +401,24 @@ fn lifecycle_matrix_matches_the_legacy_kernel() {
             .map(compatibility_state)
             .map_err(|error| match error {
                 legacy_execution_graph::StepTransitionError::InvalidTransition { .. } => {
-                    choregraph_seaglass::StepTransitionError::InvalidTransition {
+                    choregraph_seaglass::lifecycle::StepTransitionError::InvalidTransition {
                         from: state,
                         action,
                     }
                 }
                 legacy_execution_graph::StepTransitionError::TerminalState { .. } => {
-                    choregraph_seaglass::StepTransitionError::TerminalState {
+                    choregraph_seaglass::lifecycle::StepTransitionError::TerminalState {
                         from: state,
                         action,
                     }
                 }
             });
             assert_eq!(
-                choregraph_seaglass::transition_step_state(state, action),
+                choregraph_seaglass::lifecycle::transition_step_state(state, action),
                 legacy
             );
             assert_eq!(
-                choregraph_seaglass::is_terminal_state(state),
+                choregraph_seaglass::lifecycle::is_terminal_state(state),
                 legacy_execution_graph::is_terminal_state(legacy_state(state))
             );
         }
@@ -384,16 +428,22 @@ fn lifecycle_matrix_matches_the_legacy_kernel() {
 #[test]
 fn ready_and_resume_decisions_match_for_valid_sparse_states() {
     let legacy_plan = must(legacy_execution_graph::admit_graph(&legacy_diamond()));
-    let compatibility_plan = must(choregraph_seaglass::admit_graph(&choregraph_diamond()));
+    let compatibility_plan = must(choregraph_seaglass::admission::admit_graph(
+        &choregraph_diamond(),
+    ));
     let mut legacy_states = BTreeMap::new();
     let mut compatibility_states = BTreeMap::new();
 
     assert_eq!(
-        choregraph_seaglass::ready_nodes(&compatibility_plan, &compatibility_states),
+        choregraph_seaglass::aggregate::ready_nodes(&compatibility_plan, &compatibility_states),
         legacy_execution_graph::ready_nodes(&legacy_plan, &legacy_states)
     );
     assert_eq!(
-        choregraph_seaglass::resume_decision(&compatibility_plan, &compatibility_states, NODE_B),
+        choregraph_seaglass::aggregate::resume_decision(
+            &compatibility_plan,
+            &compatibility_states,
+            NODE_B
+        ),
         compatibility_resume(legacy_execution_graph::resume_decision(
             &legacy_plan,
             &legacy_states,
@@ -407,14 +457,18 @@ fn ready_and_resume_decisions_match_for_valid_sparse_states() {
     );
     compatibility_states.insert(
         NODE_A.to_string(),
-        choregraph_seaglass::StepState::Completed,
+        choregraph_seaglass::lifecycle::StepState::Completed,
     );
     assert_eq!(
-        choregraph_seaglass::ready_nodes(&compatibility_plan, &compatibility_states),
+        choregraph_seaglass::aggregate::ready_nodes(&compatibility_plan, &compatibility_states),
         legacy_execution_graph::ready_nodes(&legacy_plan, &legacy_states)
     );
     assert_eq!(
-        choregraph_seaglass::resume_decision(&compatibility_plan, &compatibility_states, NODE_B),
+        choregraph_seaglass::aggregate::resume_decision(
+            &compatibility_plan,
+            &compatibility_states,
+            NODE_B
+        ),
         compatibility_resume(legacy_execution_graph::resume_decision(
             &legacy_plan,
             &legacy_states,
@@ -426,13 +480,20 @@ fn ready_and_resume_decisions_match_for_valid_sparse_states() {
         NODE_A.to_string(),
         legacy_execution_graph::StepState::Failed,
     );
-    compatibility_states.insert(NODE_A.to_string(), choregraph_seaglass::StepState::Failed);
+    compatibility_states.insert(
+        NODE_A.to_string(),
+        choregraph_seaglass::lifecycle::StepState::Failed,
+    );
     assert_eq!(
-        choregraph_seaglass::ready_nodes(&compatibility_plan, &compatibility_states),
+        choregraph_seaglass::aggregate::ready_nodes(&compatibility_plan, &compatibility_states),
         legacy_execution_graph::ready_nodes(&legacy_plan, &legacy_states)
     );
     assert_eq!(
-        choregraph_seaglass::resume_decision(&compatibility_plan, &compatibility_states, NODE_B),
+        choregraph_seaglass::aggregate::resume_decision(
+            &compatibility_plan,
+            &compatibility_states,
+            NODE_B
+        ),
         compatibility_resume(legacy_execution_graph::resume_decision(
             &legacy_plan,
             &legacy_states,
@@ -443,29 +504,34 @@ fn ready_and_resume_decisions_match_for_valid_sparse_states() {
 
 #[test]
 fn aggregate_steps_delegate_without_effect_authority() {
-    let plan = must(choregraph_seaglass::admit_graph(&choregraph_diamond()));
+    let plan = must(choregraph_seaglass::admission::admit_graph(
+        &choregraph_diamond(),
+    ));
     let initial = plan.machine().initial_state();
-    assert!(choregraph_core::invariant(plan.machine(), &initial));
-    let decision = choregraph_seaglass::step_machine(
+    assert!(choregraph_core::invariant::invariant(
+        plan.machine(),
+        &initial
+    ));
+    let decision = choregraph_seaglass::aggregate::step_machine(
         &plan,
         &initial,
         NODE_A,
-        choregraph_seaglass::StepAction::MarkReady,
+        choregraph_seaglass::lifecycle::StepAction::MarkReady,
     );
     assert!(matches!(
         decision,
-        choregraph_seaglass::MachineDecision::Accept { .. }
+        choregraph_seaglass::aggregate::MachineDecision::Accept { .. }
     ));
-    let choregraph_seaglass::MachineDecision::Accept { next } = decision else {
+    let choregraph_seaglass::aggregate::MachineDecision::Accept { next } = decision else {
         return;
     };
-    let node_id = must(choregraph_core::NodeId::parse(
+    let node_id = must(choregraph_core::id::bounded::NodeId::parse(
         NODE_A,
         plan.machine().limits().max_identifier_bytes,
     ));
     assert_eq!(
         next.state(&node_id),
-        Some(choregraph_core::LocalState::Ready)
+        Some(choregraph_core::model::semantics::LocalState::Ready)
     );
 }
 
@@ -477,45 +543,99 @@ fn stricter_identifier_state_and_unknown_node_cases_fail_closed() {
         )],
         Vec::new(),
     );
-    let compatibility_graph = choregraph_seaglass::ExecutionGraph::new(
-        vec![choregraph_seaglass::ExecutionNode::new(
+    let compatibility_graph = choregraph_seaglass::topology::ExecutionGraph::new(
+        vec![choregraph_seaglass::topology::ExecutionNode::new(
             INVALID_PROFILE_NODE,
         )],
         Vec::new(),
     );
     assert!(legacy_execution_graph::admit_graph(&legacy_graph).is_ok());
     assert!(
-        choregraph_seaglass::validate_graph(&compatibility_graph)
+        choregraph_seaglass::admission::validate_graph(&compatibility_graph)
             .iter()
-            .any(|item| item.code == choregraph_seaglass::GraphDiagnosticCode::GraphTooLarge)
+            .any(|item| item.code
+                == choregraph_seaglass::admission::GraphDiagnosticCode::GraphTooLarge)
     );
 
     let legacy_plan = must(legacy_execution_graph::admit_graph(&legacy_diamond()));
-    let compatibility_plan = must(choregraph_seaglass::admit_graph(&choregraph_diamond()));
+    let compatibility_plan = must(choregraph_seaglass::admission::admit_graph(
+        &choregraph_diamond(),
+    ));
     assert_eq!(
         legacy_execution_graph::resume_decision(&legacy_plan, &BTreeMap::new(), MISSING_NODE),
         legacy_execution_graph::ResumeDecision::Execute
     );
     assert_eq!(
-        choregraph_seaglass::resume_decision(&compatibility_plan, &BTreeMap::new(), MISSING_NODE),
-        choregraph_seaglass::ResumeDecision::RejectTerminalMutation
+        choregraph_seaglass::aggregate::resume_decision(
+            &compatibility_plan,
+            &BTreeMap::new(),
+            MISSING_NODE
+        ),
+        choregraph_seaglass::aggregate::ResumeDecision::RejectTerminalMutation
     );
     assert_eq!(
-        choregraph_seaglass::resume_decision_checked(
+        choregraph_seaglass::aggregate::resume_decision_checked(
             &compatibility_plan,
             &BTreeMap::new(),
             MISSING_NODE,
         ),
-        Err(choregraph_seaglass::ResumeDecisionError::UnknownNode)
+        Err(choregraph_seaglass::aggregate::ResumeDecisionError::UnknownNode)
     );
 
     let inconsistent_states = BTreeMap::from([(
         NODE_D.to_string(),
-        choregraph_seaglass::StepState::Completed,
+        choregraph_seaglass::lifecycle::StepState::Completed,
     )]);
-    assert!(choregraph_seaglass::ready_nodes(&compatibility_plan, &inconsistent_states).is_empty());
+    assert!(
+        choregraph_seaglass::aggregate::ready_nodes(&compatibility_plan, &inconsistent_states)
+            .is_empty()
+    );
     assert!(matches!(
-        choregraph_seaglass::ready_nodes_checked(&compatibility_plan, &inconsistent_states),
-        Err(choregraph_seaglass::StateConversionError::InvalidState(_))
+        choregraph_seaglass::aggregate::ready_nodes_checked(
+            &compatibility_plan,
+            &inconsistent_states
+        ),
+        Err(choregraph_seaglass::aggregate::StateConversionError::InvalidState(_))
     ));
+}
+
+#[test]
+fn sparse_expansion_preserves_exact_coverage_and_rejects_extra_keys() {
+    use choregraph_seaglass::aggregate::{StateConversionError, expand_state};
+    use choregraph_seaglass::lifecycle::StepState;
+
+    let plan = must(choregraph_seaglass::admission::admit_graph(
+        &choregraph_diamond(),
+    ));
+    let initial = must(expand_state(&plan, &BTreeMap::new()));
+    assert_eq!(initial, plan.machine().initial_state());
+    let sparse = BTreeMap::from([(NODE_A.to_string(), StepState::Completed)]);
+    let expanded = must(expand_state(&plan, &sparse));
+    assert_eq!(expanded.entries().len(), EXPECTED_DIAMOND_NODE_COUNT);
+    assert_eq!(
+        expanded.entries().keys().cloned().collect::<Vec<_>>(),
+        plan.machine().node_ids()
+    );
+    assert_eq!(
+        expanded
+            .entries()
+            .values()
+            .filter(|state| **state == choregraph_core::model::semantics::LocalState::Completed)
+            .count(),
+        sparse.len()
+    );
+    assert_eq!(
+        expand_state(
+            &plan,
+            &BTreeMap::from([(MISSING_NODE.to_string(), StepState::Pending)])
+        ),
+        Err(StateConversionError::UnknownNode)
+    );
+    assert_eq!(
+        expand_state(
+            &plan,
+            &BTreeMap::from([(INVALID_PROFILE_NODE.to_string(), StepState::Pending)])
+        ),
+        Err(StateConversionError::InvalidNodeId)
+    );
 }

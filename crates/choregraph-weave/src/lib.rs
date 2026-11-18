@@ -12,7 +12,11 @@ extern crate alloc;
 use alloc::vec::Vec;
 use core::hash::Hash;
 
-use choregraph_history::{Digest, EventId, HistoryGraph, Projection};
+use choregraph_history::{
+    dag::Graph,
+    identity::{Digest, EventId},
+    traversal::Projection,
+};
 use universal_weave::hashbrown::DefaultHashBuilder;
 use universal_weave::independent::IndependentNode;
 use universal_weave::indexmap::IndexSet;
@@ -47,27 +51,45 @@ impl CanonicalKey for EventId {
     }
 }
 
+/// Explicit caller-selected topology limits, validated by `Policy::new`.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct Limits {
+    pub max_nodes: u32,
+    pub max_parent_fan_in: u32,
+}
+
+impl Limits {
+    fn validate(self) -> Result<(), Error> {
+        if self.max_nodes == 0 {
+            return Err(Error::InvalidPolicy { field: "max_nodes" });
+        }
+        if self.max_parent_fan_in == 0 {
+            return Err(Error::InvalidPolicy {
+                field: "max_parent_fan_in",
+            });
+        }
+        Ok(())
+    }
+}
+
 /// Named positive topology bounds.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct WeavePolicy {
+pub struct Policy {
     max_nodes: u32,
     max_parent_fan_in: u32,
     max_nodes_native: usize,
 }
 
-impl WeavePolicy {
+impl Policy {
     /// Creates a valid policy.
-    pub fn new(max_nodes: u32, max_parent_fan_in: u32) -> Result<Self, WeaveError> {
-        if max_nodes == 0 {
-            return Err(WeaveError::InvalidPolicy { field: "max_nodes" });
-        }
-        if max_parent_fan_in == 0 {
-            return Err(WeaveError::InvalidPolicy {
-                field: "max_parent_fan_in",
-            });
-        }
-        let max_nodes_native = usize::try_from(max_nodes)
-            .map_err(|_| WeaveError::InvalidPolicy { field: "max_nodes" })?;
+    pub fn new(limits: Limits) -> Result<Self, Error> {
+        limits.validate()?;
+        let Limits {
+            max_nodes,
+            max_parent_fan_in,
+        } = limits;
+        let max_nodes_native =
+            usize::try_from(max_nodes).map_err(|_| Error::InvalidPolicy { field: "max_nodes" })?;
         Ok(Self {
             max_nodes,
             max_parent_fan_in,
@@ -111,7 +133,7 @@ type TopologyNode<K> = IndependentNode<K, TopologyContent, DefaultHashBuilder>;
 
 /// One bounded derived-topology operation.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum WeaveOperation<K> {
+pub enum Operation<K> {
     Add {
         key: K,
         parents: Vec<K>,
@@ -131,36 +153,25 @@ pub enum WeaveOperation<K> {
     },
 }
 
-impl<K: Copy> WeaveOperation<K> {
-    const fn key(&self) -> K {
-        match self {
-            Self::Add { key, .. }
-            | Self::Move { key, .. }
-            | Self::SetActive { key, .. }
-            | Self::SetBookmarked { key, .. } => *key,
+impl<K: Copy> Operation<K> {
+    const fn descriptor(&self) -> Result<(K, u8, OperationKind), Error> {
+        if let Self::Add { key, .. } = self {
+            return Ok((*key, ADD_OPERATION_TAG, OperationKind::Add));
         }
-    }
-
-    const fn tag(&self) -> u8 {
-        match self {
-            Self::Add { .. } => ADD_OPERATION_TAG,
-            Self::Move { .. } => MOVE_OPERATION_TAG,
-            Self::SetActive { .. } => SET_ACTIVE_OPERATION_TAG,
-            Self::SetBookmarked { .. } => SET_BOOKMARKED_OPERATION_TAG,
+        if let Self::Move { key, .. } = self {
+            return Ok((*key, MOVE_OPERATION_TAG, OperationKind::Move));
         }
-    }
-
-    const fn kind(&self) -> WeaveOperationKind {
-        if matches!(self, Self::Add { .. }) {
-            WeaveOperationKind::Add
-        } else if matches!(self, Self::Move { .. }) {
-            WeaveOperationKind::Move
-        } else if matches!(self, Self::SetActive { .. }) {
-            WeaveOperationKind::SetActive
-        } else {
-            debug_assert!(matches!(self, Self::SetBookmarked { .. }));
-            WeaveOperationKind::SetBookmarked
+        if let Self::SetActive { key, .. } = self {
+            return Ok((*key, SET_ACTIVE_OPERATION_TAG, OperationKind::SetActive));
         }
+        if let Self::SetBookmarked { key, .. } = self {
+            return Ok((
+                *key,
+                SET_BOOKMARKED_OPERATION_TAG,
+                OperationKind::SetBookmarked,
+            ));
+        }
+        Err(Error::InvalidParentage)
     }
 }
 
@@ -187,8 +198,8 @@ pub struct TopologySnapshot<K> {
 
 /// One admitted derived-topology operation receipt.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WeaveReceipt<K> {
-    pub operation: WeaveOperationKind,
+pub struct Receipt<K> {
+    pub operation: OperationKind,
     pub target: K,
     pub prior_generation: u64,
     pub generation: u64,
@@ -200,7 +211,7 @@ pub struct WeaveReceipt<K> {
 
 /// Stable operation class in receipts.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WeaveOperationKind {
+pub enum OperationKind {
     Add,
     Move,
     SetActive,
@@ -208,14 +219,14 @@ pub enum WeaveOperationKind {
 }
 
 /// A new adapter value and its bounded receipt.
-pub struct WeaveMutation<K: CanonicalKey> {
-    pub adapter: WeaveAdapter<K>,
-    pub receipt: WeaveReceipt<K>,
+pub struct Mutation<K: CanonicalKey> {
+    pub adapter: Adapter<K>,
+    pub receipt: Receipt<K>,
 }
 
 /// Fail-closed derived-topology errors.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum WeaveError {
+pub enum Error {
     InvalidPolicy { field: &'static str },
     StaleGeneration { expected: u64, observed: u64 },
     NodeLimitExceeded { maximum: u32 },
@@ -232,18 +243,18 @@ pub enum WeaveError {
 
 /// A pure bounded adapter over Universal Weave `0.4.1`.
 #[derive(Clone)]
-pub struct WeaveAdapter<K: CanonicalKey> {
-    policy: WeavePolicy,
+pub struct Adapter<K: CanonicalKey> {
+    policy: Policy,
     generation: u64,
     node_count: u32,
     source_history_identity: Option<Digest>,
     weave: TopologyDag<K>,
 }
 
-impl<K: CanonicalKey> WeaveAdapter<K> {
+impl<K: CanonicalKey> Adapter<K> {
     /// Creates empty derived topology.
     #[must_use]
-    pub fn new(policy: WeavePolicy) -> Self {
+    pub fn new(policy: Policy) -> Self {
         Self {
             policy,
             generation: 0,
@@ -275,28 +286,28 @@ impl<K: CanonicalKey> WeaveAdapter<K> {
     pub fn apply(
         &self,
         expected_generation: u64,
-        operation: WeaveOperation<K>,
-    ) -> Result<WeaveMutation<K>, WeaveError> {
+        operation: Operation<K>,
+    ) -> Result<Mutation<K>, Error> {
         if expected_generation != self.generation {
-            return Err(WeaveError::StaleGeneration {
+            return Err(Error::StaleGeneration {
                 expected: self.generation,
                 observed: expected_generation,
             });
         }
         let before = self.snapshot()?.identity;
-        let target = operation.key();
-        let operation_tag = operation.tag();
-        let operation_kind = operation.kind();
+        let (target, operation_tag, operation_kind) = operation.descriptor()?;
         let mut candidate = self.clone();
         candidate.apply_to_candidate(operation)?;
+        debug_assert!(candidate.node_count <= candidate.policy.max_nodes);
+        debug_assert!(candidate.weave.contains(&target));
         let changed_topology = candidate.snapshot()?.identity;
         if before == changed_topology {
-            return Err(WeaveError::NoChange);
+            return Err(Error::NoChange);
         }
         let next_generation = self
             .generation
             .checked_add(1)
-            .ok_or(WeaveError::GenerationOverflow)?;
+            .ok_or(Error::GenerationOverflow)?;
         candidate.generation = next_generation;
         let after = candidate.snapshot()?.identity;
         let policy_identity = self.policy.identity();
@@ -309,9 +320,9 @@ impl<K: CanonicalKey> WeaveAdapter<K> {
             after,
             policy: policy_identity,
         });
-        Ok(WeaveMutation {
+        Ok(Mutation {
             adapter: candidate,
-            receipt: WeaveReceipt {
+            receipt: Receipt {
                 operation: operation_kind,
                 target,
                 prior_generation: self.generation,
@@ -325,7 +336,7 @@ impl<K: CanonicalKey> WeaveAdapter<K> {
     }
 
     /// Returns a deterministic metadata-only snapshot.
-    pub fn snapshot(&self) -> Result<TopologySnapshot<K>, WeaveError> {
+    pub fn snapshot(&self) -> Result<TopologySnapshot<K>, Error> {
         let mut weave = self.weave.clone();
         let mut keys = Vec::new();
         weave.get_ordered_identifiers(&mut keys);
@@ -342,6 +353,8 @@ impl<K: CanonicalKey> WeaveAdapter<K> {
                 });
             }
         }
+        debug_assert_eq!(u32::try_from(entries.len()), Ok(self.node_count));
+        debug_assert!(entries.len() <= self.policy.max_nodes_native);
         let policy_identity = self.policy.identity();
         let identity = topology_identity(
             self.generation,
@@ -362,8 +375,8 @@ impl<K: CanonicalKey> WeaveAdapter<K> {
         missing_const_fn,
         reason = "Universal Weave mutation trait calls are not const operations"
     )]
-    fn apply_to_candidate(&mut self, operation: WeaveOperation<K>) -> Result<(), WeaveError> {
-        if let WeaveOperation::Add {
+    fn apply_to_candidate(&mut self, operation: Operation<K>) -> Result<(), Error> {
+        if let Operation::Add {
             key,
             parents,
             content_identity,
@@ -371,37 +384,39 @@ impl<K: CanonicalKey> WeaveAdapter<K> {
         {
             return self.add(*key, parents, *content_identity);
         }
-        if let WeaveOperation::Move { key, parents } = &operation {
+        self.apply_update(operation)
+    }
+
+    fn apply_update(&mut self, operation: Operation<K>) -> Result<(), Error> {
+        if let Operation::Move { key, parents } = &operation {
             return self.move_node(*key, parents);
         }
-        if let WeaveOperation::SetActive { key, active } = &operation {
+        if let Operation::SetActive { key, active } = &operation {
             return self.set_active(*key, *active);
         }
-        if let WeaveOperation::SetBookmarked { key, bookmarked } = &operation {
+        if let Operation::SetBookmarked { key, bookmarked } = &operation {
             return self.set_bookmarked(*key, *bookmarked);
         }
-        Err(WeaveError::InvalidParentage)
+        Err(Error::InvalidParentage)
     }
 
     #[allow(
         explicit_defaults,
         reason = "the selected Universal Weave IndexSet exposes no empty constructor for its fixed hasher"
     )]
-    fn add(&mut self, key: K, parents: &[K], content_identity: Digest) -> Result<(), WeaveError> {
+    fn add(&mut self, key: K, parents: &[K], content_identity: Digest) -> Result<(), Error> {
+        debug_assert!(self.node_count <= self.policy.max_nodes);
         if self.node_count >= self.policy.max_nodes {
-            return Err(WeaveError::NodeLimitExceeded {
+            return Err(Error::NodeLimitExceeded {
                 maximum: self.policy.max_nodes,
             });
         }
-        let next_node_count = self
-            .node_count
-            .checked_add(1)
-            .ok_or(WeaveError::CountOverflow {
-                field: "topology_nodes",
-            })?;
+        let next_node_count = self.node_count.checked_add(1).ok_or(Error::CountOverflow {
+            field: "topology_nodes",
+        })?;
         self.validate_parents(parents)?;
         if self.weave.contains(&key) {
-            return Err(WeaveError::NodeExists);
+            return Err(Error::NodeExists);
         }
         let node = TopologyNode {
             id: key,
@@ -414,30 +429,35 @@ impl<K: CanonicalKey> WeaveAdapter<K> {
             },
         };
         if !self.weave.insert(node) {
-            return Err(WeaveError::InvalidParentage);
+            return Err(Error::InvalidParentage);
         }
         self.node_count = next_node_count;
+        debug_assert!(
+            self.weave
+                .get(&key)
+                .is_some_and(|node| node.from().len() == parents.len())
+        );
         Ok(())
     }
 
-    fn move_node(&mut self, key: K, parents: &[K]) -> Result<(), WeaveError> {
+    fn move_node(&mut self, key: K, parents: &[K]) -> Result<(), Error> {
         if !self.weave.contains(&key) {
-            return Err(WeaveError::NodeMissing);
+            return Err(Error::NodeMissing);
         }
         self.validate_parents(parents)?;
         if !self.weave.move_to(&key, parents) {
-            return Err(WeaveError::InvalidParentage);
+            return Err(Error::InvalidParentage);
         }
         Ok(())
     }
 
-    fn set_active(&mut self, key: K, active: bool) -> Result<(), WeaveError> {
-        let node = self.weave.get(&key).ok_or(WeaveError::NodeMissing)?;
+    fn set_active(&mut self, key: K, active: bool) -> Result<(), Error> {
+        let node = self.weave.get(&key).ok_or(Error::NodeMissing)?;
         if node.is_active() == active {
-            return Err(WeaveError::NoChange);
+            return Err(Error::NoChange);
         }
         if !self.weave.set_active(&key, active) {
-            return Err(WeaveError::InvalidParentage);
+            return Err(Error::InvalidParentage);
         }
         Ok(())
     }
@@ -446,15 +466,15 @@ impl<K: CanonicalKey> WeaveAdapter<K> {
         missing_const_fn,
         reason = "Universal Weave bookmark trait calls are not const operations"
     )]
-    fn set_bookmarked(&mut self, key: K, bookmarked: bool) -> Result<(), WeaveError> {
+    fn set_bookmarked(&mut self, key: K, bookmarked: bool) -> Result<(), Error> {
         if !self.weave.contains(&key) {
-            return Err(WeaveError::NodeMissing);
+            return Err(Error::NodeMissing);
         }
         if self.weave.contains_bookmark(&key) == bookmarked {
-            return Err(WeaveError::NoChange);
+            return Err(Error::NoChange);
         }
         if !self.weave.set_bookmarked(&key, bookmarked) {
-            return Err(WeaveError::InvalidParentage);
+            return Err(Error::InvalidParentage);
         }
         Ok(())
     }
@@ -463,10 +483,10 @@ impl<K: CanonicalKey> WeaveAdapter<K> {
         missing_const_fn,
         reason = "Universal Weave membership trait calls are not const operations"
     )]
-    fn validate_parents(&self, parents: &[K]) -> Result<(), WeaveError> {
+    fn validate_parents(&self, parents: &[K]) -> Result<(), Error> {
         let parent_count = count_from_length(parents.len(), "topology_parents")?;
         if parent_count > self.policy.max_parent_fan_in {
-            return Err(WeaveError::ParentLimitExceeded {
+            return Err(Error::ParentLimitExceeded {
                 observed: parent_count,
                 maximum: self.policy.max_parent_fan_in,
             });
@@ -475,28 +495,28 @@ impl<K: CanonicalKey> WeaveAdapter<K> {
             .windows(ADJACENT_PARENT_COUNT)
             .all(|pair| pair[0] < pair[1])
         {
-            return Err(WeaveError::InvalidParentage);
+            return Err(Error::InvalidParentage);
         }
         if parents.iter().any(|parent| !self.weave.contains(parent)) {
-            return Err(WeaveError::ParentMissing);
+            return Err(Error::ParentMissing);
         }
         Ok(())
     }
 }
 
-impl WeaveAdapter<EventId> {
+impl Adapter<EventId> {
     /// Projects admitted immutable history into a mutable metadata-only topology.
     pub fn from_history(
-        graph: &HistoryGraph,
+        graph: &Graph,
         projection: &Projection,
-        policy: WeavePolicy,
-    ) -> Result<Self, WeaveError> {
+        policy: Policy,
+    ) -> Result<Self, Error> {
         let mut adapter = Self::new(policy);
         adapter.source_history_identity = Some(graph.identity());
         for identity in projection.events() {
             let event = graph
                 .event(*identity)
-                .ok_or(WeaveError::ProjectionEventMissing { event: *identity })?;
+                .ok_or(Error::ProjectionEventMissing { event: *identity })?;
             let mut parents: Vec<EventId> = event
                 .content()
                 .parents
@@ -507,7 +527,7 @@ impl WeaveAdapter<EventId> {
             parents.sort();
             let mutation = adapter.apply(
                 adapter.generation,
-                WeaveOperation::Add {
+                Operation::Add {
                     key: *identity,
                     parents,
                     content_identity: event.content().payload_identity,
@@ -515,6 +535,11 @@ impl WeaveAdapter<EventId> {
             )?;
             adapter = mutation.adapter;
         }
+        debug_assert_eq!(
+            usize::try_from(adapter.node_count),
+            Ok(projection.events().len())
+        );
+        debug_assert_eq!(adapter.generation, u64::from(adapter.node_count));
         Ok(adapter)
     }
 }
@@ -584,15 +609,15 @@ fn update_optional_digest(hasher: &mut blake3::Hasher, value: Option<Digest>) {
     missing_const_fn,
     reason = "BLAKE3 hasher mutation is not a const operation"
 )]
-fn update_length(hasher: &mut blake3::Hasher, length: usize) {
-    match u64::try_from(length) {
+fn update_length(hasher: &mut blake3::Hasher, item_count: usize) {
+    match u64::try_from(item_count) {
         Ok(framed) => {
             hasher.update(&[LENGTH_U64_TAG]);
             hasher.update(&framed.to_le_bytes());
         }
         Err(_) => {
             hasher.update(&[LENGTH_NATIVE_TAG]);
-            hasher.update(&length.to_le_bytes());
+            hasher.update(&item_count.to_le_bytes());
         }
     }
 }
@@ -607,6 +632,6 @@ fn update_bytes(hasher: &mut blake3::Hasher, bytes: &[u8]) {
     hasher.update(bytes);
 }
 
-fn count_from_length(length: usize, field: &'static str) -> Result<u32, WeaveError> {
-    u32::try_from(length).map_err(|_| WeaveError::CountOverflow { field })
+fn count_from_length(item_count: usize, field: &'static str) -> Result<u32, Error> {
+    u32::try_from(item_count).map_err(|_| Error::CountOverflow { field })
 }

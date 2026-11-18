@@ -1,5 +1,9 @@
 #!/usr/bin/env -S nix shell github:nix-community/fenix/4e49ef62eedaa5c149d62b63b3f53844e1cc45d7#minimal.toolchain github:NixOS/nixpkgs/20535e48e12c86043b577b8518234ff5dbb26957#gcc -c cargo -q -Zscript
 
+// Qualifies the historical runner semantics after the declared Seaglass Rust API
+// namespace migration below, not drop-in Rust source compatibility. The verified
+// base revision, test assertions, fixture data and selected runner tests stay fixed.
+
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -13,6 +17,26 @@ const CARGO_CONFIG_PATH: &str = ".cargo/config.toml";
 const MINIMAL_CARGO_CONFIG: &str = "[net]\ngit-fetch-with-cli = true\n";
 const ADAPTER_PATH: &str = "crates/choregraph-seaglass";
 const RUNNER_TEST: &str = "test_runner_core";
+const RUNNER_SOURCE_PATH: &str = "src/engine/runner.rs";
+// Exact occurrences in LATTICE_REVISION only. Longer diagnostic paths precede
+// their common prefix so each reviewed occurrence is migrated exactly once.
+const RUNNER_NAMESPACE_MIGRATIONS: &[(&str, &str, usize)] = &[
+    ("seaglass_execution_graph::ResumeDecision", "seaglass_execution_graph::aggregate::ResumeDecision", 1),
+    ("seaglass_execution_graph::StepAction", "seaglass_execution_graph::lifecycle::StepAction", 1),
+    ("seaglass_execution_graph::StepState", "seaglass_execution_graph::lifecycle::StepState", 2),
+    ("seaglass_execution_graph::StepTransitionError", "seaglass_execution_graph::lifecycle::StepTransitionError", 1),
+    ("seaglass_execution_graph::ready_nodes", "seaglass_execution_graph::aggregate::ready_nodes", 1),
+    ("seaglass_execution_graph::transition_step_state", "seaglass_execution_graph::lifecycle::transition_step_state", 1),
+    ("seaglass_execution_graph::is_terminal_state", "seaglass_execution_graph::lifecycle::is_terminal_state", 1),
+    ("seaglass_execution_graph::ExecutionPlan", "seaglass_execution_graph::aggregate::ExecutionPlan", 1),
+    ("seaglass_execution_graph::admit_graph", "seaglass_execution_graph::admission::admit_graph", 1),
+    ("seaglass_execution_graph::ExecutionGraph", "seaglass_execution_graph::topology::ExecutionGraph", 2),
+    ("seaglass_execution_graph::ExecutionNode", "seaglass_execution_graph::topology::ExecutionNode", 1),
+    ("seaglass_execution_graph::ExecutionEdge", "seaglass_execution_graph::topology::ExecutionEdge", 1),
+    ("seaglass_execution_graph::GraphDiagnosticCode", "seaglass_execution_graph::admission::GraphDiagnosticCode", 8),
+    ("seaglass_execution_graph::GraphDiagnostic", "seaglass_execution_graph::admission::GraphDiagnostic", 1),
+    ("seaglass_execution_graph::resume_decision", "seaglass_execution_graph::aggregate::resume_decision", 1),
+];
 const SELF_TEST_FLAG: &str = "--self-test";
 const EXPECTED_ARGUMENT_COUNT: usize = 3;
 const SELF_TEST_ARGUMENT_COUNT: usize = 2;
@@ -158,6 +182,23 @@ fn patch_dependency(destination: &Path, choregraph_root: &Path) -> Result<(), St
         .map_err(|error| format!("cannot write {}: {error}", manifest_path.display()))
 }
 
+fn migrate_historical_runner_namespace(destination: &Path) -> Result<(), String> {
+    let runner_path = destination.join(RUNNER_SOURCE_PATH);
+    let mut source = fs::read_to_string(&runner_path)
+        .map_err(|error| format!("cannot read {}: {error}", runner_path.display()))?;
+    for &(old, new, expected_count) in RUNNER_NAMESPACE_MIGRATIONS {
+        let observed_count = source.matches(old).count();
+        if observed_count != expected_count {
+            return Err(format!(
+                "historical runner API migration for {LATTICE_REVISION}: expected {expected_count} occurrences of {old}, found {observed_count}"
+            ));
+        }
+        source = source.replacen(old, new, expected_count);
+    }
+    fs::write(&runner_path, source)
+        .map_err(|error| format!("cannot write {}: {error}", runner_path.display()))
+}
+
 fn run_runner_tests(destination: &Path) -> Result<(), String> {
     let status = Command::new("cargo")
         .current_dir(destination)
@@ -228,10 +269,13 @@ fn run(arguments: &[String]) -> Result<(), String> {
     extract_revision(&lattice_repository, &disposable.path)?;
     select_disposable_linker_config(&disposable.path)?;
     patch_dependency(&disposable.path, &choregraph_root)?;
+    migrate_historical_runner_namespace(&disposable.path)?;
     run_runner_tests(&disposable.path)?;
 
     println!("lattice_revision={LATTICE_REVISION}");
     println!("adapter=choregraph-seaglass");
+    println!("rust_api_migration=seaglass-semantic-owner-paths");
+    println!("qualification=historical-runner-semantics-after-rust-api-migration");
     println!("runner_tests=passed");
     println!("source_fallback=none");
     Ok(())

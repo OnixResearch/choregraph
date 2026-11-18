@@ -12,24 +12,41 @@
 )]
 
 use choregraph_core::{
-    Action, AdmissionLimits, AdmittedMachine, CANONICAL_REFERENCE_PROFILE_V1,
-    ConcreteEffectDeclarationSpec, DURABLE_SUSPENSION_V1, LocalState, MachineSpec, MachineSpecV2,
-    NodeSpec, ReferenceBindingSpec, SuspensionDeclarationSpec, TransitionSelector,
+    concrete::effect::ConcreteEffectDeclarationSpec, concrete::machine::MachineSpecV2,
+    concrete::reference::CANONICAL_REFERENCE_PROFILE_V1, concrete::reference::ReferenceBindingSpec,
+    model::automaton::AdmittedMachine, model::automaton::MachineSpec,
+    model::capacity::AdmissionLimits, model::graph::NodeSpec,
+    model::pause::SuspensionDeclarationSpec, model::semantics::Action,
+    model::semantics::DURABLE_SUSPENSION_V1, model::semantics::LocalState,
+    model::semantics::TransitionSelector,
 };
 use choregraph_kamacite::{
-    ArtifactDomain, ArtifactIdentity, IdentityMaterials, build_artifact_set,
-    build_concrete_machine_artifact, build_durable_lifecycle_artifact, build_profile_artifact,
-    compute_identity, durable_machine_descriptor, encode_durable_machine_descriptor,
+    aggregate::assembly::{
+        IdentityMaterials, build_artifact_set, durable_machine_descriptor,
+        encode_durable_machine_descriptor,
+    },
+    aggregate::policy::build_profile_artifact,
+    concrete::conversion::build_concrete_machine_artifact,
+    identity::{ArtifactDomain, ArtifactIdentity, compute_identity},
+    lifecycle::conversion::build_durable_lifecycle_artifact,
 };
 use preserves::PackedWriter;
 use serde::Serialize;
 
 use choregraph_wasm::{
-    ABI_VERSION, ActionTag, AdapterErrorCode, ConcreteBindingValue, ConcreteEffectRequestValue,
-    ConcreteEventValue, ConcreteReferenceValue, EventValue, IntentValue, KernelCall,
-    MAX_OUTER_REQUEST_BYTES, MAX_TRACE_EVENTS, MachineArtifactKind, MachineArtifacts,
-    OperationRequest, Outcome, ReplayBindingPairValue, ReplayBindingsValue, StateEntryValue,
-    StateTag, StateValue, decode_result, dispatch, encode_call,
+    MAX_OUTER_REQUEST_BYTES, MAX_TRACE_EVENTS, decode_result, dispatch, encode_call,
+    schema::{
+        decision::{IntentValue, Outcome},
+        diagnostic::AdapterErrorCode,
+        history::{ReplayBindingPairValue, ReplayBindingsValue},
+        input::{KernelCall, MachineArtifactKind, MachineArtifacts, OperationRequest},
+        invocation::{
+            ActionTag, ConcreteBindingValue, ConcreteEffectRequestValue, ConcreteEventValue,
+            ConcreteReferenceValue, EventValue,
+        },
+        profile::ABI_VERSION,
+        snapshot::{StateEntryValue, StateTag, StateValue},
+    },
 };
 
 const NODE: &str = "effect-node";
@@ -146,7 +163,7 @@ fn concrete_artifacts() -> MachineArtifacts {
             source_ref: String::from(REQUEST_SOURCE),
         },
         payload_binding: ReferenceBindingSpec::Exact {
-            reference: choregraph_core::ConcreteReferenceSpec {
+            reference: choregraph_core::concrete::reference::ConcreteReferenceSpec {
                 profile: String::from(CANONICAL_REFERENCE_PROFILE_V1),
                 identity: String::from(PAYLOAD_REFERENCE),
             },
@@ -195,12 +212,12 @@ fn concrete_event(action: ActionTag) -> ConcreteEventValue {
 fn bindings(machine_byte: u8, trace_byte: u8) -> ReplayBindingPairValue {
     ReplayBindingPairValue {
         expected: ReplayBindingsValue {
-            machine: vec![machine_byte; choregraph_core::TRACE_BINDING_BYTES],
-            initial_state: vec![TRACE_BYTE; choregraph_core::TRACE_BINDING_BYTES],
+            machine: vec![machine_byte; choregraph_core::model::history::TRACE_BINDING_BYTES],
+            initial_state: vec![TRACE_BYTE; choregraph_core::model::history::TRACE_BINDING_BYTES],
         },
         trace: ReplayBindingsValue {
-            machine: vec![trace_byte; choregraph_core::TRACE_BINDING_BYTES],
-            initial_state: vec![TRACE_BYTE; choregraph_core::TRACE_BINDING_BYTES],
+            machine: vec![trace_byte; choregraph_core::model::history::TRACE_BINDING_BYTES],
+            initial_state: vec![TRACE_BYTE; choregraph_core::model::history::TRACE_BINDING_BYTES],
         },
     }
 }

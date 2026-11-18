@@ -25,261 +25,32 @@ use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use crate::id::{
-    AbilityId, BoundedId, DeclarationKey, IdentifierError, NodeId, OperationId, PayloadRef,
-    PayloadRefError, ResourceId, SlotId, SourceRef,
+use crate::concrete::effect::{
+    ConcreteEffectDeclaration, ConcreteEffectDeclarationSpec, ConcreteEffectIntent,
+    ConcreteEffectRequest,
 };
+use crate::concrete::event::ConcreteEvent;
+use crate::concrete::machine::MachineSpecV2;
+use crate::concrete::reference::{
+    CanonicalReferenceProfile, ConcreteBindingInput, ConcreteReference, ConcreteReferenceSpec,
+    ReferenceBinding, ReferenceBindingSpec,
+};
+use crate::id::bounded::{BoundedId, DeclarationKey, IdentifierError, NodeId, SlotId, SourceRef};
+use crate::id::reference::{PayloadRef, PayloadRefError};
 use crate::invariant::well_formed;
-use crate::model::{
-    Action, AdmissionDiagnostic, AdmissionDiagnosticCode, AdmissionLimits, AdmittedMachine,
-    EdgeSpec, EffectKey, LINEAR_LIFECYCLE_V1, LimitKind, MACHINE_SCHEMA_V2, MachineSchema,
-    MachineSpec, MachineState, NodeSpec, ReplayBindings, ReplayLimits, TransitionSelector,
-};
+use crate::model::automaton::{AdmittedMachine, EffectKey, MachineSpec, MachineState};
+use crate::model::capacity::AdmissionLimits;
+use crate::model::outcome::{AdmissionDiagnostic, AdmissionDiagnosticCode, LimitKind};
+use crate::model::semantics::TransitionSelector;
+use crate::model::semantics::{LINEAR_LIFECYCLE_V1, MACHINE_SCHEMA_V2, MachineSchema};
 use crate::transition::lifecycle_target_for_profile;
 
-pub const CANONICAL_REFERENCE_PROFILE_V1: &str = "choregraph.packed-preserves.v1";
+pub mod effect;
+pub mod event;
+pub mod machine;
+pub mod reference;
+pub mod replay;
 const EVENT_ACTION_TAG_BYTES: usize = 1;
-
-/// The closed canonical encoding profile accepted by the pure core.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum CanonicalReferenceProfile {
-    PackedPreservesV1,
-}
-
-impl CanonicalReferenceProfile {
-    #[must_use]
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::PackedPreservesV1 => CANONICAL_REFERENCE_PROFILE_V1,
-        }
-    }
-
-    fn parse(value: &str) -> Option<Self> {
-        match value {
-            CANONICAL_REFERENCE_PROFILE_V1 => Some(Self::PackedPreservesV1),
-            _ => None,
-        }
-    }
-}
-
-/// One untrusted canonical reference supplied by a schema or event.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ConcreteReferenceSpec {
-    pub profile: String,
-    pub identity: String,
-}
-
-/// One admitted canonical packed Preserves reference.
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct ConcreteReference {
-    pub profile: CanonicalReferenceProfile,
-    pub identity: PayloadRef,
-}
-
-/// One untrusted exact or runtime-slot binding.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum ReferenceBindingSpec {
-    Exact { reference: ConcreteReferenceSpec },
-    Slot { slot_id: String, source_ref: String },
-}
-
-/// One admitted exact or runtime-slot binding.
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum ReferenceBinding {
-    Exact(ConcreteReference),
-    Slot {
-        slot_id: SlotId,
-        source_ref: SourceRef,
-    },
-}
-
-/// One untrusted v2 effect declaration.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ConcreteEffectDeclarationSpec {
-    pub declaration_key: String,
-    pub node_id: String,
-    pub transition: TransitionSelector,
-    pub operation: String,
-    pub resource: String,
-    pub ability: String,
-    pub request_binding: ReferenceBindingSpec,
-    pub payload_binding: ReferenceBindingSpec,
-}
-
-/// One admitted immutable v2 effect declaration.
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct ConcreteEffectDeclaration {
-    pub declaration_key: DeclarationKey,
-    pub node_id: NodeId,
-    pub transition: TransitionSelector,
-    pub operation: OperationId,
-    pub resource: ResourceId,
-    pub ability: AbilityId,
-    pub request_binding: ReferenceBinding,
-    pub payload_binding: ReferenceBinding,
-}
-
-/// One untrusted v2 machine specification.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct MachineSpecV2 {
-    pub schema: String,
-    pub lifecycle_profile: String,
-    pub nodes: Vec<NodeSpec>,
-    pub edges: Vec<EdgeSpec>,
-    pub effects: Vec<ConcreteEffectDeclarationSpec>,
-    pub suspensions: Vec<crate::model::SuspensionDeclarationSpec>,
-}
-
-impl MachineSpecV2 {
-    #[must_use]
-    pub fn new(nodes: Vec<NodeSpec>, edges: Vec<EdgeSpec>) -> Self {
-        Self {
-            schema: String::from(MACHINE_SCHEMA_V2),
-            lifecycle_profile: String::from(LINEAR_LIFECYCLE_V1),
-            nodes,
-            edges,
-            effects: Vec::new(),
-            suspensions: Vec::new(),
-        }
-    }
-}
-
-/// One concrete reference and its selected slot facts.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ConcreteBindingInput {
-    pub slot_id: Option<String>,
-    pub source_ref: Option<String>,
-    pub reference: ConcreteReferenceSpec,
-}
-
-/// One v2 effect request carried by an event.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ConcreteEffectRequest {
-    pub declaration_key: String,
-    pub request: ConcreteBindingInput,
-    pub payload: ConcreteBindingInput,
-}
-
-/// One bounded v2 lifecycle event.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ConcreteEvent {
-    pub node_id: String,
-    pub action: Action,
-    pub effects: Vec<ConcreteEffectRequest>,
-    pub suspension: Option<crate::model::SuspensionFactSpec>,
-}
-
-impl ConcreteEvent {
-    #[must_use]
-    pub fn new(node_id: impl Into<String>, action: Action) -> Self {
-        Self {
-            node_id: node_id.into(),
-            action,
-            effects: Vec::new(),
-            suspension: None,
-        }
-    }
-
-    #[must_use]
-    pub fn suspension(
-        node_id: impl Into<String>,
-        action: Action,
-        class: impl Into<String>,
-        reference: impl Into<String>,
-    ) -> Self {
-        Self {
-            node_id: node_id.into(),
-            action,
-            effects: Vec::new(),
-            suspension: Some(crate::model::SuspensionFactSpec {
-                class: class.into(),
-                reference: reference.into(),
-            }),
-        }
-    }
-}
-
-/// One concrete intent emitted by an accepted v2 transition.
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct ConcreteEffectIntent {
-    pub declaration_key: DeclarationKey,
-    pub node_id: NodeId,
-    pub transition: TransitionSelector,
-    pub operation: OperationId,
-    pub resource: ResourceId,
-    pub ability: AbilityId,
-    pub request_slot: Option<SlotId>,
-    pub request_source_ref: Option<SourceRef>,
-    pub request_reference: ConcreteReference,
-    pub payload_slot: Option<SlotId>,
-    pub payload_source_ref: Option<SourceRef>,
-    pub payload_reference: ConcreteReference,
-}
-
-/// The result of one pure v2 transition request.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum ConcreteDecision {
-    Accept {
-        next: MachineState,
-        intents: Vec<ConcreteEffectIntent>,
-    },
-    Deny {
-        reason: crate::DenialReason,
-    },
-}
-
-/// An ordered v2 event slice with exact canonical identity bindings.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct ConcreteBoundedTrace<'a> {
-    bindings: ReplayBindings,
-    events: &'a [ConcreteEvent],
-}
-
-impl<'a> ConcreteBoundedTrace<'a> {
-    #[must_use]
-    pub const fn new(bindings: ReplayBindings, events: &'a [ConcreteEvent]) -> Self {
-        Self { bindings, events }
-    }
-
-    #[must_use]
-    pub const fn bindings(&self) -> ReplayBindings {
-        self.bindings
-    }
-
-    #[must_use]
-    pub const fn events(&self) -> &'a [ConcreteEvent] {
-        self.events
-    }
-}
-
-/// All explicit inputs to one deterministic v2 replay.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct ConcreteReplayInput<'a> {
-    pub(crate) machine: &'a AdmittedMachine,
-    pub(crate) initial_state: &'a MachineState,
-    pub(crate) expected_bindings: ReplayBindings,
-    pub(crate) trace: ConcreteBoundedTrace<'a>,
-    pub(crate) limits: ReplayLimits,
-}
-
-impl<'a> ConcreteReplayInput<'a> {
-    #[must_use]
-    pub const fn new(
-        machine: &'a AdmittedMachine,
-        initial_state: &'a MachineState,
-        expected_bindings: ReplayBindings,
-        trace: ConcreteBoundedTrace<'a>,
-        limits: ReplayLimits,
-    ) -> Self {
-        Self {
-            machine,
-            initial_state,
-            expected_bindings,
-            trace,
-            limits,
-        }
-    }
-}
 
 fn diagnostic(code: AdmissionDiagnosticCode, subject: &'static str) -> AdmissionDiagnostic {
     AdmissionDiagnostic {
@@ -399,9 +170,13 @@ fn parse_binding(
             source_ref,
         } => {
             let slot_id =
-                parse_id::<crate::id::SlotDomain>(slot_id, limits, "slot-id", diagnostics);
-            let source_ref =
-                parse_id::<crate::id::SourceDomain>(source_ref, limits, "source-ref", diagnostics);
+                parse_id::<crate::id::domains::SlotDomain>(slot_id, limits, "slot-id", diagnostics);
+            let source_ref = parse_id::<crate::id::domains::SourceDomain>(
+                source_ref,
+                limits,
+                "source-ref",
+                diagnostics,
+            );
             match (slot_id, source_ref) {
                 (Some(slot_id), Some(source_ref)) => Some(ReferenceBinding::Slot {
                     slot_id,
@@ -450,38 +225,46 @@ fn declaration_size(declaration: &ConcreteEffectDeclaration) -> usize {
 fn parse_declaration(
     raw: &ConcreteEffectDeclarationSpec,
     limits: AdmissionLimits,
-    profile: crate::LifecycleProfile,
+    profile: crate::model::semantics::LifecycleProfile,
     diagnostics: &mut Vec<AdmissionDiagnostic>,
 ) -> Option<ConcreteEffectDeclaration> {
-    let declaration_key = parse_id::<crate::id::DeclarationDomain>(
+    let declaration_key = parse_id::<crate::id::domains::DeclarationDomain>(
         &raw.declaration_key,
         limits,
         "declaration-key",
         diagnostics,
     )?;
-    let node_id =
-        parse_id::<crate::id::NodeDomain>(&raw.node_id, limits, "effect-node", diagnostics)?;
-    let operation = parse_id::<crate::id::OperationDomain>(
+    let node_id = parse_id::<crate::id::domains::NodeDomain>(
+        &raw.node_id,
+        limits,
+        "effect-node",
+        diagnostics,
+    )?;
+    let operation = parse_id::<crate::id::domains::OperationDomain>(
         &raw.operation,
         limits,
         "effect-operation",
         diagnostics,
     )?;
-    let resource = parse_id::<crate::id::ResourceDomain>(
+    let resource = parse_id::<crate::id::domains::ResourceDomain>(
         &raw.resource,
         limits,
         "effect-resource",
         diagnostics,
     )?;
-    let ability =
-        parse_id::<crate::id::AbilityDomain>(&raw.ability, limits, "effect-ability", diagnostics)?;
+    let ability = parse_id::<crate::id::domains::AbilityDomain>(
+        &raw.ability,
+        limits,
+        "effect-ability",
+        diagnostics,
+    )?;
     let request_binding =
         parse_binding(&raw.request_binding, limits, "request-binding", diagnostics)?;
     let payload_binding =
         parse_binding(&raw.payload_binding, limits, "payload-binding", diagnostics)?;
     if matches!(
         raw.transition.action,
-        crate::Action::Suspend | crate::Action::ResumeSignal
+        crate::model::semantics::Action::Suspend | crate::model::semantics::Action::ResumeSignal
     ) {
         diagnostics.push(diagnostic(
             AdmissionDiagnosticCode::SuspensionEffectTransition,
@@ -610,7 +393,7 @@ impl AdmittedMachine {
             ));
         }
         if spec.lifecycle_profile != LINEAR_LIFECYCLE_V1
-            && spec.lifecycle_profile != crate::DURABLE_SUSPENSION_V1
+            && spec.lifecycle_profile != crate::model::semantics::DURABLE_SUSPENSION_V1
         {
             diagnostics.push(diagnostic(
                 AdmissionDiagnosticCode::UnsupportedLifecycleProfile,
@@ -692,7 +475,8 @@ pub(crate) fn concrete_effects_match(machine: &AdmittedMachine) -> bool {
         }
         if !matches!(
             declaration.transition.action,
-            crate::Action::Suspend | crate::Action::ResumeSignal
+            crate::model::semantics::Action::Suspend
+                | crate::model::semantics::Action::ResumeSignal
         ) && lifecycle_target_for_profile(
             machine.lifecycle_profile,
             declaration.transition.from,
@@ -704,7 +488,8 @@ pub(crate) fn concrete_effects_match(machine: &AdmittedMachine) -> bool {
         }
         if matches!(
             declaration.transition.action,
-            crate::Action::Suspend | crate::Action::ResumeSignal
+            crate::model::semantics::Action::Suspend
+                | crate::model::semantics::Action::ResumeSignal
         ) {
             return false;
         }
@@ -742,11 +527,11 @@ pub(crate) fn concrete_effects_match(machine: &AdmittedMachine) -> bool {
 fn parse_event_reference(
     value: &ConcreteReferenceSpec,
     limits: AdmissionLimits,
-) -> Result<ConcreteReference, crate::DenialReason> {
+) -> Result<ConcreteReference, crate::model::outcome::DenialReason> {
     let profile = CanonicalReferenceProfile::parse(&value.profile)
-        .ok_or(crate::DenialReason::MalformedEffectRequest)?;
+        .ok_or(crate::model::outcome::DenialReason::MalformedEffectRequest)?;
     let identity = PayloadRef::parse(&value.identity, limits.max_reference_bytes)
-        .map_err(|_| crate::DenialReason::MalformedEffectRequest)?;
+        .map_err(|_| crate::model::outcome::DenialReason::MalformedEffectRequest)?;
     Ok(ConcreteReference { profile, identity })
 }
 
@@ -760,20 +545,22 @@ fn resolve_binding(
     declaration: &ReferenceBinding,
     input: &ConcreteBindingInput,
     limits: AdmissionLimits,
-) -> Result<ResolvedBinding, crate::DenialReason> {
+) -> Result<ResolvedBinding, crate::model::outcome::DenialReason> {
     let reference = parse_event_reference(&input.reference, limits)?;
     match declaration {
         ReferenceBinding::Exact(expected) => {
-            let is_accepted = crate::verified::concrete_binding_accepts(
-                crate::verified::BINDING_EXACT,
-                false,
-                false,
-                reference == *expected,
-                input.slot_id.is_none(),
-                input.source_ref.is_none(),
+            let is_accepted = crate::verified::primitive::matching::concrete_binding_accepts(
+                crate::verified::primitive::matching::BINDING_EXACT,
+                crate::verified::primitive::matching::ConcreteBindingFacts {
+                    slot_matches: false,
+                    source_matches: false,
+                    exact_reference_matches: reference == *expected,
+                    slot_absent: input.slot_id.is_none(),
+                    source_absent: input.source_ref.is_none(),
+                },
             );
             if !is_accepted {
-                return Err(crate::DenialReason::ConcreteBindingMismatch);
+                return Err(crate::model::outcome::DenialReason::ConcreteBindingMismatch);
             }
             Ok(ResolvedBinding {
                 slot_id: None,
@@ -788,29 +575,31 @@ fn resolve_binding(
             let selected_slot = input
                 .slot_id
                 .as_deref()
-                .ok_or(crate::DenialReason::ConcreteBindingMismatch)
+                .ok_or(crate::model::outcome::DenialReason::ConcreteBindingMismatch)
                 .and_then(|value| {
                     SlotId::parse(value, limits.max_identifier_bytes)
-                        .map_err(|_| crate::DenialReason::MalformedEffectRequest)
+                        .map_err(|_| crate::model::outcome::DenialReason::MalformedEffectRequest)
                 })?;
             let selected_source = input
                 .source_ref
                 .as_deref()
-                .ok_or(crate::DenialReason::ConcreteBindingMismatch)
+                .ok_or(crate::model::outcome::DenialReason::ConcreteBindingMismatch)
                 .and_then(|value| {
                     SourceRef::parse(value, limits.max_identifier_bytes)
-                        .map_err(|_| crate::DenialReason::MalformedEffectRequest)
+                        .map_err(|_| crate::model::outcome::DenialReason::MalformedEffectRequest)
                 })?;
-            let is_accepted = crate::verified::concrete_binding_accepts(
-                crate::verified::BINDING_SLOT,
-                selected_slot == *slot_id,
-                selected_source == *source_ref,
-                false,
-                false,
-                false,
+            let is_accepted = crate::verified::primitive::matching::concrete_binding_accepts(
+                crate::verified::primitive::matching::BINDING_SLOT,
+                crate::verified::primitive::matching::ConcreteBindingFacts {
+                    slot_matches: selected_slot == *slot_id,
+                    source_matches: selected_source == *source_ref,
+                    exact_reference_matches: false,
+                    slot_absent: false,
+                    source_absent: false,
+                },
             );
             if !is_accepted {
-                return Err(crate::DenialReason::ConcreteBindingMismatch);
+                return Err(crate::model::outcome::DenialReason::ConcreteBindingMismatch);
             }
             Ok(ResolvedBinding {
                 slot_id: Some(selected_slot),
@@ -822,12 +611,12 @@ fn resolve_binding(
 }
 
 fn intent_size(intent: &ConcreteEffectIntent) -> usize {
-    let optional_size = |value: &Option<BoundedId<crate::id::SlotDomain>>| {
+    let optional_size = |value: &Option<BoundedId<crate::id::domains::SlotDomain>>| {
         value
             .as_ref()
             .map_or(0, |identifier| identifier.as_str().len())
     };
-    let source_size = |value: &Option<BoundedId<crate::id::SourceDomain>>| {
+    let source_size = |value: &Option<BoundedId<crate::id::domains::SourceDomain>>| {
         value
             .as_ref()
             .map_or(0, |identifier| identifier.as_str().len())
@@ -887,7 +676,7 @@ pub(crate) fn resolve_concrete_intents(
     machine: &AdmittedMachine,
     allowed_indices: &[usize],
     event: &ConcreteEvent,
-) -> Result<(Vec<usize>, Vec<ConcreteEffectIntent>), crate::DenialReason> {
+) -> Result<(Vec<usize>, Vec<ConcreteEffectIntent>), crate::model::outcome::DenialReason> {
     let mut selected = BTreeSet::new();
     let allowed = allowed_indices.iter().copied().collect::<BTreeSet<_>>();
     let mut resolved = Vec::with_capacity(event.effects.len());
@@ -896,22 +685,22 @@ pub(crate) fn resolve_concrete_intents(
             &request.declaration_key,
             machine.limits.max_identifier_bytes,
         )
-        .map_err(|_| crate::DenialReason::MalformedEffectRequest)?;
+        .map_err(|_| crate::model::outcome::DenialReason::MalformedEffectRequest)?;
         let Some(index) = machine
             .concrete_effect_key_indices
             .get(&declaration_key)
             .copied()
         else {
-            return Err(crate::DenialReason::UnknownDeclaration);
+            return Err(crate::model::outcome::DenialReason::UnknownDeclaration);
         };
         if !allowed.contains(&index) {
-            return Err(crate::DenialReason::UndeclaredEffect);
+            return Err(crate::model::outcome::DenialReason::UndeclaredEffect);
         }
         if !selected.insert(index) {
-            return Err(crate::DenialReason::DuplicateEffectRequest);
+            return Err(crate::model::outcome::DenialReason::DuplicateEffectRequest);
         }
         let Some(declaration) = machine.concrete_effects.get(index) else {
-            return Err(crate::DenialReason::InvalidState);
+            return Err(crate::model::outcome::DenialReason::InvalidState);
         };
         let request_binding = resolve_binding(
             &declaration.request_binding,
@@ -939,10 +728,12 @@ pub(crate) fn resolve_concrete_intents(
         };
         let observed = intent_size(&intent);
         if observed > machine.limits.max_intent_bytes {
-            return Err(crate::DenialReason::ConcreteIntentTooLarge {
-                observed,
-                maximum: machine.limits.max_intent_bytes,
-            });
+            return Err(
+                crate::model::outcome::DenialReason::ConcreteIntentTooLarge {
+                    observed,
+                    maximum: machine.limits.max_intent_bytes,
+                },
+            );
         }
         resolved.push((index, intent));
     }
@@ -960,7 +751,7 @@ pub fn concrete_effects_allowed(
     intents: &[ConcreteEffectIntent],
 ) -> bool {
     if machine.schema != MachineSchema::V2
-        || !crate::invariant(machine, state)
+        || !crate::invariant::invariant(machine, state)
         || intents.len() != event.effects.len()
     {
         return false;

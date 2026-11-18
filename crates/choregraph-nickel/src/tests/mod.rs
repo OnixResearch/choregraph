@@ -2,30 +2,22 @@
 #![allow(
     unknown_lints,
     function_length,
-    non_trait_imports,
-    numeric_units,
     reason = "the restricted-Nickel corpus keeps explicit boundary sizes and compatibility scenarios"
 )]
 
 // r[impl choregraph.nickel.fixtures]
-use crate::{
-    FrontendIssueCode, FrontendLimits, LoweredSourceFormat, MAX_SAFE_SUMMARY_BYTES, ObservedImport,
-    TranslationMaterials, build_translation_receipts, lower_evaluated_json, redact_evaluator_error,
-    summary, validate_translation_receipts,
-};
-use choregraph_core::AdmissionLimits;
 
 const DIAMOND_JSON: &[u8] =
-    include_bytes!("../../../fixtures/nickel/evaluated/lattice-diamond.json");
+    include_bytes!("../../../../fixtures/nickel/evaluated/lattice-diamond.json");
 const DECLARED_IMPORT_JSON: &[u8] =
-    include_bytes!("../../../fixtures/nickel/evaluated/declared-import.json");
-const MINIMAL_JSON: &[u8] = include_bytes!("../../../fixtures/nickel/evaluated/minimal.json");
+    include_bytes!("../../../../fixtures/nickel/evaluated/declared-import.json");
+const MINIMAL_JSON: &[u8] = include_bytes!("../../../../fixtures/nickel/evaluated/minimal.json");
 const SOURCE_ORDER_JSON: &[u8] =
-    include_bytes!("../../../fixtures/nickel/evaluated/source-order.json");
+    include_bytes!("../../../../fixtures/nickel/evaluated/source-order.json");
 const LATTICE_EFFECT_V2_JSON: &[u8] =
-    include_bytes!("../../../fixtures/nickel/evaluated/lattice-effect-v2.json");
+    include_bytes!("../../../../fixtures/nickel/evaluated/lattice-effect-v2.json");
 const DURABLE_SUSPENSION_JSON: &[u8] =
-    include_bytes!("../../../fixtures/nickel/evaluated/durable-suspension.json");
+    include_bytes!("../../../../fixtures/nickel/evaluated/durable-suspension.json");
 const SINGLE_EFFECT_COUNT: usize = 1;
 const FIRST_ITEM: usize = 0;
 
@@ -43,8 +35,8 @@ fn must_array(value: &mut serde_json::Value) -> &mut Vec<serde_json::Value> {
     }
 }
 
-fn materials<'a>(lowerer: &'a [u8]) -> TranslationMaterials<'a> {
-    TranslationMaterials {
+fn materials<'a>(lowerer: &'a [u8]) -> crate::identity::TranslationMaterials<'a> {
+    crate::identity::TranslationMaterials {
         source: b"source",
         import_closure: b"closure",
         evaluator: b"evaluator",
@@ -59,20 +51,31 @@ fn materials<'a>(lowerer: &'a [u8]) -> TranslationMaterials<'a> {
 
 #[test]
 fn accepts_evaluated_data_and_rejects_ambient_stages() {
-    assert!(crate::accepts(crate::LoweringInputStage::EvaluatedData));
-    assert!(!crate::accepts(crate::LoweringInputStage::NickelSource));
-    assert!(!crate::accepts(crate::LoweringInputStage::DynamicImport));
-    assert!(!crate::accepts(crate::LoweringInputStage::EnvironmentValue));
+    assert!(crate::boundary::accepts(
+        crate::boundary::LoweringInputStage::EvaluatedData
+    ));
+    assert!(!crate::boundary::accepts(
+        crate::boundary::LoweringInputStage::NickelSource
+    ));
+    assert!(!crate::boundary::accepts(
+        crate::boundary::LoweringInputStage::DynamicImport
+    ));
+    assert!(!crate::boundary::accepts(
+        crate::boundary::LoweringInputStage::EnvironmentValue
+    ));
 }
 
 #[test]
 fn lowers_lattice_port_diamond_to_stable_node_graph() {
-    let output = must(lower_evaluated_json(
+    let output = must(crate::lower::lower_evaluated_json(
         DIAMOND_JSON,
         &[],
-        FrontendLimits::default(),
+        crate::profile::FrontendLimits::default(),
     ));
-    assert_eq!(output.source_format, LoweredSourceFormat::LatticeWorkflowV1);
+    assert_eq!(
+        output.source_format,
+        crate::lower::LoweredSourceFormat::LatticeWorkflowV1
+    );
     assert_eq!(output.machine.node_ids().len(), 4);
     assert_eq!(output.machine.edges().len(), 4);
     assert_eq!(
@@ -93,15 +96,18 @@ fn lowers_lattice_port_diamond_to_stable_node_graph() {
 
 #[test]
 fn lowers_durable_suspension_profile_with_explicit_selection() {
-    let output = must(lower_evaluated_json(
+    let output = must(crate::lower::lower_evaluated_json(
         DURABLE_SUSPENSION_JSON,
         &[],
-        FrontendLimits::default(),
+        crate::profile::FrontendLimits::default(),
     ));
-    assert_eq!(output.source_format, LoweredSourceFormat::ChoregraphV1);
+    assert_eq!(
+        output.source_format,
+        crate::lower::LoweredSourceFormat::ChoregraphV1
+    );
     assert_eq!(
         output.machine.lifecycle_profile(),
-        choregraph_core::LifecycleProfile::DurableSuspensionV1
+        choregraph_core::model::semantics::LifecycleProfile::DurableSuspensionV1
     );
     assert_eq!(
         output.machine.suspension_declarations().len(),
@@ -113,7 +119,7 @@ fn lowers_durable_suspension_profile_with_explicit_selection() {
     let restarted = output.machine.declared_suspension_state();
     assert_eq!(
         restarted.state(&declaration.node_id),
-        Some(choregraph_core::LocalState::Suspended)
+        Some(choregraph_core::model::semantics::LocalState::Suspended)
     );
 }
 
@@ -123,67 +129,95 @@ fn rejects_suspension_inference_widening_and_product_fields() {
         must(serde_json::from_slice(DURABLE_SUSPENSION_JSON));
     must_array(&mut linear_events["events"]).retain(|event| event != "suspend");
     let linear_events = must(serde_json::to_vec(&linear_events));
-    let failure = lower_evaluated_json(&linear_events, &[], FrontendLimits::default());
+    let failure = crate::lower::lower_evaluated_json(
+        &linear_events,
+        &[],
+        crate::profile::FrontendLimits::default(),
+    );
     assert_eq!(
         failure.err().map(|error| error.issues[0].code),
-        Some(FrontendIssueCode::UnsupportedEvents)
+        Some(crate::diagnostic::FrontendIssueCode::UnsupportedEvents)
     );
 
     let mut inferred: serde_json::Value = must(serde_json::from_slice(DURABLE_SUSPENSION_JSON));
-    inferred["lifecycle_profile"] =
-        serde_json::Value::String(String::from(choregraph_core::LINEAR_LIFECYCLE_V1));
+    inferred["lifecycle_profile"] = serde_json::Value::String(String::from(
+        choregraph_core::model::semantics::LINEAR_LIFECYCLE_V1,
+    ));
     must_array(&mut inferred["events"])
         .retain(|event| event != "suspend" && event != "resume-signal");
     let inferred = must(serde_json::to_vec(&inferred));
-    let failure = lower_evaluated_json(&inferred, &[], FrontendLimits::default());
+    let failure = crate::lower::lower_evaluated_json(
+        &inferred,
+        &[],
+        crate::profile::FrontendLimits::default(),
+    );
     assert_eq!(
         failure.err().map(|error| error.issues[0].code),
-        Some(FrontendIssueCode::MachineAdmissionRejected)
+        Some(crate::diagnostic::FrontendIssueCode::MachineAdmissionRejected)
     );
 
     let mut unknown: serde_json::Value = must(serde_json::from_slice(DURABLE_SUSPENSION_JSON));
     unknown["lifecycle_profile"] =
         serde_json::Value::String(String::from("choregraph.lifecycle.unknown.v9"));
     let unknown = must(serde_json::to_vec(&unknown));
-    let failure = lower_evaluated_json(&unknown, &[], FrontendLimits::default());
+    let failure = crate::lower::lower_evaluated_json(
+        &unknown,
+        &[],
+        crate::profile::FrontendLimits::default(),
+    );
     assert_eq!(
         failure.err().map(|error| error.issues[0].code),
-        Some(FrontendIssueCode::UnsupportedLifecycle)
+        Some(crate::diagnostic::FrontendIssueCode::UnsupportedLifecycle)
     );
 
     let mut product: serde_json::Value = must(serde_json::from_slice(DURABLE_SUSPENSION_JSON));
     product["suspensions"][FIRST_ITEM]["approver"] =
         serde_json::Value::String(String::from("alice"));
     let product = must(serde_json::to_vec(&product));
-    let failure = lower_evaluated_json(&product, &[], FrontendLimits::default());
+    let failure = crate::lower::lower_evaluated_json(
+        &product,
+        &[],
+        crate::profile::FrontendLimits::default(),
+    );
     assert_eq!(
         failure.err().map(|error| error.issues[0].code),
-        Some(FrontendIssueCode::MalformedEvaluatedValue)
+        Some(crate::diagnostic::FrontendIssueCode::MalformedEvaluatedValue)
     );
 }
 
 #[test]
 fn lattice_workflow_formats_reject_suspension_inference() {
     let mut lattice: serde_json::Value = must(serde_json::from_slice(DIAMOND_JSON));
-    lattice["lifecycle_profile"] =
-        serde_json::Value::String(String::from(choregraph_core::DURABLE_SUSPENSION_V1));
+    lattice["lifecycle_profile"] = serde_json::Value::String(String::from(
+        choregraph_core::model::semantics::DURABLE_SUSPENSION_V1,
+    ));
     let lattice = must(serde_json::to_vec(&lattice));
-    let failure = lower_evaluated_json(&lattice, &[], FrontendLimits::default());
+    let failure = crate::lower::lower_evaluated_json(
+        &lattice,
+        &[],
+        crate::profile::FrontendLimits::default(),
+    );
     assert_eq!(
         failure.err().map(|error| error.issues[0].code),
-        Some(FrontendIssueCode::UnsupportedLifecycle)
+        Some(crate::diagnostic::FrontendIssueCode::UnsupportedLifecycle)
     );
 }
 
 #[test]
 fn lowers_lattice_v2_with_explicit_concrete_effect_declarations() {
-    let output = must(lower_evaluated_json(
+    let output = must(crate::lower::lower_evaluated_json(
         LATTICE_EFFECT_V2_JSON,
         &[],
-        FrontendLimits::default(),
+        crate::profile::FrontendLimits::default(),
     ));
-    assert_eq!(output.source_format, LoweredSourceFormat::LatticeWorkflowV2);
-    assert_eq!(output.machine.schema(), choregraph_core::MACHINE_SCHEMA_V2);
+    assert_eq!(
+        output.source_format,
+        crate::lower::LoweredSourceFormat::LatticeWorkflowV2
+    );
+    assert_eq!(
+        output.machine.schema(),
+        choregraph_core::model::semantics::MACHINE_SCHEMA_V2
+    );
     assert_eq!(
         output.machine.concrete_effect_declarations().len(),
         SINGLE_EFFECT_COUNT
@@ -199,41 +233,50 @@ fn rejects_lattice_v2_missing_effects_pure_effects_and_foreign_sources() {
     let mut missing: serde_json::Value = must(serde_json::from_slice(LATTICE_EFFECT_V2_JSON));
     must_array(&mut missing["effects"]).clear();
     let missing = must(serde_json::to_vec(&missing));
-    let failure = lower_evaluated_json(&missing, &[], FrontendLimits::default());
+    let failure = crate::lower::lower_evaluated_json(
+        &missing,
+        &[],
+        crate::profile::FrontendLimits::default(),
+    );
     assert_eq!(
         failure.err().map(|error| error.issues[0].code),
-        Some(FrontendIssueCode::MissingLatticeEffect)
+        Some(crate::diagnostic::FrontendIssueCode::MissingLatticeEffect)
     );
 
     let mut pure: serde_json::Value = must(serde_json::from_slice(LATTICE_EFFECT_V2_JSON));
     pure["configs"][FIRST_ITEM]["effectful"] = serde_json::Value::Bool(false);
     let pure = must(serde_json::to_vec(&pure));
-    let failure = lower_evaluated_json(&pure, &[], FrontendLimits::default());
+    let failure =
+        crate::lower::lower_evaluated_json(&pure, &[], crate::profile::FrontendLimits::default());
     assert_eq!(
         failure.err().map(|error| error.issues[0].code),
-        Some(FrontendIssueCode::UnknownLatticeEffectNode)
+        Some(crate::diagnostic::FrontendIssueCode::UnknownLatticeEffectNode)
     );
 
     let mut foreign: serde_json::Value = must(serde_json::from_slice(LATTICE_EFFECT_V2_JSON));
     foreign["effects"][FIRST_ITEM]["request_binding"]["source_ref"] =
         serde_json::Value::String(String::from("node/2/input/request"));
     let foreign = must(serde_json::to_vec(&foreign));
-    let failure = lower_evaluated_json(&foreign, &[], FrontendLimits::default());
+    let failure = crate::lower::lower_evaluated_json(
+        &foreign,
+        &[],
+        crate::profile::FrontendLimits::default(),
+    );
     assert_eq!(
         failure.err().map(|error| error.issues[0].code),
-        Some(FrontendIssueCode::InvalidLatticeSourceRef)
+        Some(crate::diagnostic::FrontendIssueCode::InvalidLatticeSourceRef)
     );
 }
 
 #[test]
 fn lowers_direct_graph_with_a_declared_content_addressed_import() {
-    let output = must(lower_evaluated_json(
+    let output = must(crate::lower::lower_evaluated_json(
         DECLARED_IMPORT_JSON,
-        &[ObservedImport {
+        &[crate::imports::ObservedImport {
             logical_id: "defaults",
             bytes: b"",
         }],
-        FrontendLimits::default(),
+        crate::profile::FrontendLimits::default(),
     ));
     assert_eq!(output.import_closure.import_count, 1);
     assert_eq!(output.import_closure.total_bytes, 0);
@@ -242,29 +285,38 @@ fn lowers_direct_graph_with_a_declared_content_addressed_import() {
 #[test]
 fn rejects_unknown_fields_cycles_bad_ports_events_and_excessive_bounds() {
     let unknown = br#"{"source_format":"choregraph-v1","unknown":true}"#;
-    let failure = lower_evaluated_json(unknown, &[], FrontendLimits::default());
+    let failure =
+        crate::lower::lower_evaluated_json(unknown, &[], crate::profile::FrontendLimits::default());
     assert_eq!(
         failure.err().map(|error| error.issues[0].code),
-        Some(FrontendIssueCode::MalformedEvaluatedValue)
+        Some(crate::diagnostic::FrontendIssueCode::MalformedEvaluatedValue)
     );
 
     let mut wrong_direction: serde_json::Value = must(serde_json::from_slice(DIAMOND_JSON));
     wrong_direction["nodes"][0]["ports"][0]["direction"] =
         serde_json::Value::String(String::from("output"));
     let wrong_direction = must(serde_json::to_vec(&wrong_direction));
-    let failure = lower_evaluated_json(&wrong_direction, &[], FrontendLimits::default());
+    let failure = crate::lower::lower_evaluated_json(
+        &wrong_direction,
+        &[],
+        crate::profile::FrontendLimits::default(),
+    );
     assert_eq!(
         failure.err().map(|error| error.issues[0].code),
-        Some(FrontendIssueCode::WrongLatticePortDirection)
+        Some(crate::diagnostic::FrontendIssueCode::WrongLatticePortDirection)
     );
 
     let mut duplicate_port: serde_json::Value = must(serde_json::from_slice(DIAMOND_JSON));
     duplicate_port["nodes"][1]["ports"][0]["id"] = serde_json::Value::from(40_u64);
     let duplicate_port = must(serde_json::to_vec(&duplicate_port));
-    let failure = lower_evaluated_json(&duplicate_port, &[], FrontendLimits::default());
+    let failure = crate::lower::lower_evaluated_json(
+        &duplicate_port,
+        &[],
+        crate::profile::FrontendLimits::default(),
+    );
     assert_eq!(
         failure.err().map(|error| error.issues[0].code),
-        Some(FrontendIssueCode::DuplicateLatticePort)
+        Some(crate::diagnostic::FrontendIssueCode::DuplicateLatticePort)
     );
 
     let mut duplicate_config: serde_json::Value = must(serde_json::from_slice(DIAMOND_JSON));
@@ -273,19 +325,27 @@ fn rejects_unknown_fields_cycles_bad_ports_events_and_excessive_bounds() {
         "operation": "duplicate"
     }));
     let duplicate_config = must(serde_json::to_vec(&duplicate_config));
-    let failure = lower_evaluated_json(&duplicate_config, &[], FrontendLimits::default());
+    let failure = crate::lower::lower_evaluated_json(
+        &duplicate_config,
+        &[],
+        crate::profile::FrontendLimits::default(),
+    );
     assert_eq!(
         failure.err().map(|error| error.issues[0].code),
-        Some(FrontendIssueCode::DuplicateLatticeConfig)
+        Some(crate::diagnostic::FrontendIssueCode::DuplicateLatticeConfig)
     );
 
     let mut missing_port: serde_json::Value = must(serde_json::from_slice(DIAMOND_JSON));
     missing_port["edges"][0]["target"] = serde_json::Value::from(999_u64);
     let missing_port = must(serde_json::to_vec(&missing_port));
-    let failure = lower_evaluated_json(&missing_port, &[], FrontendLimits::default());
+    let failure = crate::lower::lower_evaluated_json(
+        &missing_port,
+        &[],
+        crate::profile::FrontendLimits::default(),
+    );
     assert_eq!(
         failure.err().map(|error| error.issues[0].code),
-        Some(FrontendIssueCode::MissingLatticePort)
+        Some(crate::diagnostic::FrontendIssueCode::MissingLatticePort)
     );
 
     let mut cycle: serde_json::Value = must(serde_json::from_slice(DIAMOND_JSON));
@@ -302,32 +362,37 @@ fn rejects_unknown_fields_cycles_bad_ports_events_and_excessive_bounds() {
         "target": 10
     }));
     let cycle = must(serde_json::to_vec(&cycle));
-    let failure = lower_evaluated_json(&cycle, &[], FrontendLimits::default());
+    let failure =
+        crate::lower::lower_evaluated_json(&cycle, &[], crate::profile::FrontendLimits::default());
     assert_eq!(
         failure.err().map(|error| error.issues[0].code),
-        Some(FrontendIssueCode::MachineAdmissionRejected)
+        Some(crate::diagnostic::FrontendIssueCode::MachineAdmissionRejected)
     );
 
     let mut bad_events: serde_json::Value = must(serde_json::from_slice(DIAMOND_JSON));
     assert!(must_array(&mut bad_events["events"]).pop().is_some());
     let bad_events = must(serde_json::to_vec(&bad_events));
-    let failure = lower_evaluated_json(&bad_events, &[], FrontendLimits::default());
+    let failure = crate::lower::lower_evaluated_json(
+        &bad_events,
+        &[],
+        crate::profile::FrontendLimits::default(),
+    );
     assert_eq!(
         failure.err().map(|error| error.issues[0].code),
-        Some(FrontendIssueCode::UnsupportedEvents)
+        Some(crate::diagnostic::FrontendIssueCode::UnsupportedEvents)
     );
 
-    let small = FrontendLimits {
-        machine_ceiling: AdmissionLimits {
+    let small = crate::profile::FrontendLimits {
+        machine_ceiling: choregraph_core::model::capacity::AdmissionLimits {
             max_nodes: 1,
-            ..AdmissionLimits::default()
+            ..choregraph_core::model::capacity::AdmissionLimits::default()
         },
-        ..FrontendLimits::default()
+        ..crate::profile::FrontendLimits::default()
     };
-    let failure = lower_evaluated_json(DIAMOND_JSON, &[], small);
+    let failure = crate::lower::lower_evaluated_json(DIAMOND_JSON, &[], small);
     assert_eq!(
         failure.err().map(|error| error.issues[0].code),
-        Some(FrontendIssueCode::MachineLimitExceedsProfile)
+        Some(crate::diagnostic::FrontendIssueCode::MachineLimitExceedsProfile)
     );
 }
 
@@ -336,67 +401,71 @@ fn rejects_import_escape_hash_mismatch_and_undeclared_observation() {
     let mut escaped: serde_json::Value = must(serde_json::from_slice(DECLARED_IMPORT_JSON));
     escaped["imports"][0]["relative_path"] = serde_json::Value::String(String::from("../secret"));
     let escaped = must(serde_json::to_vec(&escaped));
-    let failure = lower_evaluated_json(&escaped, &[], FrontendLimits::default());
+    let failure = crate::lower::lower_evaluated_json(
+        &escaped,
+        &[],
+        crate::profile::FrontendLimits::default(),
+    );
     assert_eq!(
         failure.err().map(|error| error.issues[0].code),
-        Some(FrontendIssueCode::InvalidImportPath)
+        Some(crate::diagnostic::FrontendIssueCode::InvalidImportPath)
     );
 
-    let failure = lower_evaluated_json(
+    let failure = crate::lower::lower_evaluated_json(
         DECLARED_IMPORT_JSON,
-        &[ObservedImport {
+        &[crate::imports::ObservedImport {
             logical_id: "defaults",
             bytes: b"changed",
         }],
-        FrontendLimits::default(),
+        crate::profile::FrontendLimits::default(),
     );
     assert_eq!(
         failure.err().map(|error| error.issues[0].code),
-        Some(FrontendIssueCode::ImportHashMismatch)
+        Some(crate::diagnostic::FrontendIssueCode::ImportHashMismatch)
     );
 
-    let failure = lower_evaluated_json(
+    let failure = crate::lower::lower_evaluated_json(
         DIAMOND_JSON,
-        &[ObservedImport {
+        &[crate::imports::ObservedImport {
             logical_id: "secret",
             bytes: b"value",
         }],
-        FrontendLimits::default(),
+        crate::profile::FrontendLimits::default(),
     );
     assert_eq!(
         failure.err().map(|error| error.issues[0].code),
-        Some(FrontendIssueCode::UndeclaredImportObservation)
+        Some(crate::diagnostic::FrontendIssueCode::UndeclaredImportObservation)
     );
 }
 
 #[test]
 fn source_and_lattice_array_order_variation_lower_to_the_same_machine() {
-    let minimal = must(lower_evaluated_json(
+    let minimal = must(crate::lower::lower_evaluated_json(
         MINIMAL_JSON,
         &[],
-        FrontendLimits::default(),
+        crate::profile::FrontendLimits::default(),
     ));
-    let source_order = must(lower_evaluated_json(
+    let source_order = must(crate::lower::lower_evaluated_json(
         SOURCE_ORDER_JSON,
         &[],
-        FrontendLimits::default(),
+        crate::profile::FrontendLimits::default(),
     ));
     assert_eq!(minimal.machine, source_order.machine);
 
-    let baseline = must(lower_evaluated_json(
+    let baseline = must(crate::lower::lower_evaluated_json(
         DIAMOND_JSON,
         &[],
-        FrontendLimits::default(),
+        crate::profile::FrontendLimits::default(),
     ));
     let mut reordered: serde_json::Value = must(serde_json::from_slice(DIAMOND_JSON));
     must_array(&mut reordered["nodes"]).reverse();
     must_array(&mut reordered["edges"]).reverse();
     must_array(&mut reordered["configs"]).reverse();
     let reordered = must(serde_json::to_vec(&reordered));
-    let candidate = must(lower_evaluated_json(
+    let candidate = must(crate::lower::lower_evaluated_json(
         &reordered,
         &[],
-        FrontendLimits::default(),
+        crate::profile::FrontendLimits::default(),
     ));
     assert_eq!(baseline.machine, candidate.machine);
     assert_eq!(baseline.import_closure, candidate.import_closure);
@@ -405,19 +474,24 @@ fn source_and_lattice_array_order_variation_lower_to_the_same_machine() {
 #[test]
 fn translation_receipts_fail_when_lowerer_or_evaluator_identity_is_stale() {
     let baseline_materials = materials(b"lowerer-v1");
-    let receipts = must(build_translation_receipts(baseline_materials));
-    must(validate_translation_receipts(&receipts, baseline_materials));
-    let stale = validate_translation_receipts(&receipts, materials(b"lowerer-v2"));
+    let receipts = must(crate::identity::build_translation_receipts(
+        baseline_materials,
+    ));
+    must(crate::identity::validate_translation_receipts(
+        &receipts,
+        baseline_materials,
+    ));
+    let stale = crate::identity::validate_translation_receipts(&receipts, materials(b"lowerer-v2"));
     assert_eq!(
         stale.err().map(|error| error.issues[0].code),
-        Some(FrontendIssueCode::StaleTranslationReceipt)
+        Some(crate::diagnostic::FrontendIssueCode::StaleTranslationReceipt)
     );
     let mut stale_evaluator = baseline_materials;
     stale_evaluator.evaluator = b"evaluator-v2";
-    let stale = validate_translation_receipts(&receipts, stale_evaluator);
+    let stale = crate::identity::validate_translation_receipts(&receipts, stale_evaluator);
     assert_eq!(
         stale.err().map(|error| error.issues[0].code),
-        Some(FrontendIssueCode::StaleTranslationReceipt)
+        Some(crate::diagnostic::FrontendIssueCode::StaleTranslationReceipt)
     );
     assert!(
         receipts
@@ -431,10 +505,12 @@ fn translation_receipts_fail_when_lowerer_or_evaluator_identity_is_stale() {
 #[test]
 fn translation_identity_chain_changes_with_selected_material_only() {
     let first_materials = materials(b"lowerer-v1");
-    let first = must(build_translation_receipts(first_materials));
+    let first = must(crate::identity::build_translation_receipts(first_materials));
     let mut changed_materials = first_materials;
     changed_materials.evaluated_output = b"output-v2";
-    let changed = must(build_translation_receipts(changed_materials));
+    let changed = must(crate::identity::build_translation_receipts(
+        changed_materials,
+    ));
     assert_ne!(
         first.evaluator.identities.evaluated_output,
         changed.evaluator.identities.evaluated_output
@@ -474,28 +550,31 @@ fn translation_identity_chain_changes_with_selected_material_only() {
 
     let mut empty = first_materials;
     empty.source = b"";
-    let failure = build_translation_receipts(empty);
+    let failure = crate::identity::build_translation_receipts(empty);
     assert_eq!(
         failure.err().map(|error| error.issues[0].code),
-        Some(FrontendIssueCode::EmptyIdentityMaterial)
+        Some(crate::diagnostic::FrontendIssueCode::EmptyIdentityMaterial)
     );
 }
 
 #[test]
 fn safe_diagnostics_are_constant_bounded_and_contain_no_raw_context() {
     let raw = "evaluation failed at /home/operator/private.ncl with credential=secret";
-    let redacted = redact_evaluator_error(raw);
-    assert_eq!(redacted.code, FrontendIssueCode::EvaluatorRejected);
+    let redacted = crate::diagnostic::redact_evaluator_error(raw);
+    assert_eq!(
+        redacted.code,
+        crate::diagnostic::FrontendIssueCode::EvaluatorRejected
+    );
     assert!(!redacted.summary.contains("/home/"));
     assert!(!redacted.summary.contains("credential=secret"));
 
     for code in [
-        FrontendIssueCode::MalformedEvaluatedValue,
-        FrontendIssueCode::ImportHashMismatch,
-        FrontendIssueCode::StaleTranslationReceipt,
+        crate::diagnostic::FrontendIssueCode::MalformedEvaluatedValue,
+        crate::diagnostic::FrontendIssueCode::ImportHashMismatch,
+        crate::diagnostic::FrontendIssueCode::StaleTranslationReceipt,
     ] {
-        let text = summary(code);
-        assert!(text.len() <= MAX_SAFE_SUMMARY_BYTES);
+        let text = crate::diagnostic::summary(code);
+        assert!(text.len() <= crate::diagnostic::MAX_SAFE_SUMMARY_BYTES);
         assert!(!text.contains("/home/"));
         assert!(!text.contains("credential"));
         assert!(!text.contains("environment value"));

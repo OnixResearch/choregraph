@@ -3,9 +3,9 @@
 extern crate alloc;
 
 #[path = "../../crates/choregraph-core/src/verified.rs"]
-mod production_verified;
+mod verified;
 
-use production_verified::effects_allowed_spec;
+use verified::{primitive::membership::effects_allowed_spec};
 use vstd::prelude::*;
 
 verus! {

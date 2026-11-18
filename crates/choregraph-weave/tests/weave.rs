@@ -19,12 +19,12 @@
 use std::collections::BTreeMap;
 
 use choregraph_history::{
-    DIGEST_BYTES, Digest, EventClass, EventDraft, HistoryGraph, HistoryLimits, ParentLink,
-    linear_lineage,
+    dag::Graph,
+    identity::{DIGEST_BYTES, Digest},
+    model::{EventClass, EventDraft, Limits, ParentLink},
+    traversal::linear_lineage,
 };
-use choregraph_weave::{
-    CanonicalKey, WeaveAdapter, WeaveError, WeaveOperation, WeaveOperationKind, WeavePolicy,
-};
+use choregraph_weave::{Adapter, CanonicalKey, Error, Operation, OperationKind, Policy};
 
 const MAX_EVENTS: u32 = 16;
 const MAX_PARENTS: u32 = 4;
@@ -56,31 +56,35 @@ fn digest(seed: u8) -> Digest {
     Digest::from_bytes([seed; DIGEST_BYTES])
 }
 
-fn policy() -> WeavePolicy {
-    WeavePolicy::new(MAX_NODES, MAX_FAN_IN).expect("positive weave policy")
+fn policy() -> Policy {
+    Policy::new(choregraph_weave::Limits {
+        max_nodes: MAX_NODES,
+        max_parent_fan_in: MAX_FAN_IN,
+    })
+    .expect("positive weave policy")
 }
 
 #[test]
 fn generic_add_move_activate_and_bookmark_match_reviewed_structural_behavior() {
-    let adapter = WeaveAdapter::<TestKey>::new(policy());
+    let adapter = Adapter::<TestKey>::new(policy());
     let root = adapter
         .apply(
             CURRENT_GENERATION,
-            WeaveOperation::Add {
+            Operation::Add {
                 key: TestKey(ROOT_KEY),
                 parents: Vec::new(),
                 content_identity: digest(ROOT_SEED),
             },
         )
         .expect("root add");
-    assert_eq!(root.receipt.operation, WeaveOperationKind::Add);
+    assert_eq!(root.receipt.operation, OperationKind::Add);
     assert_eq!(root.receipt.generation, NEXT_GENERATION);
 
     let child = root
         .adapter
         .apply(
             root.receipt.generation,
-            WeaveOperation::Add {
+            Operation::Add {
                 key: TestKey(CHILD_KEY),
                 parents: vec![TestKey(ROOT_KEY)],
                 content_identity: digest(CHILD_SEED),
@@ -91,7 +95,7 @@ fn generic_add_move_activate_and_bookmark_match_reviewed_structural_behavior() {
         .adapter
         .apply(
             child.receipt.generation,
-            WeaveOperation::SetActive {
+            Operation::SetActive {
                 key: TestKey(CHILD_KEY),
                 active: true,
             },
@@ -101,7 +105,7 @@ fn generic_add_move_activate_and_bookmark_match_reviewed_structural_behavior() {
         .adapter
         .apply(
             activated.receipt.generation,
-            WeaveOperation::SetBookmarked {
+            Operation::SetBookmarked {
                 key: TestKey(CHILD_KEY),
                 bookmarked: true,
             },
@@ -111,7 +115,7 @@ fn generic_add_move_activate_and_bookmark_match_reviewed_structural_behavior() {
         .adapter
         .apply(
             bookmarked.receipt.generation,
-            WeaveOperation::Add {
+            Operation::Add {
                 key: TestKey(OTHER_KEY),
                 parents: Vec::new(),
                 content_identity: digest(SCHEMA_SEED),
@@ -122,7 +126,7 @@ fn generic_add_move_activate_and_bookmark_match_reviewed_structural_behavior() {
         .adapter
         .apply(
             other.receipt.generation,
-            WeaveOperation::Move {
+            Operation::Move {
                 key: TestKey(CHILD_KEY),
                 parents: vec![TestKey(OTHER_KEY)],
             },
@@ -142,11 +146,11 @@ fn generic_add_move_activate_and_bookmark_match_reviewed_structural_behavior() {
 
 #[test]
 fn stale_missing_cycle_and_no_change_reject_without_topology_change() {
-    let adapter = WeaveAdapter::<TestKey>::new(policy());
+    let adapter = Adapter::<TestKey>::new(policy());
     let root = adapter
         .apply(
             CURRENT_GENERATION,
-            WeaveOperation::Add {
+            Operation::Add {
                 key: TestKey(ROOT_KEY),
                 parents: Vec::new(),
                 content_identity: digest(ROOT_SEED),
@@ -157,7 +161,7 @@ fn stale_missing_cycle_and_no_change_reject_without_topology_change() {
         .adapter
         .apply(
             root.receipt.generation,
-            WeaveOperation::Add {
+            Operation::Add {
                 key: TestKey(CHILD_KEY),
                 parents: vec![TestKey(ROOT_KEY)],
                 content_identity: digest(CHILD_SEED),
@@ -169,63 +173,67 @@ fn stale_missing_cycle_and_no_change_reject_without_topology_change() {
     assert!(matches!(
         adapter.apply(
             adapter.generation(),
-            WeaveOperation::SetActive {
+            Operation::SetActive {
                 key: TestKey(ROOT_KEY),
                 active: false,
             }
         ),
-        Err(WeaveError::NoChange)
+        Err(Error::NoChange)
     ));
     assert!(matches!(
         adapter.apply(
             adapter.generation(),
-            WeaveOperation::Move {
+            Operation::Move {
                 key: TestKey(CHILD_KEY),
                 parents: vec![TestKey(ROOT_KEY)],
             }
         ),
-        Err(WeaveError::NoChange)
+        Err(Error::NoChange)
     ));
     assert!(matches!(
         adapter.apply(
             CURRENT_GENERATION,
-            WeaveOperation::SetActive {
+            Operation::SetActive {
                 key: TestKey(CHILD_KEY),
                 active: true,
             }
         ),
-        Err(WeaveError::StaleGeneration { .. })
+        Err(Error::StaleGeneration { .. })
     ));
     assert!(matches!(
         adapter.apply(
             adapter.generation(),
-            WeaveOperation::SetActive {
+            Operation::SetActive {
                 key: TestKey(MISSING_KEY),
                 active: true,
             }
         ),
-        Err(WeaveError::NodeMissing)
+        Err(Error::NodeMissing)
     ));
     assert!(matches!(
         adapter.apply(
             adapter.generation(),
-            WeaveOperation::Move {
+            Operation::Move {
                 key: TestKey(ROOT_KEY),
                 parents: vec![TestKey(CHILD_KEY)],
             }
         ),
-        Err(WeaveError::InvalidParentage)
+        Err(Error::InvalidParentage)
     ));
     assert_eq!(
         before,
         adapter.snapshot().expect("unchanged snapshot").identity
     );
 
-    let one_node_policy = WeavePolicy::new(1, MAX_FAN_IN).expect("one-node policy");
-    let one_node = WeaveAdapter::<TestKey>::new(one_node_policy)
+    let one_node_policy = Policy::new(choregraph_weave::Limits {
+        max_nodes: 1,
+        max_parent_fan_in: MAX_FAN_IN,
+    })
+    .expect("one-node policy");
+    let one_node = Adapter::<TestKey>::new(one_node_policy)
         .apply(
             CURRENT_GENERATION,
-            WeaveOperation::Add {
+            Operation::Add {
                 key: TestKey(ROOT_KEY),
                 parents: Vec::new(),
                 content_identity: digest(ROOT_SEED),
@@ -235,27 +243,26 @@ fn stale_missing_cycle_and_no_change_reject_without_topology_change() {
     assert!(matches!(
         one_node.adapter.apply(
             one_node.receipt.generation,
-            WeaveOperation::Add {
+            Operation::Add {
                 key: TestKey(CHILD_KEY),
                 parents: vec![TestKey(ROOT_KEY)],
                 content_identity: digest(CHILD_SEED),
             }
         ),
-        Err(WeaveError::NodeLimitExceeded { .. })
+        Err(Error::NodeLimitExceeded { .. })
     ));
 }
 
 #[test]
 fn admitted_history_projects_to_metadata_only_derived_topology() {
-    let limits = HistoryLimits::new(
-        MAX_EVENTS,
-        MAX_PARENTS,
-        MAX_METADATA,
-        MAX_LABEL,
-        MAX_PROJECTION,
-    )
-    .expect("limits");
-    let graph = HistoryGraph::new(limits).expect("graph");
+    let limits = Limits {
+        max_events: MAX_EVENTS,
+        max_parents: MAX_PARENTS,
+        max_metadata_entries: MAX_METADATA,
+        max_label_bytes: MAX_LABEL,
+        max_projection_events: MAX_PROJECTION,
+    };
+    let graph = Graph::new(limits).expect("graph");
     let root = graph
         .admit(EventDraft::v1(
             EventClass::Application,
@@ -279,7 +286,7 @@ fn admitted_history_projects_to_metadata_only_derived_topology() {
     let lineage = linear_lineage(&child.graph, child.event, &BTreeMap::new(), MAX_PROJECTION)
         .expect("lineage");
     let adapter =
-        WeaveAdapter::from_history(&child.graph, &lineage, policy()).expect("derived topology");
+        Adapter::from_history(&child.graph, &lineage, policy()).expect("derived topology");
     let snapshot = adapter.snapshot().expect("derived snapshot");
     assert_eq!(
         snapshot.source_history_identity,

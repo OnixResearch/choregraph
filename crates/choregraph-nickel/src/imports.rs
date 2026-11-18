@@ -6,17 +6,11 @@
     compound_condition,
     function_length,
     missing_const_fn,
-    non_trait_imports,
-    numeric_units,
     raw_arithmetic_overflow,
     reason = "import closure checks retain explicit bounded collection and digest compatibility shapes"
 )]
 
 // r[impl choregraph.nickel.imports]
-use crate::diagnostic::{FrontendFailure, FrontendIssueCode};
-use crate::model::{ImportDeclaration, ImportMediaClass};
-use crate::profile::FrontendLimits;
-use std::collections::{BTreeMap, BTreeSet};
 
 const IMPORT_CLOSURE_CONTEXT: &str = "choregraph import closure v1";
 const LENGTH_FRAME_BYTES: usize = size_of::<u64>();
@@ -36,8 +30,8 @@ pub struct ValidatedImportClosure {
     pub total_bytes: usize,
 }
 
-fn fail(code: FrontendIssueCode) -> FrontendFailure {
-    FrontendFailure::one(code)
+fn fail(code: crate::diagnostic::FrontendIssueCode) -> crate::diagnostic::FrontendFailure {
+    crate::diagnostic::FrontendFailure::one(code)
 }
 
 fn safe_identifier(value: &str, maximum: usize) -> bool {
@@ -74,91 +68,126 @@ fn valid_blake3(value: &str) -> bool {
             .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
 }
 
-fn media_label(media: &ImportMediaClass) -> &'static str {
-    match media {
-        ImportMediaClass::NickelData => "nickel-data",
-        ImportMediaClass::Utf8Text => "utf8-text",
-        ImportMediaClass::PreservesPacked => "preserves-packed",
+fn media_label(
+    media: &crate::model::dependency::ImportMediaClass,
+) -> Result<&'static str, crate::diagnostic::FrontendFailure> {
+    if matches!(
+        media,
+        crate::model::dependency::ImportMediaClass::NickelData
+    ) {
+        return Ok("nickel-data");
     }
+    if matches!(media, crate::model::dependency::ImportMediaClass::Utf8Text) {
+        return Ok("utf8-text");
+    }
+    if matches!(
+        media,
+        crate::model::dependency::ImportMediaClass::PreservesPacked
+    ) {
+        return Ok("preserves-packed");
+    }
+    Err(fail(
+        crate::diagnostic::FrontendIssueCode::UnsupportedImportMediaClass,
+    ))
 }
 
-fn frame(material: &mut Vec<u8>, value: &[u8]) -> Result<(), FrontendFailure> {
-    let length = u64::try_from(value.len())
-        .map_err(|_| fail(FrontendIssueCode::ImportTotalBytesExceeded))?;
-    material.extend_from_slice(&length.to_le_bytes()[..LENGTH_FRAME_BYTES]);
+fn frame(material: &mut Vec<u8>, value: &[u8]) -> Result<(), crate::diagnostic::FrontendFailure> {
+    let length_bytes = u64::try_from(value.len())
+        .map_err(|_| fail(crate::diagnostic::FrontendIssueCode::ImportTotalBytesExceeded))?;
+    material.extend_from_slice(&length_bytes.to_le_bytes()[..LENGTH_FRAME_BYTES]);
     material.extend_from_slice(value);
     Ok(())
 }
 
 pub fn validate_import_closure(
-    declarations: &[ImportDeclaration],
+    declarations: &[crate::model::dependency::ImportDeclaration],
     observations: &[ObservedImport<'_>],
-    limits: FrontendLimits,
-) -> Result<ValidatedImportClosure, FrontendFailure> {
+    limits: crate::profile::FrontendLimits,
+) -> Result<ValidatedImportClosure, crate::diagnostic::FrontendFailure> {
     if declarations.len() > limits.max_imports {
-        return Err(fail(FrontendIssueCode::TooManyImports));
+        return Err(fail(crate::diagnostic::FrontendIssueCode::TooManyImports));
     }
-    let mut declared = BTreeMap::new();
+    let mut declared = std::collections::BTreeMap::new();
     for declaration in declarations {
         if !safe_identifier(&declaration.logical_id, limits.max_import_identifier_bytes)
             || !safe_identifier(&declaration.root_id, limits.max_import_identifier_bytes)
         {
-            return Err(fail(FrontendIssueCode::InvalidImportIdentifier));
+            return Err(fail(
+                crate::diagnostic::FrontendIssueCode::InvalidImportIdentifier,
+            ));
         }
         if !safe_relative_path(&declaration.relative_path, limits.max_import_path_bytes) {
-            return Err(fail(FrontendIssueCode::InvalidImportPath));
+            return Err(fail(
+                crate::diagnostic::FrontendIssueCode::InvalidImportPath,
+            ));
         }
-        let declared_limit = usize::try_from(declaration.max_bytes)
-            .map_err(|_| fail(FrontendIssueCode::ImportByteLimitExceeded))?;
-        if declared_limit == 0 || declared_limit > limits.max_import_bytes {
-            return Err(fail(FrontendIssueCode::ImportByteLimitExceeded));
+        let declared_limit_bytes = usize::try_from(declaration.max_bytes)
+            .map_err(|_| fail(crate::diagnostic::FrontendIssueCode::ImportByteLimitExceeded))?;
+        if declared_limit_bytes == 0 || declared_limit_bytes > limits.max_import_bytes {
+            return Err(fail(
+                crate::diagnostic::FrontendIssueCode::ImportByteLimitExceeded,
+            ));
         }
         if !valid_blake3(&declaration.expected_blake3) {
-            return Err(fail(FrontendIssueCode::InvalidImportHash));
+            return Err(fail(
+                crate::diagnostic::FrontendIssueCode::InvalidImportHash,
+            ));
         }
         if declared
             .insert(declaration.logical_id.as_str(), declaration)
             .is_some()
         {
-            return Err(fail(FrontendIssueCode::DuplicateImportDeclaration));
+            return Err(fail(
+                crate::diagnostic::FrontendIssueCode::DuplicateImportDeclaration,
+            ));
         }
     }
 
-    let mut observed = BTreeMap::new();
+    let mut observed = std::collections::BTreeMap::new();
     for observation in observations {
         if observed
             .insert(observation.logical_id, observation.bytes)
             .is_some()
         {
-            return Err(fail(FrontendIssueCode::DuplicateImportObservation));
+            return Err(fail(
+                crate::diagnostic::FrontendIssueCode::DuplicateImportObservation,
+            ));
         }
         if !declared.contains_key(observation.logical_id) {
-            return Err(fail(FrontendIssueCode::UndeclaredImportObservation));
+            return Err(fail(
+                crate::diagnostic::FrontendIssueCode::UndeclaredImportObservation,
+            ));
         }
     }
 
     let mut total_bytes = 0usize;
     let mut canonical_material = Vec::new();
-    let mut seen = BTreeSet::new();
+    let mut seen = std::collections::BTreeSet::new();
     for (logical_id, declaration) in declared {
         let bytes = observed
             .get(logical_id)
             .copied()
-            .ok_or_else(|| fail(FrontendIssueCode::MissingImportObservation))?;
-        let declared_limit = usize::try_from(declaration.max_bytes)
-            .map_err(|_| fail(FrontendIssueCode::ImportByteLimitExceeded))?;
-        if bytes.len() > declared_limit {
-            return Err(fail(FrontendIssueCode::ImportByteLimitExceeded));
+            .ok_or_else(|| fail(crate::diagnostic::FrontendIssueCode::MissingImportObservation))?;
+        let declared_limit_bytes = usize::try_from(declaration.max_bytes)
+            .map_err(|_| fail(crate::diagnostic::FrontendIssueCode::ImportByteLimitExceeded))?;
+        if bytes.len() > declared_limit_bytes {
+            return Err(fail(
+                crate::diagnostic::FrontendIssueCode::ImportByteLimitExceeded,
+            ));
         }
         total_bytes = total_bytes
             .checked_add(bytes.len())
-            .ok_or_else(|| fail(FrontendIssueCode::ImportTotalBytesExceeded))?;
+            .ok_or_else(|| fail(crate::diagnostic::FrontendIssueCode::ImportTotalBytesExceeded))?;
         if total_bytes > limits.max_total_import_bytes {
-            return Err(fail(FrontendIssueCode::ImportTotalBytesExceeded));
+            return Err(fail(
+                crate::diagnostic::FrontendIssueCode::ImportTotalBytesExceeded,
+            ));
         }
-        let observed_hash = blake3::hash(bytes).to_hex().to_string();
-        if observed_hash != declaration.expected_blake3 {
-            return Err(fail(FrontendIssueCode::ImportHashMismatch));
+        let observed_hash = blake3::hash(bytes).to_hex();
+        if observed_hash.as_str() != declaration.expected_blake3 {
+            return Err(fail(
+                crate::diagnostic::FrontendIssueCode::ImportHashMismatch,
+            ));
         }
         frame(&mut canonical_material, logical_id.as_bytes())?;
         frame(&mut canonical_material, declaration.root_id.as_bytes())?;
@@ -168,14 +197,16 @@ pub fn validate_import_closure(
         )?;
         frame(
             &mut canonical_material,
-            media_label(&declaration.media_class).as_bytes(),
+            media_label(&declaration.media_class)?.as_bytes(),
         )?;
         frame(
             &mut canonical_material,
             declaration.expected_blake3.as_bytes(),
         )?;
         if !seen.insert(logical_id) {
-            return Err(fail(FrontendIssueCode::DuplicateImportDeclaration));
+            return Err(fail(
+                crate::diagnostic::FrontendIssueCode::DuplicateImportDeclaration,
+            ));
         }
     }
     let blake3 = blake3::derive_key(IMPORT_CLOSURE_CONTEXT, &canonical_material);

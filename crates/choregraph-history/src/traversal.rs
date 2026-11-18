@@ -1,6 +1,7 @@
 // r[impl choregraph.history.lineage]
 // r[impl choregraph.history.lineage.linear]
 // r[impl choregraph.history.lineage.ambiguous]
+
 const PROJECTION_IDENTITY_DOMAIN: &[u8] = b"choregraph.history.projection.v1";
 
 /// Projection class. Parent order is never treated as a semantic choice.
@@ -62,22 +63,22 @@ impl Projection {
 
 /// Returns the bounded ancestor closure of one head.
 pub fn ancestor_closure(
-    graph: &crate::dag::HistoryGraph,
+    graph: &crate::dag::Graph,
     head: crate::identity::EventId,
     maximum: u32,
-) -> Result<Projection, crate::model::HistoryError> {
+) -> Result<Projection, crate::model::Error> {
     validate_bound(graph, maximum)?;
     debug_assert!(maximum > 0);
     debug_assert!(maximum <= graph.limits().max_projection_events);
     if !graph.contains(head) {
-        return Err(crate::model::HistoryError::HeadMissing { event: head });
+        return Err(crate::model::Error::HeadMissing { event: head });
     }
     let mut state = ClosureState::new(graph, head, maximum)?;
     while let Some((current, is_exit)) = state.pending.pop() {
         if is_exit {
             let ordered_count = count_or_error(state.ordered.len(), "projection_events")?;
             if ordered_count >= maximum {
-                return Err(crate::model::HistoryError::ProjectionLimitExceeded {
+                return Err(crate::model::Error::ProjectionLimitExceeded {
                     observed: ordered_count,
                     maximum,
                 });
@@ -90,7 +91,7 @@ pub fn ancestor_closure(
         }
         let expanded_count = count_or_error(state.expanded.len(), "projection_expanded")?;
         if expanded_count > maximum {
-            return Err(crate::model::HistoryError::ProjectionLimitExceeded {
+            return Err(crate::model::Error::ProjectionLimitExceeded {
                 observed: expanded_count,
                 maximum,
             });
@@ -98,7 +99,7 @@ pub fn ancestor_closure(
         state.push(current, true)?;
         let event = graph
             .event(current)
-            .ok_or(crate::model::HistoryError::HeadMissing { event: current })?;
+            .ok_or(crate::model::Error::HeadMissing { event: current })?;
         for parent in event.content().parents.iter().rev() {
             state.push(parent.event, false)?;
         }
@@ -113,16 +114,16 @@ pub fn ancestor_closure(
 
 /// Returns one explicit root-to-head lineage.
 pub fn linear_lineage(
-    graph: &crate::dag::HistoryGraph,
+    graph: &crate::dag::Graph,
     head: crate::identity::EventId,
     choices: &ParentChoices,
     maximum: u32,
-) -> Result<Projection, crate::model::HistoryError> {
+) -> Result<Projection, crate::model::Error> {
     validate_bound(graph, maximum)?;
     debug_assert!(maximum > 0);
     debug_assert!(maximum <= graph.limits().max_projection_events);
     if !graph.contains(head) {
-        return Err(crate::model::HistoryError::HeadMissing { event: head });
+        return Err(crate::model::Error::HeadMissing { event: head });
     }
     let reversed_reserve = output_reserve(graph, maximum)?;
     let mut reversed = alloc::vec::Vec::with_capacity(reversed_reserve);
@@ -130,18 +131,18 @@ pub fn linear_lineage(
     let mut current = head;
     loop {
         if !visited.insert(current) {
-            return Err(crate::model::HistoryError::Cycle { event: current });
+            return Err(crate::model::Error::Cycle { event: current });
         }
         let visited_count = count_or_error(visited.len(), "lineage_visited")?;
         if visited_count > maximum {
-            return Err(crate::model::HistoryError::ProjectionLimitExceeded {
+            return Err(crate::model::Error::ProjectionLimitExceeded {
                 observed: visited_count,
                 maximum,
             });
         }
         let reversed_count = count_or_error(reversed.len(), "lineage_events")?;
         if reversed_count >= maximum {
-            return Err(crate::model::HistoryError::ProjectionLimitExceeded {
+            return Err(crate::model::Error::ProjectionLimitExceeded {
                 observed: reversed_count,
                 maximum,
             });
@@ -149,7 +150,7 @@ pub fn linear_lineage(
         reversed.push(current);
         let event = graph
             .event(current)
-            .ok_or(crate::model::HistoryError::HeadMissing { event: current })?;
+            .ok_or(crate::model::Error::HeadMissing { event: current })?;
         let parents = &event.content().parents;
         let selected = match parents.as_slice() {
             [] => break,
@@ -158,9 +159,9 @@ pub fn linear_lineage(
                 let selected = choices
                     .get(&current)
                     .copied()
-                    .ok_or(crate::model::HistoryError::AmbiguousLineage { event: current })?;
+                    .ok_or(crate::model::Error::AmbiguousLineage { event: current })?;
                 if !parents.iter().any(|parent| parent.event == selected) {
-                    return Err(crate::model::HistoryError::InvalidParentChoice {
+                    return Err(crate::model::Error::InvalidParentChoice {
                         event: current,
                         selected,
                     });
@@ -183,21 +184,11 @@ struct ClosureState {
 
 impl ClosureState {
     fn new(
-        graph: &crate::dag::HistoryGraph,
+        graph: &crate::dag::Graph,
         head: crate::identity::EventId,
         maximum: u32,
-    ) -> Result<Self, crate::model::HistoryError> {
-        let parent_slots = graph.limits().max_parents.checked_add(1).ok_or(
-            crate::model::HistoryError::CountOverflow {
-                field: "projection_parent_slots",
-            },
-        )?;
-        let pending_max_entries =
-            maximum
-                .checked_mul(parent_slots)
-                .ok_or(crate::model::HistoryError::CountOverflow {
-                    field: "projection_pending",
-                })?;
+    ) -> Result<Self, crate::model::Error> {
+        let pending_max_entries = pending_limit(graph, maximum)?;
         let ordered_reserve = output_reserve(graph, maximum)?;
         Ok(Self {
             pending: alloc::vec![(head, false)],
@@ -211,10 +202,10 @@ impl ClosureState {
         &mut self,
         event: crate::identity::EventId,
         is_exit: bool,
-    ) -> Result<(), crate::model::HistoryError> {
+    ) -> Result<(), crate::model::Error> {
         let pending_count = count_or_error(self.pending.len(), "projection_pending")?;
         if pending_count >= self.pending_max_entries {
-            return Err(crate::model::HistoryError::ProjectionLimitExceeded {
+            return Err(crate::model::Error::ProjectionLimitExceeded {
                 observed: pending_count,
                 maximum: self.pending_max_entries,
             });
@@ -224,23 +215,36 @@ impl ClosureState {
     }
 }
 
-fn output_reserve(
-    graph: &crate::dag::HistoryGraph,
-    maximum: u32,
-) -> Result<usize, crate::model::HistoryError> {
+fn pending_limit(graph: &crate::dag::Graph, maximum: u32) -> Result<u32, crate::model::Error> {
+    let parent_slots =
+        graph
+            .limits()
+            .max_parents
+            .checked_add(1)
+            .ok_or(crate::model::Error::CountOverflow {
+                field: "projection_parent_slots",
+            })?;
+    maximum
+        .checked_mul(parent_slots)
+        .ok_or(crate::model::Error::CountOverflow {
+            field: "projection_pending",
+        })
+}
+
+fn output_reserve(graph: &crate::dag::Graph, maximum: u32) -> Result<usize, crate::model::Error> {
     usize::try_from(core::cmp::min(maximum, graph.len())).map_err(|_| {
-        crate::model::HistoryError::CountOverflow {
+        crate::model::Error::CountOverflow {
             field: "projection_capacity",
         }
     })
 }
 
 const fn validate_bound(
-    graph: &crate::dag::HistoryGraph,
+    graph: &crate::dag::Graph,
     maximum: u32,
-) -> Result<(), crate::model::HistoryError> {
+) -> Result<(), crate::model::Error> {
     if maximum == 0 || maximum > graph.limits().max_projection_events {
-        return Err(crate::model::HistoryError::ProjectionLimitExceeded {
+        return Err(crate::model::Error::ProjectionLimitExceeded {
             observed: maximum,
             maximum: graph.limits().max_projection_events,
         });
@@ -248,13 +252,13 @@ const fn validate_bound(
     Ok(())
 }
 
-fn count_or_error(length: usize, field: &'static str) -> Result<u32, crate::model::HistoryError> {
-    crate::identity::count_from_length(length)
-        .ok_or(crate::model::HistoryError::CountOverflow { field })
+fn count_or_error(item_count: usize, field: &'static str) -> Result<u32, crate::model::Error> {
+    crate::identity::count_from_length(item_count)
+        .ok_or(crate::model::Error::CountOverflow { field })
 }
 
 fn build(
-    graph: &crate::dag::HistoryGraph,
+    graph: &crate::dag::Graph,
     kind: ProjectionKind,
     head: crate::identity::EventId,
     events: alloc::vec::Vec<crate::identity::EventId>,

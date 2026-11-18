@@ -37,7 +37,7 @@ The `ReplayDecision` type has no intent field. The fold still lets production `s
 
 The public folds are in `crates/choregraph-core/src/transition.rs`. Each fold calls the same exported transition wrapper used for live decisions.
 
-The Verus trace specifications are in `crates/choregraph-core/src/verified/trace.rs`. They recursively apply `indexed_step_accepts_spec` and `indexed_step_next_spec` from the production-called kernel.
+The Verus trace namespace root is `crates/choregraph-core/src/verified/trace.rs`. Its `specification` child owns the recursive fold specifications; its `theorem` child owns their proofs. They recursively apply `kernel::decision::indexed_step_accepts_spec` and `kernel::decision::indexed_step_next_spec` from the production-called verified kernel, without a root reexport or second transition table.
 
 The positive proof root includes both production sources by path:
 
@@ -67,7 +67,8 @@ The proof rail rejects false claims about:
 - empty-trace state mutation;
 - safety without an invariant initial state;
 - skipping the first denied event;
-- dispatch authority from replay.
+- dispatch authority from replay;
+- dropping a suspension fact from an accepted prefix.
 
 Executable tests also cover malformed node identifiers, unknown nodes, invalid transitions, terminal mutation, reordered dependencies, stale bindings, and oversized traces.
 
@@ -101,6 +102,14 @@ Run the focused rail:
 ```text
 nix build .#checks.x86_64-linux.trace-replay-verus --no-link -L
 ```
+
+On failure, the Nix rail reports the failing stage and any relevant captured
+verifier diagnostics instead of leaving an empty build log.
+A source-digest failure names the file and both digests. It is not permission
+to replace a recorded digest: qualify the selected source and rerun both
+positive and negative proofs before refreshing the manifest and its generated
+digest. Until that succeeds, the prior `verified` manifest does not attest to
+changed source bytes.
 
 Run the executable and target rails:
 

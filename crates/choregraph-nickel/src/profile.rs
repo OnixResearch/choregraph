@@ -2,12 +2,10 @@
 #![allow(
     unknown_lints,
     explicit_defaults,
-    non_trait_imports,
     reason = "the closed profile publishes explicit reviewed defaults through the existing API"
 )]
 
 // r[impl choregraph.nickel.profile]
-use choregraph_core::AdmissionLimits;
 
 pub const DEFAULT_MAX_EVALUATED_BYTES: usize = 1_048_576;
 pub const DEFAULT_MAX_IMPORTS: usize = 128;
@@ -24,7 +22,7 @@ pub struct FrontendLimits {
     pub max_total_import_bytes: usize,
     pub max_import_identifier_bytes: usize,
     pub max_import_path_bytes: usize,
-    pub machine_ceiling: AdmissionLimits,
+    pub machine_ceiling: choregraph_core::model::capacity::AdmissionLimits,
 }
 
 impl Default for FrontendLimits {
@@ -36,7 +34,7 @@ impl Default for FrontendLimits {
             max_total_import_bytes: DEFAULT_MAX_TOTAL_IMPORT_BYTES,
             max_import_identifier_bytes: DEFAULT_MAX_IMPORT_IDENTIFIER_BYTES,
             max_import_path_bytes: DEFAULT_MAX_IMPORT_PATH_BYTES,
-            machine_ceiling: AdmissionLimits::default(),
+            machine_ceiling: choregraph_core::model::capacity::AdmissionLimits::default(),
         }
     }
 }

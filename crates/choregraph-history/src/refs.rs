@@ -1,6 +1,7 @@
 // r[impl choregraph.history.branch_refs]
 // r[impl choregraph.history.branch_refs.advance]
 // r[impl choregraph.history.branch_refs.stale]
+
 const BRANCH_IDENTITY_DOMAIN: &[u8] = b"choregraph.history.branch.v1";
 const SNAPSHOT_IDENTITY_DOMAIN: &[u8] = b"choregraph.history.snapshot.v1";
 const CURSOR_IDENTITY_DOMAIN: &[u8] = b"choregraph.history.cursor.v1";
@@ -40,36 +41,36 @@ pub struct ReferenceMutationPlan {
 
 /// Plans one generation-fenced branch advance.
 pub fn plan_branch_advance(
-    graph: &crate::dag::HistoryGraph,
+    graph: &crate::dag::Graph,
     current: &BranchRef,
     expected_generation: u64,
     expected_head: crate::identity::EventId,
     proposed_head: crate::identity::EventId,
-) -> Result<ReferenceMutationPlan, crate::model::HistoryError> {
+) -> Result<ReferenceMutationPlan, crate::model::Error> {
     validate_branch(graph, current)?;
     debug_assert!(!current.name.is_empty());
     debug_assert!(graph.contains(current.head));
     if current.generation != expected_generation {
-        return Err(crate::model::HistoryError::StaleGeneration {
+        return Err(crate::model::Error::StaleGeneration {
             expected: current.generation,
             observed: expected_generation,
         });
     }
     if current.head != expected_head {
-        return Err(crate::model::HistoryError::StaleHead);
+        return Err(crate::model::Error::StaleHead);
     }
     if !graph.contains(proposed_head) {
-        return Err(crate::model::HistoryError::HeadMissing {
+        return Err(crate::model::Error::HeadMissing {
             event: proposed_head,
         });
     }
     if proposed_head == current.head {
-        return Err(crate::model::HistoryError::NoChange);
+        return Err(crate::model::Error::NoChange);
     }
     let generation = current
         .generation
         .checked_add(1)
-        .ok_or(crate::model::HistoryError::GenerationOverflow)?;
+        .ok_or(crate::model::Error::GenerationOverflow)?;
     Ok(ReferenceMutationPlan {
         before: current.clone(),
         after: BranchRef {
@@ -96,42 +97,32 @@ pub struct Snapshot {
 impl Snapshot {
     /// Derives a snapshot without granting storage authority.
     pub fn derive(
-        graph: &crate::dag::HistoryGraph,
+        graph: &crate::dag::Graph,
         branch: &BranchRef,
         projection: &crate::traversal::Projection,
         policy_identity: crate::identity::Digest,
-    ) -> Result<Self, crate::model::HistoryError> {
+    ) -> Result<Self, crate::model::Error> {
         validate_branch(graph, branch)?;
         if branch.head != projection.head() {
-            return Err(crate::model::HistoryError::StaleHead);
+            return Err(crate::model::Error::StaleHead);
         }
-        let event_count = crate::identity::count_from_length(projection.events().len()).ok_or(
-            crate::model::HistoryError::CountOverflow {
-                field: "snapshot_events",
-            },
-        )?;
-        let graph_identity = graph.identity();
-        let branch_identity = branch.identity();
-        let projection_identity = projection.identity();
-        let identity = derive_snapshot_identity(&SnapshotIdentityMaterial {
-            graph: graph_identity,
-            branch: branch_identity,
-            generation: branch.generation,
-            policy: policy_identity,
-            projection: projection_identity,
-            head: branch.head,
-            event_count,
-        });
-        Ok(Self {
-            graph_identity,
-            branch_identity,
-            generation: branch.generation,
-            policy_identity,
-            projection_identity,
-            head: branch.head,
-            event_count,
+        let material =
+            SnapshotIdentityMaterial::from_inputs(graph, branch, projection, policy_identity)?;
+        Ok(Self::from_material(material))
+    }
+
+    fn from_material(material: SnapshotIdentityMaterial) -> Self {
+        let identity = derive_snapshot_identity(&material);
+        Self {
+            graph_identity: material.graph,
+            branch_identity: material.branch,
+            generation: material.generation,
+            policy_identity: material.policy,
+            projection_identity: material.projection,
+            head: material.head,
+            event_count: material.event_count,
             identity,
-        })
+        }
     }
 }
 
@@ -151,19 +142,19 @@ pub struct Cursor {
 
 impl Cursor {
     /// Creates a cursor inside the selected snapshot.
-    pub fn derive(snapshot: &Snapshot, position: u32) -> Result<Self, crate::model::HistoryError> {
+    pub fn derive(snapshot: &Snapshot, position: u32) -> Result<Self, crate::model::Error> {
         if position > snapshot.event_count {
-            return Err(crate::model::HistoryError::CursorOutOfBounds {
+            return Err(crate::model::Error::CursorOutOfBounds {
                 position,
-                length: snapshot.event_count,
+                event_count: snapshot.event_count,
             });
         }
-        let mut hasher = blake3::Hasher::new();
-        crate::identity::update_bytes(&mut hasher, CURSOR_IDENTITY_DOMAIN);
-        crate::identity::update_digest(&mut hasher, snapshot.identity);
-        crate::identity::update_count(&mut hasher, position);
-        let identity = crate::identity::Digest::from_bytes(*hasher.finalize().as_bytes());
-        Ok(Self {
+        Ok(Self::from_snapshot(snapshot, position))
+    }
+
+    fn from_snapshot(snapshot: &Snapshot, position: u32) -> Self {
+        let identity = cursor_identity(snapshot.identity, position);
+        Self {
             snapshot_identity: snapshot.identity,
             graph_identity: snapshot.graph_identity,
             branch_identity: snapshot.branch_identity,
@@ -173,36 +164,44 @@ impl Cursor {
             head: snapshot.head,
             position,
             identity,
-        })
+        }
     }
 }
 
+fn cursor_identity(
+    snapshot_identity: crate::identity::Digest,
+    position: u32,
+) -> crate::identity::Digest {
+    let mut hasher = blake3::Hasher::new();
+    crate::identity::update_bytes(&mut hasher, CURSOR_IDENTITY_DOMAIN);
+    crate::identity::update_digest(&mut hasher, snapshot_identity);
+    crate::identity::update_count(&mut hasher, position);
+    crate::identity::Digest::from_bytes(*hasher.finalize().as_bytes())
+}
+
 /// Validates that a cursor still belongs to the exact snapshot.
-pub fn validate_cursor(
-    cursor: &Cursor,
-    snapshot: &Snapshot,
-) -> Result<(), crate::model::HistoryError> {
+pub fn validate_cursor(cursor: &Cursor, snapshot: &Snapshot) -> Result<(), crate::model::Error> {
     let expected = Cursor::derive(snapshot, cursor.position)?;
     if expected != *cursor {
-        return Err(crate::model::HistoryError::CursorMismatch);
+        return Err(crate::model::Error::CursorMismatch);
     }
     Ok(())
 }
 
 fn validate_branch(
-    graph: &crate::dag::HistoryGraph,
+    graph: &crate::dag::Graph,
     branch: &BranchRef,
-) -> Result<(), crate::model::HistoryError> {
+) -> Result<(), crate::model::Error> {
     let name_bytes = crate::identity::count_from_length(branch.name.len()).ok_or(
-        crate::model::HistoryError::CountOverflow {
+        crate::model::Error::CountOverflow {
             field: "branch_name",
         },
     )?;
     if branch.name.is_empty() || name_bytes > graph.limits().max_label_bytes {
-        return Err(crate::model::HistoryError::InvalidBranchName);
+        return Err(crate::model::Error::InvalidBranchName);
     }
     if !graph.contains(branch.head) {
-        return Err(crate::model::HistoryError::HeadMissing { event: branch.head });
+        return Err(crate::model::Error::HeadMissing { event: branch.head });
     }
     Ok(())
 }
@@ -215,6 +214,30 @@ struct SnapshotIdentityMaterial {
     projection: crate::identity::Digest,
     head: crate::identity::EventId,
     event_count: u32,
+}
+
+impl SnapshotIdentityMaterial {
+    fn from_inputs(
+        graph: &crate::dag::Graph,
+        branch: &BranchRef,
+        projection: &crate::traversal::Projection,
+        policy: crate::identity::Digest,
+    ) -> Result<Self, crate::model::Error> {
+        let event_count = crate::identity::count_from_length(projection.events().len()).ok_or(
+            crate::model::Error::CountOverflow {
+                field: "snapshot_events",
+            },
+        )?;
+        Ok(Self {
+            graph: graph.identity(),
+            branch: branch.identity(),
+            generation: branch.generation,
+            policy,
+            projection: projection.identity(),
+            head: branch.head,
+            event_count,
+        })
+    }
 }
 
 fn derive_snapshot_identity(material: &SnapshotIdentityMaterial) -> crate::identity::Digest {

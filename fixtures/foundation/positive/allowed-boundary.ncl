@@ -85,7 +85,7 @@ let reviewed_universal_weave = {
     },
     {
       path = "crates/choregraph-core/src/analytics/mod.rs",
-      text = "pub fn ready_nodes() { crate::verified::ready_frontier(); }\n/// Returns one deterministic resume decision\n",
+      text = "pub fn ready_nodes() { crate::verified::readiness::ready_frontier(); }\n/// Returns one deterministic resume decision\n",
     },
     {
       path = "crates/choregraph-core/src/verified.rs",
@@ -101,7 +101,7 @@ let reviewed_universal_weave = {
   history_machine_sources = [
     {
       path = "crates/choregraph-history-machine/src/lib.rs",
-      text = "#![no_std]\nextern crate alloc;\nchoregraph_core::replay(replay_input);\nchoregraph_core::replay_concrete(replay_input);\n",
+      text = "#![no_std]\nextern crate alloc;\nchoregraph_core::transition::replay(replay_input);\nchoregraph_core::transition::replay_concrete(replay_input);\n",
     },
   ],
   weave_sources = [

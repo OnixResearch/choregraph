@@ -1,5 +1,3 @@
-use super::*;
-
 // r[verify choregraph.role_choreography.source.valid]
 // r[verify choregraph.role_choreography.source.undeclared]
 // r[verify choregraph.role_choreography.bounds.exceeded]
@@ -21,32 +19,34 @@ use super::*;
 // r[verify choregraph.role_choreography.fixtures.coverage]
 // r[verify choregraph.role_choreography.boundary.delivery]
 
-const ROLE_A: RoleId = RoleId(1);
-const ROLE_B: RoleId = RoleId(2);
-const ROLE_C: RoleId = RoleId(3);
-const ROLE_D: RoleId = RoleId(4);
-const VALUE_A: ValueId = ValueId(10);
-const VALUE_B: ValueId = ValueId(11);
-const PAYLOAD_A: PayloadTag = PayloadTag(20);
-const PAYLOAD_B: PayloadTag = PayloadTag(21);
-const LABEL_A: LabelId = LabelId(30);
-const LABEL_B: LabelId = LabelId(31);
-const LABEL_C: LabelId = LabelId(32);
+const ROLE_A: crate::model::participants::RoleId = crate::model::participants::RoleId(1);
+const ROLE_B: crate::model::participants::RoleId = crate::model::participants::RoleId(2);
+const ROLE_C: crate::model::participants::RoleId = crate::model::participants::RoleId(3);
+const ROLE_D: crate::model::participants::RoleId = crate::model::participants::RoleId(4);
+const VALUE_A: crate::model::participants::ValueId = crate::model::participants::ValueId(10);
+const VALUE_B: crate::model::participants::ValueId = crate::model::participants::ValueId(11);
+const PAYLOAD_A: crate::model::participants::PayloadTag =
+    crate::model::participants::PayloadTag(20);
+const PAYLOAD_B: crate::model::participants::PayloadTag =
+    crate::model::participants::PayloadTag(21);
+const LABEL_A: crate::model::participants::LabelId = crate::model::participants::LabelId(30);
+const LABEL_B: crate::model::participants::LabelId = crate::model::participants::LabelId(31);
+const LABEL_C: crate::model::participants::LabelId = crate::model::participants::LabelId(32);
 const SPAN_START: u32 = 0;
 const SPAN_END: u32 = 8;
 const ALTERNATE_SPAN_START: u32 = 9;
 const ALTERNATE_SPAN_END: u32 = 17;
-const OVERSIZED_ROLE_COUNT: usize = MAX_ROLES.saturating_add(1);
+const OVERSIZED_ROLE_COUNT: usize = crate::model::bounds::MAX_ROLES.saturating_add(1);
 
-fn span() -> SourceSpan {
-    SourceSpan {
+fn span() -> crate::model::participants::SourceSpan {
+    crate::model::participants::SourceSpan {
         start: SPAN_START,
         end: SPAN_END,
     }
 }
 
-fn alternate_span() -> SourceSpan {
-    SourceSpan {
+fn alternate_span() -> crate::model::participants::SourceSpan {
+    crate::model::participants::SourceSpan {
         start: ALTERNATE_SPAN_START,
         end: ALTERNATE_SPAN_END,
     }
@@ -56,18 +56,18 @@ fn exact_identity(seed: &[u8]) -> String {
     format!("blake3:{}", blake3::hash(seed).to_hex())
 }
 
-fn native(id: RoleId) -> RoleDeclaration {
-    RoleDeclaration {
+fn native(id: crate::model::participants::RoleId) -> crate::model::participants::RoleDeclaration {
+    crate::model::participants::RoleDeclaration {
         id,
-        kind: RoleKind::Native,
+        kind: crate::model::participants::RoleKind::Native,
         span: span(),
     }
 }
 
-fn external(id: RoleId) -> RoleDeclaration {
-    RoleDeclaration {
+fn external(id: crate::model::participants::RoleId) -> crate::model::participants::RoleDeclaration {
+    crate::model::participants::RoleDeclaration {
         id,
-        kind: RoleKind::External {
+        kind: crate::model::participants::RoleKind::External {
             contract_identity: exact_identity(b"contract"),
             input_schema_identity: exact_identity(b"input"),
             output_schema_identity: exact_identity(b"output"),
@@ -76,8 +76,12 @@ fn external(id: RoleId) -> RoleDeclaration {
     }
 }
 
-fn value(id: ValueId, payload_tag: PayloadTag, owner: RoleId) -> ValueDeclaration {
-    ValueDeclaration {
+fn value(
+    id: crate::model::participants::ValueId,
+    payload_tag: crate::model::participants::PayloadTag,
+    owner: crate::model::participants::RoleId,
+) -> crate::model::participants::ValueDeclaration {
+    crate::model::participants::ValueDeclaration {
         id,
         payload_tag,
         initial_owner: owner,
@@ -85,18 +89,18 @@ fn value(id: ValueId, payload_tag: PayloadTag, owner: RoleId) -> ValueDeclaratio
     }
 }
 
-fn end() -> ChoreographyNode {
-    ChoreographyNode::End { span: span() }
+fn end() -> crate::model::tree::Node {
+    crate::model::tree::Node::End { span: span() }
 }
 
 fn communication(
-    from: RoleId,
-    to: RoleId,
-    label: LabelId,
-    payload_tag: PayloadTag,
-    next: ChoreographyNode,
-) -> ChoreographyNode {
-    ChoreographyNode::Communication {
+    from: crate::model::participants::RoleId,
+    to: crate::model::participants::RoleId,
+    label: crate::model::participants::LabelId,
+    payload_tag: crate::model::participants::PayloadTag,
+    next: crate::model::tree::Node,
+) -> crate::model::tree::Node {
+    crate::model::tree::Node::Communication {
         from,
         to,
         label,
@@ -107,14 +111,14 @@ fn communication(
 }
 
 fn transfer(
-    from: RoleId,
-    to: RoleId,
-    label: LabelId,
-    payload_tag: PayloadTag,
-    value: ValueId,
-    next: ChoreographyNode,
-) -> ChoreographyNode {
-    ChoreographyNode::Transfer {
+    from: crate::model::participants::RoleId,
+    to: crate::model::participants::RoleId,
+    label: crate::model::participants::LabelId,
+    payload_tag: crate::model::participants::PayloadTag,
+    value: crate::model::participants::ValueId,
+    next: crate::model::tree::Node,
+) -> crate::model::tree::Node {
+    crate::model::tree::Node::Transfer {
         from,
         to,
         label,
@@ -125,54 +129,60 @@ fn transfer(
     }
 }
 
-fn source(protocol: ChoreographyNode) -> RoleChoreographySource {
-    RoleChoreographySource {
-        schema: String::from(ROLE_CHOREOGRAPHY_SCHEMA),
-        limits: ChoreographyLimits::reviewed(),
+fn source(protocol: crate::model::tree::Node) -> crate::model::schema::RoleSource {
+    crate::model::schema::RoleSource {
+        schema: String::from(crate::model::schema::ROLE_CHOREOGRAPHY_SCHEMA),
+        limits: crate::model::bounds::Limits::reviewed(),
         imports: Vec::new(),
         roles: vec![native(ROLE_A), native(ROLE_B), native(ROLE_C)],
         values: vec![value(VALUE_A, PAYLOAD_A, ROLE_A)],
         protocol,
-        non_claims: REQUIRED_NON_CLAIMS.map(String::from).to_vec(),
+        non_claims: crate::model::schema::REQUIRED_NON_CLAIMS
+            .map(String::from)
+            .to_vec(),
     }
 }
 
-fn two_role_source() -> RoleChoreographySource {
+fn two_role_source() -> crate::model::schema::RoleSource {
     let mut result = source(transfer(ROLE_A, ROLE_B, LABEL_A, PAYLOAD_A, VALUE_A, end()));
     result.roles.pop();
     result
 }
 
-fn must_admit(source: RoleChoreographySource) -> AdmittedChoreography {
-    match admit_source(source) {
+fn must_admit(source: crate::model::schema::RoleSource) -> crate::admission::Admitted {
+    match crate::admission::admit_source(source) {
         Ok(admitted) => admitted,
         Err(diagnostics) => panic!("admission failed: {diagnostics:?}"),
     }
 }
 
-fn must_project(source: RoleChoreographySource) -> ProjectedChoreography {
-    match project_all(&must_admit(source)) {
+fn must_project(source: crate::model::schema::RoleSource) -> crate::endpoint::Projected {
+    match crate::endpoint::project_all(&must_admit(source)) {
         Ok(projected) => projected,
         Err(diagnostics) => panic!("projection failed: {diagnostics:?}"),
     }
 }
 
-fn must_bundle(source: RoleChoreographySource) -> ProjectionBundle {
+fn must_bundle(source: crate::model::schema::RoleSource) -> crate::linkage::ProjectionBundle {
     let admitted = must_admit(source);
-    let materials = ProjectionMaterials::reviewed(b"source envelope", b"evaluator output");
-    match build_projection_bundle(&admitted, &materials) {
+    let materials =
+        crate::linkage::ProjectionMaterials::reviewed(b"source envelope", b"evaluator output");
+    match crate::linkage::build_projection_bundle(&admitted, &materials) {
         Ok(bundle) => bundle,
         Err(diagnostics) => panic!("artifact build failed: {diagnostics:?}"),
     }
 }
 
-fn first_code(result: Result<AdmittedChoreography, Vec<ChoreographyDiagnostic>>) -> DiagnosticCode {
+fn first_code(
+    result: Result<crate::admission::Admitted, crate::admission::Error>,
+) -> crate::issue::DiagnosticCode {
     match result {
         Ok(_) => panic!("invalid source unexpectedly passed"),
-        Err(diagnostics) => match diagnostics.first() {
+        Err(crate::admission::Error::Diagnostics(diagnostics)) => match diagnostics.first() {
             Some(diagnostic) => diagnostic.code,
             None => panic!("failed admission returned no diagnostic"),
         },
+        Err(crate::admission::Error::UnsupportedNode) => panic!("known test node was unsupported"),
     }
 }
 
@@ -182,23 +192,23 @@ fn two_role_transfer_matches_trellis_sender_and_receiver() {
     assert_eq!(projected.locals.locals.len(), 2);
     assert!(matches!(
         projected.locals.locals[0].protocol,
-        LocalProtocol::SendOwned {
+        crate::endpoint::LocalProtocol::SendOwned {
             peer: ROLE_B,
             label: LABEL_A,
             payload_tag: PAYLOAD_A,
             value: VALUE_A,
             ref next,
-        } if **next == LocalProtocol::End
+        } if **next == crate::endpoint::LocalProtocol::End
     ));
     assert!(matches!(
         projected.locals.locals[1].protocol,
-        LocalProtocol::ReceiveOwned {
+        crate::endpoint::LocalProtocol::ReceiveOwned {
             peer: ROLE_A,
             label: LABEL_A,
             payload_tag: PAYLOAD_A,
             value: VALUE_A,
             ref next,
-        } if **next == LocalProtocol::End
+        } if **next == crate::endpoint::LocalProtocol::End
     ));
 }
 
@@ -228,15 +238,15 @@ fn chained_and_return_transfer_preserve_exact_value() {
 
 #[test]
 fn projectable_choice_includes_uninvolved_role() {
-    let protocol = ChoreographyNode::Choice {
+    let protocol = crate::model::tree::Node::Choice {
         decider: ROLE_A,
         branches: vec![
-            ChoiceBranch {
+            crate::model::tree::ChoiceBranch {
                 label: LABEL_A,
                 body: communication(ROLE_A, ROLE_B, LABEL_A, PAYLOAD_A, end()),
                 span: span(),
             },
-            ChoiceBranch {
+            crate::model::tree::ChoiceBranch {
                 label: LABEL_B,
                 body: communication(ROLE_A, ROLE_B, LABEL_B, PAYLOAD_B, end()),
                 span: span(),
@@ -247,13 +257,16 @@ fn projectable_choice_includes_uninvolved_role() {
     let projected = must_project(source(protocol));
     assert!(matches!(
         projected.locals.locals[0].protocol,
-        LocalProtocol::InternalChoice { .. }
+        crate::endpoint::LocalProtocol::InternalChoice { .. }
     ));
     assert!(matches!(
         projected.locals.locals[1].protocol,
-        LocalProtocol::Offer { from: ROLE_A, .. }
+        crate::endpoint::LocalProtocol::Offer { from: ROLE_A, .. }
     ));
-    assert_eq!(projected.locals.locals[2].protocol, LocalProtocol::End);
+    assert_eq!(
+        projected.locals.locals[2].protocol,
+        crate::endpoint::LocalProtocol::End
+    );
 }
 
 #[test]
@@ -263,66 +276,108 @@ fn external_role_is_identity_only_protocol_data() {
     let projected = must_project(candidate);
     assert!(matches!(
         projected.locals.locals[1].role_kind,
-        RoleKind::External { .. }
+        crate::model::participants::RoleKind::External { .. }
     ));
 }
 
 #[test]
 fn canonical_bundle_binds_every_local_and_rejects_receipt_mutation() {
     let source = two_role_source();
-    if let Err(error) = choregraph_kamacite::encode_role_choreography_source(&source) {
+    if let Err(error) = choregraph_kamacite::profile::source::encode(&source) {
         panic!("source encoding failed: {error}");
     }
     let bundle = must_bundle(source);
     assert_eq!(bundle.locals.len(), 2);
     assert_eq!(bundle.receipt_body.local_artifacts.len(), 2);
-    assert_eq!(bundle.receipt_body.trellis_revision, TRELLIS_REVISION);
-    assert!(identity_is_valid(
+    assert_eq!(
+        bundle.receipt_body.trellis_revision,
+        crate::linkage::provenance::TRELLIS_REVISION
+    );
+    assert!(crate::linkage::digest::identity_is_valid(
         &bundle.receipt.identity,
-        ChoreographyIdentityDomain::ProjectionReceipt
+        crate::linkage::digest::IdentityDomain::ProjectionReceipt
     ));
     assert!(
-        verify_projection_receipt(&bundle, &bundle.receipt_body, &bundle.receipt.packed_bytes)
-            .is_ok()
+        crate::linkage::verify_projection_receipt(
+            &bundle,
+            &bundle.receipt_body,
+            &bundle.receipt.packed_bytes
+        )
+        .is_ok()
     );
 
     let mut stale = bundle.receipt_body.clone();
-    stale.trellis_revision = String::from(TRELLIS_SEMANTIC_COMMIT);
-    assert!(verify_projection_receipt(&bundle, &stale, &bundle.receipt.packed_bytes).is_err());
+    stale.trellis_revision = String::from(crate::linkage::provenance::TRELLIS_SEMANTIC_COMMIT);
+    assert!(
+        crate::linkage::verify_projection_receipt(&bundle, &stale, &bundle.receipt.packed_bytes)
+            .is_err()
+    );
 
     let mut stale_schema = bundle.receipt_body.clone();
     stale_schema.schema_set = bundle.receipt_body.source_envelope.clone();
     assert!(
-        verify_projection_receipt(&bundle, &stale_schema, &bundle.receipt.packed_bytes).is_err()
+        crate::linkage::verify_projection_receipt(
+            &bundle,
+            &stale_schema,
+            &bundle.receipt.packed_bytes
+        )
+        .is_err()
     );
 
     let mut stale_lowerer = bundle.receipt_body.clone();
     stale_lowerer.lowerer = bundle.receipt_body.source_envelope.clone();
     assert!(
-        verify_projection_receipt(&bundle, &stale_lowerer, &bundle.receipt.packed_bytes).is_err()
+        crate::linkage::verify_projection_receipt(
+            &bundle,
+            &stale_lowerer,
+            &bundle.receipt.packed_bytes
+        )
+        .is_err()
     );
 
     let mut stale_proof_set = bundle.receipt_body.clone();
     stale_proof_set.trellis_proof_set = bundle.receipt_body.source_envelope.clone();
     assert!(
-        verify_projection_receipt(&bundle, &stale_proof_set, &bundle.receipt.packed_bytes).is_err()
+        crate::linkage::verify_projection_receipt(
+            &bundle,
+            &stale_proof_set,
+            &bundle.receipt.packed_bytes
+        )
+        .is_err()
     );
 
     let mut wrong_local = bundle.receipt_body.clone();
     wrong_local.local_artifacts[0] = bundle.receipt_body.global_artifact.clone();
     assert!(
-        verify_projection_receipt(&bundle, &wrong_local, &bundle.receipt.packed_bytes).is_err()
+        crate::linkage::verify_projection_receipt(
+            &bundle,
+            &wrong_local,
+            &bundle.receipt.packed_bytes
+        )
+        .is_err()
     );
 
     let mut wrong_order = bundle.receipt_body.clone();
     wrong_order.local_artifacts.swap(0, 1);
     assert!(
-        verify_projection_receipt(&bundle, &wrong_order, &bundle.receipt.packed_bytes).is_err()
+        crate::linkage::verify_projection_receipt(
+            &bundle,
+            &wrong_order,
+            &bundle.receipt.packed_bytes
+        )
+        .is_err()
     );
 
     let mut wrong_set = bundle.receipt_body.clone();
     wrong_set.complete_local_set = bundle.receipt_body.source_envelope.clone();
-    assert!(verify_projection_receipt(&bundle, &wrong_set, &bundle.receipt.packed_bytes).is_err());
+    assert!(
+        crate::linkage::verify_projection_receipt(
+            &bundle,
+            &wrong_set,
+            &bundle.receipt.packed_bytes
+        )
+        .is_err()
+    );
 
     let forbidden_claims = [
         "trellis-proof-transferred",
@@ -334,7 +389,12 @@ fn canonical_bundle_binds_every_local_and_rejects_receipt_mutation() {
         let mut overclaim = bundle.receipt_body.clone();
         overclaim.evidence_roles[0].claim = String::from(forbidden_claim);
         assert!(
-            verify_projection_receipt(&bundle, &overclaim, &bundle.receipt.packed_bytes).is_err()
+            crate::linkage::verify_projection_receipt(
+                &bundle,
+                &overclaim,
+                &bundle.receipt.packed_bytes
+            )
+            .is_err()
         );
     }
 }
@@ -362,7 +422,7 @@ fn local_continuation_change_invalidates_local_set_and_receipt() {
         changed.receipt_body.complete_local_set
     );
     assert!(
-        verify_projection_receipt(
+        crate::linkage::verify_projection_receipt(
             &changed,
             &original.receipt_body,
             &original.receipt.packed_bytes,
@@ -376,14 +436,14 @@ fn duplicate_and_undeclared_roles_fail() {
     let mut duplicate = two_role_source();
     duplicate.roles.push(native(ROLE_A));
     assert_eq!(
-        first_code(admit_source(duplicate)),
-        DiagnosticCode::DuplicateRole
+        first_code(crate::admission::admit_source(duplicate)),
+        crate::issue::DiagnosticCode::DuplicateRole
     );
 
     let undeclared = source(transfer(ROLE_A, ROLE_D, LABEL_A, PAYLOAD_A, VALUE_A, end()));
     assert_eq!(
-        first_code(admit_source(undeclared)),
-        DiagnosticCode::UndeclaredRole
+        first_code(crate::admission::admit_source(undeclared)),
+        crate::issue::DiagnosticCode::UndeclaredRole
     );
 }
 
@@ -391,40 +451,43 @@ fn duplicate_and_undeclared_roles_fail() {
 fn self_transfer_and_stale_owner_fail() {
     let self_transfer = source(transfer(ROLE_A, ROLE_A, LABEL_A, PAYLOAD_A, VALUE_A, end()));
     assert_eq!(
-        first_code(admit_source(self_transfer)),
-        DiagnosticCode::SelfTransfer
+        first_code(crate::admission::admit_source(self_transfer)),
+        crate::issue::DiagnosticCode::SelfTransfer
     );
 
     let stale = source(transfer(ROLE_B, ROLE_C, LABEL_A, PAYLOAD_A, VALUE_A, end()));
-    assert_eq!(first_code(admit_source(stale)), DiagnosticCode::StaleOwner);
+    assert_eq!(
+        first_code(crate::admission::admit_source(stale)),
+        crate::issue::DiagnosticCode::StaleOwner
+    );
 }
 
 #[test]
 fn wrong_value_and_payload_fail() {
     let unknown = source(transfer(ROLE_A, ROLE_B, LABEL_A, PAYLOAD_A, VALUE_B, end()));
     assert_eq!(
-        first_code(admit_source(unknown)),
-        DiagnosticCode::UnknownValue
+        first_code(crate::admission::admit_source(unknown)),
+        crate::issue::DiagnosticCode::UnknownValue
     );
 
     let mismatch = source(transfer(ROLE_A, ROLE_B, LABEL_A, PAYLOAD_B, VALUE_A, end()));
     assert_eq!(
-        first_code(admit_source(mismatch)),
-        DiagnosticCode::PayloadMismatch
+        first_code(crate::admission::admit_source(mismatch)),
+        crate::issue::DiagnosticCode::PayloadMismatch
     );
 }
 
 #[test]
 fn duplicate_and_unsorted_branch_labels_fail() {
-    let duplicate = source(ChoreographyNode::Choice {
+    let duplicate = source(crate::model::tree::Node::Choice {
         decider: ROLE_A,
         branches: vec![
-            ChoiceBranch {
+            crate::model::tree::ChoiceBranch {
                 label: LABEL_A,
                 body: end(),
                 span: span(),
             },
-            ChoiceBranch {
+            crate::model::tree::ChoiceBranch {
                 label: LABEL_A,
                 body: end(),
                 span: span(),
@@ -433,19 +496,19 @@ fn duplicate_and_unsorted_branch_labels_fail() {
         span: span(),
     });
     assert_eq!(
-        first_code(admit_source(duplicate)),
-        DiagnosticCode::DuplicateBranchLabel
+        first_code(crate::admission::admit_source(duplicate)),
+        crate::issue::DiagnosticCode::DuplicateBranchLabel
     );
 
-    let unsorted = source(ChoreographyNode::Choice {
+    let unsorted = source(crate::model::tree::Node::Choice {
         decider: ROLE_A,
         branches: vec![
-            ChoiceBranch {
+            crate::model::tree::ChoiceBranch {
                 label: LABEL_B,
                 body: end(),
                 span: span(),
             },
-            ChoiceBranch {
+            crate::model::tree::ChoiceBranch {
                 label: LABEL_A,
                 body: end(),
                 span: span(),
@@ -454,22 +517,22 @@ fn duplicate_and_unsorted_branch_labels_fail() {
         span: span(),
     });
     assert_eq!(
-        first_code(admit_source(unsorted)),
-        DiagnosticCode::UnsortedBranchLabel
+        first_code(crate::admission::admit_source(unsorted)),
+        crate::issue::DiagnosticCode::UnsortedBranchLabel
     );
 }
 
 #[test]
 fn incompatible_offer_heads_are_not_projectable() {
-    let protocol = ChoreographyNode::Choice {
+    let protocol = crate::model::tree::Node::Choice {
         decider: ROLE_A,
         branches: vec![
-            ChoiceBranch {
+            crate::model::tree::ChoiceBranch {
                 label: LABEL_A,
                 body: transfer(ROLE_B, ROLE_C, LABEL_A, PAYLOAD_A, VALUE_A, end()),
                 span: span(),
             },
-            ChoiceBranch {
+            crate::model::tree::ChoiceBranch {
                 label: LABEL_B,
                 body: transfer(ROLE_C, ROLE_B, LABEL_B, PAYLOAD_B, VALUE_B, end()),
                 span: alternate_span(),
@@ -480,24 +543,25 @@ fn incompatible_offer_heads_are_not_projectable() {
     let mut candidate = source(protocol);
     candidate.values[0].initial_owner = ROLE_B;
     candidate.values.push(value(VALUE_B, PAYLOAD_B, ROLE_C));
-    let diagnostics = match admit_source(candidate) {
+    let diagnostics = match crate::admission::admit_source(candidate) {
         Ok(_) => panic!("incompatible offer unexpectedly admitted"),
-        Err(diagnostics) => diagnostics,
+        Err(crate::admission::Error::Diagnostics(diagnostics)) => diagnostics,
+        Err(crate::admission::Error::UnsupportedNode) => panic!("known test node was unsupported"),
     };
     assert_eq!(
         diagnostics[0].code,
-        DiagnosticCode::TrellisProjectionRejected
+        crate::issue::DiagnosticCode::TrellisProjectionRejected
     );
     assert_eq!(diagnostics[0].secondary, vec![span(), alternate_span()]);
-    assert!(diagnostics_are_safe(&diagnostics));
+    assert!(crate::issue::diagnostics_are_safe(&diagnostics));
 }
 
 #[test]
 fn malformed_external_role_and_limit_widening_fail() {
     let mut external_source = two_role_source();
-    external_source.roles[1] = RoleDeclaration {
+    external_source.roles[1] = crate::model::participants::RoleDeclaration {
         id: ROLE_B,
-        kind: RoleKind::External {
+        kind: crate::model::participants::RoleKind::External {
             contract_identity: String::from("ambient-contract"),
             input_schema_identity: exact_identity(b"input"),
             output_schema_identity: exact_identity(b"output"),
@@ -505,15 +569,15 @@ fn malformed_external_role_and_limit_widening_fail() {
         span: span(),
     };
     assert_eq!(
-        first_code(admit_source(external_source)),
-        DiagnosticCode::InvalidRoleKind
+        first_code(crate::admission::admit_source(external_source)),
+        crate::issue::DiagnosticCode::InvalidRoleKind
     );
 
     let mut widened = two_role_source();
     widened.limits.max_roles = OVERSIZED_ROLE_COUNT;
     assert_eq!(
-        first_code(admit_source(widened)),
-        DiagnosticCode::LimitsMismatch
+        first_code(crate::admission::admit_source(widened)),
+        crate::issue::DiagnosticCode::LimitsMismatch
     );
 }
 
@@ -523,24 +587,27 @@ fn oversized_role_and_identifier_inputs_fail() {
     invalid_roles_fixture.roles.clear();
     for raw in 0..OVERSIZED_ROLE_COUNT {
         let id = match u32::try_from(raw) {
-            Ok(id) => RoleId(id),
+            Ok(id) => crate::model::participants::RoleId(id),
             Err(error) => panic!("role fixture identifier does not fit: {error}"),
         };
         invalid_roles_fixture.roles.push(native(id));
     }
     assert_eq!(
-        first_code(admit_source(invalid_roles_fixture)),
-        DiagnosticCode::RoleLimitExceeded
+        first_code(crate::admission::admit_source(invalid_roles_fixture)),
+        crate::issue::DiagnosticCode::RoleLimitExceeded
     );
 
     let mut invalid_identifier_fixture = two_role_source();
-    invalid_identifier_fixture.imports.push(ImportIdentity {
-        logical_id: String::from("x").repeat(MAX_IDENTIFIER_BYTES.saturating_add(1)),
-        blake3: blake3::hash(b"oversized-import").to_hex().to_string(),
-    });
+    invalid_identifier_fixture
+        .imports
+        .push(crate::model::participants::ImportIdentity {
+            logical_id: String::from("x")
+                .repeat(crate::model::bounds::MAX_IDENTIFIER_BYTES.saturating_add(1)),
+            blake3: blake3::hash(b"oversized-import").to_hex().to_string(),
+        });
     assert_eq!(
-        first_code(admit_source(invalid_identifier_fixture)),
-        DiagnosticCode::InvalidImportIdentity
+        first_code(crate::admission::admit_source(invalid_identifier_fixture)),
+        crate::issue::DiagnosticCode::InvalidImportIdentity
     );
 }
 
@@ -562,17 +629,20 @@ fn unknown_fields_and_missing_non_claims_fail() {
         Ok(bytes) => bytes,
         Err(error) => panic!("serialize changed fixture: {error}"),
     };
-    let diagnostics = match parse_evaluated_json(&bytes) {
+    let diagnostics = match crate::admission::parse_evaluated_json(&bytes) {
         Ok(_) => panic!("unknown field unexpectedly passed"),
         Err(diagnostics) => diagnostics,
     };
-    assert_eq!(diagnostics[0].code, DiagnosticCode::MalformedEvaluatedData);
+    assert_eq!(
+        diagnostics[0].code,
+        crate::issue::DiagnosticCode::MalformedEvaluatedData
+    );
 
     let mut missing = two_role_source();
     missing.non_claims.pop();
     assert_eq!(
-        first_code(admit_source(missing)),
-        DiagnosticCode::MissingNonClaim
+        first_code(crate::admission::admit_source(missing)),
+        crate::issue::DiagnosticCode::MissingNonClaim
     );
 }
 
@@ -583,34 +653,36 @@ fn complete_set_rejects_missing_duplicate_and_reordered_roles() {
 
     let mut missing = projected.locals.clone();
     missing.locals.pop();
-    assert!(validate_complete_set(&expected, &missing).is_err());
+    assert!(crate::endpoint::validate_complete_set(&expected, &missing).is_err());
 
     let mut duplicate = projected.locals.clone();
     duplicate.locals[1].role = ROLE_A;
-    assert!(validate_complete_set(&expected, &duplicate).is_err());
+    assert!(crate::endpoint::validate_complete_set(&expected, &duplicate).is_err());
 
     let mut reordered = projected.locals;
     reordered.locals.swap(0, 1);
-    assert!(validate_complete_set(&expected, &reordered).is_err());
+    assert!(crate::endpoint::validate_complete_set(&expected, &reordered).is_err());
 }
 
 #[test]
 fn diagnostics_reject_host_and_secret_leakage() {
-    assert!(!safe_diagnostic_text("/home/operator/private"));
-    assert!(!safe_diagnostic_text("/etc/operator-private"));
-    assert!(!safe_diagnostic_text("C:\\operator-private"));
-    assert!(!safe_diagnostic_text("SECRET value"));
-    assert!(!safe_diagnostic_text("token value"));
-    assert!(!safe_diagnostic_text("PATH=value"));
+    assert!(!crate::issue::safe_diagnostic_text(
+        "/home/operator/private"
+    ));
+    assert!(!crate::issue::safe_diagnostic_text("/etc/operator-private"));
+    assert!(!crate::issue::safe_diagnostic_text("C:\\operator-private"));
+    assert!(!crate::issue::safe_diagnostic_text("SECRET value"));
+    assert!(!crate::issue::safe_diagnostic_text("token value"));
+    assert!(!crate::issue::safe_diagnostic_text("PATH=value"));
 
-    let unsafe_diagnostic = ChoreographyDiagnostic {
-        code: DiagnosticCode::UnsafeDiagnostic,
-        severity: DiagnosticSeverity::Error,
+    let unsafe_diagnostic = crate::issue::Diagnostic {
+        code: crate::issue::DiagnosticCode::UnsafeDiagnostic,
+        severity: crate::issue::DiagnosticSeverity::Error,
         primary: span(),
         secondary: Vec::new(),
         notes: vec![String::from("/home/operator/private")],
         hints: Vec::new(),
         safe_replacement: None,
     };
-    assert!(!diagnostics_are_safe(&[unsafe_diagnostic]));
+    assert!(!crate::issue::diagnostics_are_safe(&[unsafe_diagnostic]));
 }

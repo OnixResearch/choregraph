@@ -6,47 +6,39 @@
     reason = "adapter identity includes the generated Cargo lock and each reviewed source file without granting runtime authority"
 )]
 
-mod capability;
-mod corpus;
-mod release;
-
-pub use capability::{CompilationReport, CompileNickelRequest, OperatorRootSpec, compile_nickel};
-pub use corpus::{KamaciteCorpusEntry, build_kamacite_corpus};
-pub use release::{
-    PublicationCandidateReport, ReleaseBundleReport, ReleaseShellFailure, ReleaseShellIssueCode,
-    ValidatePublicationCandidateRequest, VerifyReleaseBundleRequest, WriteReleaseBundleRequest,
-    validate_publication_candidate, verify_release_bundle_file, write_release_bundle,
-};
+pub mod capability;
+pub mod corpus;
+pub mod release;
 
 /// A command accepted by the imperative shell.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Command {
     Boundary,
     CompileNickel {
-        request: Box<CompileNickelRequest>,
+        request: Box<capability::CompileNickelRequest>,
     },
     WriteKamaciteCorpus {
         output_directory: String,
     },
     WriteReleaseBundle {
-        request: WriteReleaseBundleRequest,
+        request: release::WriteReleaseBundleRequest,
     },
     VerifyReleaseBundle {
-        request: VerifyReleaseBundleRequest,
+        request: release::VerifyReleaseBundleRequest,
     },
     ValidatePublicationCandidate {
-        request: ValidatePublicationCandidateRequest,
+        request: release::ValidatePublicationCandidateRequest,
     },
 }
 
-fn parse_operator_root(value: &str) -> Result<OperatorRootSpec, &'static str> {
+fn parse_operator_root(value: &str) -> Result<capability::OperatorRootSpec, &'static str> {
     let (id, ambient_path) = value
         .split_once('=')
         .ok_or("import root must use <identifier>=<ambient-directory>")?;
     if id.is_empty() || ambient_path.is_empty() {
         return Err("import root identifier and ambient directory must be non-empty");
     }
-    Ok(OperatorRootSpec {
+    Ok(capability::OperatorRootSpec {
         id: String::from(id),
         ambient_path: std::path::PathBuf::from(ambient_path),
     })
@@ -64,7 +56,7 @@ fn parse_release_command(arguments: &[String]) -> Option<Result<Command, &'stati
                 return Some(Err("release roots and output path must be non-empty"));
             }
             Some(Ok(Command::WriteReleaseBundle {
-                request: WriteReleaseBundleRequest {
+                request: release::WriteReleaseBundleRequest {
                     artifact_root: std::path::PathBuf::from(artifact_root),
                     output_root: std::path::PathBuf::from(output_root),
                     output_path: std::path::PathBuf::from(output_path),
@@ -78,7 +70,7 @@ fn parse_release_command(arguments: &[String]) -> Option<Result<Command, &'stati
                 return Some(Err("release roots and manifest path must be non-empty"));
             }
             Some(Ok(Command::VerifyReleaseBundle {
-                request: VerifyReleaseBundleRequest {
+                request: release::VerifyReleaseBundleRequest {
                     artifact_root: std::path::PathBuf::from(artifact_root),
                     manifest_root: std::path::PathBuf::from(manifest_root),
                     manifest_path: std::path::PathBuf::from(manifest_path),
@@ -96,7 +88,7 @@ fn parse_release_command(arguments: &[String]) -> Option<Result<Command, &'stati
             rollback_revision,
         ] if command == "validate-publication-candidate" => {
             Some(Ok(Command::ValidatePublicationCandidate {
-                request: ValidatePublicationCandidateRequest {
+                request: release::ValidatePublicationCandidateRequest {
                     source_revision: source_revision.clone(),
                     source_archive_root: std::path::PathBuf::from(source_archive_root),
                     source_archive_path: std::path::PathBuf::from(source_archive_path),
@@ -131,7 +123,7 @@ fn parse_non_release_command(arguments: &[String]) -> Result<Command, &'static s
                 .map(|root| parse_operator_root(root))
                 .collect::<Result<Vec<_>, _>>()?;
             Ok(Command::CompileNickel {
-                request: Box::new(CompileNickelRequest {
+                request: Box::new(capability::CompileNickelRequest {
                     evaluator: std::path::PathBuf::from(evaluator),
                     source_root: std::path::PathBuf::from(source_root),
                     source_path: std::path::PathBuf::from(source_path),
@@ -140,7 +132,7 @@ fn parse_non_release_command(arguments: &[String]) -> Result<Command, &'static s
                     output_root: std::path::PathBuf::from(output_root),
                     output_path: std::path::PathBuf::from(output_path),
                     import_roots: root_specs,
-                    limits: choregraph_nickel::reviewed_frontend_limits(),
+                    limits: choregraph_nickel::profile::reviewed_frontend_limits(),
                 }),
             })
         }
@@ -175,20 +167,25 @@ pub fn parse_command(arguments: &[String]) -> Result<Command, &'static str> {
 )]
 #[must_use]
 pub fn render_foundation_report() -> String {
-    let foundation_claim = choregraph_core::FOUNDATION_CLAIM;
-    let machine_claim = choregraph_core::MACHINE_CLAIM;
-    let is_core_pure = choregraph_core::permits(choregraph_core::Capability::DeterministicDecision);
-    let is_kamacite_identity_only =
-        choregraph_kamacite::supports(
-            choregraph_kamacite::InterchangeClaim::CanonicalIdentityBinding,
-        ) && !choregraph_kamacite::supports(choregraph_kamacite::InterchangeClaim::BehavioralProof);
-    let is_nickel_evaluated_data_only =
-        choregraph_nickel::accepts(choregraph_nickel::LoweringInputStage::EvaluatedData)
-            && !choregraph_nickel::accepts(choregraph_nickel::LoweringInputStage::NickelSource);
-    let is_seaglass_delegate_only = choregraph_seaglass::accepts(
-        choregraph_seaglass::CompatibilityMode::DelegateToChoregraphCore,
-    ) && !choregraph_seaglass::accepts(
-        choregraph_seaglass::CompatibilityMode::IndependentTransitionImplementation,
+    let foundation_claim = choregraph_core::boundary::FOUNDATION_CLAIM;
+    let machine_claim = choregraph_core::boundary::MACHINE_CLAIM;
+    let is_core_pure = choregraph_core::boundary::permits(
+        choregraph_core::boundary::Capability::DeterministicDecision,
+    );
+    let is_kamacite_identity_only = choregraph_kamacite::boundary::supports(
+        choregraph_kamacite::boundary::InterchangeClaim::CanonicalIdentityBinding,
+    ) && !choregraph_kamacite::boundary::supports(
+        choregraph_kamacite::boundary::InterchangeClaim::BehavioralProof,
+    );
+    let is_nickel_evaluated_data_only = choregraph_nickel::boundary::accepts(
+        choregraph_nickel::boundary::LoweringInputStage::EvaluatedData,
+    ) && !choregraph_nickel::boundary::accepts(
+        choregraph_nickel::boundary::LoweringInputStage::NickelSource,
+    );
+    let is_seaglass_delegate_only = choregraph_seaglass::boundary::accepts(
+        choregraph_seaglass::boundary::CompatibilityMode::DelegateToChoregraphCore,
+    ) && !choregraph_seaglass::boundary::accepts(
+        choregraph_seaglass::boundary::CompatibilityMode::IndependentTransitionImplementation,
     );
 
     format!(
@@ -197,21 +194,21 @@ pub fn render_foundation_report() -> String {
 }
 
 #[must_use]
-pub fn render_release_bundle_report(report: &ReleaseBundleReport) -> String {
+pub fn render_release_bundle_report(report: &release::ReleaseBundleReport) -> String {
     format!(
         "status=bundled\nbundle-blake3={}\nartifacts={}\nartifact-bytes={}\nmanifest-bytes={}\n",
         report.bundle_blake3, report.artifact_count, report.artifact_bytes, report.manifest_bytes,
     )
 }
 
-pub fn render_release_verification_report(report: &ReleaseBundleReport) -> String {
+pub fn render_release_verification_report(report: &release::ReleaseBundleReport) -> String {
     format!(
         "status=verified\nbundle-blake3={}\nartifacts={}\nartifact-bytes={}\nmanifest-bytes={}\n",
         report.bundle_blake3, report.artifact_count, report.artifact_bytes, report.manifest_bytes,
     )
 }
 
-pub fn render_publication_candidate_report(report: &PublicationCandidateReport) -> String {
+pub fn render_publication_candidate_report(report: &release::PublicationCandidateReport) -> String {
     format!(
         "status=local-candidate\ncandidate-blake3={}\nsource-revision={}\nsource-archive-blake3={}\nrelease-bundle-blake3={}\nrollback-revision={}\n",
         report.candidate_blake3,
@@ -222,7 +219,7 @@ pub fn render_publication_candidate_report(report: &PublicationCandidateReport) 
     )
 }
 
-pub fn render_compilation_report(report: &CompilationReport) -> String {
+pub fn render_compilation_report(report: &capability::CompilationReport) -> String {
     format!(
         "status=compiled\nsource-format={:?}\nimports={}\nimport-bytes={}\nmachine-blake3={}\nartifact-bytes={}\n",
         report.source_format,
@@ -259,7 +256,7 @@ mod tests {
                 String::from("release.bundle"),
             ]),
             Ok(super::Command::WriteReleaseBundle {
-                request: super::WriteReleaseBundleRequest {
+                request: super::release::WriteReleaseBundleRequest {
                     artifact_root: std::path::PathBuf::from("/source"),
                     output_root: std::path::PathBuf::from("/output"),
                     output_path: std::path::PathBuf::from("release.bundle"),
@@ -274,7 +271,7 @@ mod tests {
                 String::from("release.bundle"),
             ]),
             Ok(super::Command::VerifyReleaseBundle {
-                request: super::VerifyReleaseBundleRequest {
+                request: super::release::VerifyReleaseBundleRequest {
                     artifact_root: std::path::PathBuf::from("/source"),
                     manifest_root: std::path::PathBuf::from("/output"),
                     manifest_path: std::path::PathBuf::from("release.bundle"),
@@ -293,7 +290,7 @@ mod tests {
                 String::from("rollback-revision"),
             ]),
             Ok(super::Command::ValidatePublicationCandidate {
-                request: super::ValidatePublicationCandidateRequest {
+                request: super::release::ValidatePublicationCandidateRequest {
                     source_revision: String::from("source-revision"),
                     source_archive_root: std::path::PathBuf::from("/archive"),
                     source_archive_path: std::path::PathBuf::from("source.tar"),

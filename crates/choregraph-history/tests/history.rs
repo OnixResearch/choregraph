@@ -28,9 +28,11 @@
 use std::collections::BTreeMap;
 
 use choregraph_history::{
-    BranchRef, Cursor, Digest, EventClass, EventDraft, EventId, HistoryError, HistoryGraph,
-    HistoryLimits, MergeEnvelope, MetadataIdentity, ParentLink, Snapshot, ancestor_closure,
-    linear_lineage, plan_branch_advance, validate_cursor,
+    dag::Graph,
+    identity::{DIGEST_BYTES, Digest, EventId},
+    model::{Error, EventClass, EventDraft, Limits, MergeEnvelope, MetadataIdentity, ParentLink},
+    refs::{BranchRef, Cursor, Snapshot, plan_branch_advance, validate_cursor},
+    traversal::{ancestor_closure, linear_lineage},
 };
 
 const MAX_EVENTS: u32 = 32;
@@ -51,18 +53,17 @@ const SUCCESSOR_GENERATION: u64 = INITIAL_GENERATION + 1;
 const CURSOR_POSITION: u32 = 2;
 
 fn digest(seed: u8) -> Digest {
-    Digest::from_bytes([seed; choregraph_history::DIGEST_BYTES])
+    Digest::from_bytes([seed; DIGEST_BYTES])
 }
 
-fn limits() -> HistoryLimits {
-    HistoryLimits::new(
-        MAX_EVENTS,
-        MAX_PARENTS,
-        MAX_METADATA,
-        MAX_LABEL_BYTES,
-        MAX_PROJECTION,
-    )
-    .expect("positive history limits")
+fn limits() -> Limits {
+    Limits {
+        max_events: MAX_EVENTS,
+        max_parents: MAX_PARENTS,
+        max_metadata_entries: MAX_METADATA,
+        max_label_bytes: MAX_LABEL_BYTES,
+        max_projection_events: MAX_PROJECTION,
+    }
 }
 
 fn root_draft(seed: u8) -> EventDraft {
@@ -86,13 +87,13 @@ fn child_draft(seed: u8, role: &str, parent: EventId) -> EventDraft {
     )
 }
 
-fn admit(graph: &HistoryGraph, draft: EventDraft) -> (HistoryGraph, EventId) {
+fn admit(graph: &Graph, draft: EventDraft) -> (Graph, EventId) {
     let admission = graph.admit(draft).expect("event admission");
     (admission.graph, admission.event)
 }
 
-fn fork_graph() -> (HistoryGraph, EventId, EventId, EventId) {
-    let graph = HistoryGraph::new(limits()).expect("empty graph");
+fn fork_graph() -> (Graph, EventId, EventId, EventId) {
+    let graph = Graph::new(limits()).expect("empty graph");
     let (graph, root) = admit(&graph, root_draft(ROOT_SEED));
     let (graph, left) = admit(&graph, child_draft(LEFT_SEED, "main", root));
     let (graph, right) = admit(&graph, child_draft(RIGHT_SEED, "main", root));
@@ -128,10 +129,7 @@ fn linear_fork_projection_reference_snapshot_cursor_and_merge_are_explicit() {
     let graph = admission.graph;
     let merge_id = admission.event;
     let ambiguous = linear_lineage(&graph, merge_id, &BTreeMap::new(), MAX_PROJECTION);
-    assert_eq!(
-        ambiguous,
-        Err(HistoryError::AmbiguousLineage { event: merge_id })
-    );
+    assert_eq!(ambiguous, Err(Error::AmbiguousLineage { event: merge_id }));
 
     let choices = BTreeMap::from([(merge_id, left)]);
     let lineage =
@@ -165,26 +163,23 @@ fn linear_fork_projection_reference_snapshot_cursor_and_merge_are_explicit() {
 
 #[test]
 fn malformed_missing_duplicate_cycle_stale_ambiguous_and_bound_cases_fail_closed() {
-    let graph = HistoryGraph::new(limits()).expect("empty graph");
+    let graph = Graph::new(limits()).expect("empty graph");
     let missing = EventId::new(digest(UNKNOWN_SEED));
     assert_eq!(
         graph.admit(child_draft(LEFT_SEED, "main", missing)),
-        Err(HistoryError::MissingParent { event: missing })
+        Err(Error::MissingParent { event: missing })
     );
     assert!(graph.is_empty());
 
     let (graph, root) = admit(&graph, root_draft(ROOT_SEED));
-    assert_eq!(
-        graph.admit(root_draft(ROOT_SEED)),
-        Err(HistoryError::NoChange)
-    );
+    assert_eq!(graph.admit(root_draft(ROOT_SEED)), Err(Error::NoChange));
     assert_eq!(
         graph.admit_claimed(root, root_draft(LEFT_SEED)),
-        Err(HistoryError::ConflictingDuplicate { event: root })
+        Err(Error::ConflictingDuplicate { event: root })
     );
     assert_eq!(
         graph.admit_claimed(root, child_draft(RIGHT_SEED, "self", root)),
-        Err(HistoryError::Cycle { event: root })
+        Err(Error::Cycle { event: root })
     );
 
     let noncanonical = EventDraft::v1(
@@ -204,7 +199,7 @@ fn malformed_missing_duplicate_cycle_stale_ambiguous_and_bound_cases_fail_closed
     );
     assert!(matches!(
         graph.admit(noncanonical),
-        Err(HistoryError::NonCanonicalParents | HistoryError::DuplicateParent { .. })
+        Err(Error::NonCanonicalParents | Error::DuplicateParent { .. })
     ));
 
     let branch = BranchRef {
@@ -214,40 +209,36 @@ fn malformed_missing_duplicate_cycle_stale_ambiguous_and_bound_cases_fail_closed
     };
     assert_eq!(
         plan_branch_advance(&graph, &branch, SUCCESSOR_GENERATION, root, root),
-        Err(HistoryError::StaleGeneration {
+        Err(Error::StaleGeneration {
             expected: INITIAL_GENERATION,
             observed: SUCCESSOR_GENERATION,
         })
     );
     assert_eq!(
         plan_branch_advance(&graph, &branch, INITIAL_GENERATION, missing, root),
-        Err(HistoryError::StaleHead)
+        Err(Error::StaleHead)
     );
     assert_eq!(
         plan_branch_advance(&graph, &branch, INITIAL_GENERATION, root, root),
-        Err(HistoryError::NoChange)
+        Err(Error::NoChange)
     );
     assert!(matches!(
         ancestor_closure(&graph, root, 0),
-        Err(HistoryError::ProjectionLimitExceeded { .. })
+        Err(Error::ProjectionLimitExceeded { .. })
     ));
     assert_eq!(graph.len(), 1);
 
-    let one_event_limits = HistoryLimits::new(
-        1,
-        MAX_PARENTS,
-        MAX_METADATA,
-        MAX_LABEL_BYTES,
-        MAX_PROJECTION,
-    )
-    .expect("one-event limits");
-    let bounded = HistoryGraph::new(one_event_limits).expect("bounded graph");
+    let one_event_limits = Limits {
+        max_events: 1,
+        ..limits()
+    };
+    let bounded = Graph::new(one_event_limits).expect("bounded graph");
     let admitted = bounded.admit(root_draft(ROOT_SEED)).expect("bounded root");
     assert!(matches!(
         admitted
             .graph
             .admit(child_draft(LEFT_SEED, "main", admitted.event)),
-        Err(HistoryError::EventLimitExceeded { .. })
+        Err(Error::EventLimitExceeded { .. })
     ));
     assert_eq!(admitted.graph.len(), 1);
 }
@@ -257,8 +248,8 @@ fn property_identity_acyclicity_projection_and_denial_state_are_deterministic() 
     let (graph, root, left, right) = fork_graph();
     assert_eq!(graph.identity(), graph.clone().identity());
     assert_eq!(
-        HistoryGraph::expected_identity(&root_draft(ROOT_SEED)),
-        HistoryGraph::expected_identity(&root_draft(ROOT_SEED))
+        Graph::expected_identity(&root_draft(ROOT_SEED)),
+        Graph::expected_identity(&root_draft(ROOT_SEED))
     );
     for head in [root, left, right] {
         let first = ancestor_closure(&graph, head, MAX_PROJECTION).expect("first closure");
@@ -272,7 +263,7 @@ fn property_identity_acyclicity_projection_and_denial_state_are_deterministic() 
         "missing",
         EventId::new(digest(UNKNOWN_SEED)),
     ));
-    assert!(matches!(denial, Err(HistoryError::MissingParent { .. })));
+    assert!(matches!(denial, Err(Error::MissingParent { .. })));
     assert_eq!(before, graph.identity());
 }
 
@@ -311,10 +302,7 @@ fn implicit_merge_and_stale_cursor_are_rejected() {
         merge_policy_identity: digest(POLICY_SEED),
         metadata: Vec::new(),
     };
-    assert_eq!(
-        graph.admit_merge(merge),
-        Err(HistoryError::MissingMergeResolution)
-    );
+    assert_eq!(graph.admit_merge(merge), Err(Error::MissingMergeResolution));
     let direct_merge = EventDraft::v1(
         EventClass::Merge,
         digest(MERGE_SEED),
@@ -330,10 +318,7 @@ fn implicit_merge_and_stale_cursor_are_rejected() {
         ],
         digest(SCHEMA_SEED),
     );
-    assert_eq!(
-        graph.admit(direct_merge),
-        Err(HistoryError::MissingMergePolicy)
-    );
+    assert_eq!(graph.admit(direct_merge), Err(Error::MissingMergePolicy));
 
     let projection =
         linear_lineage(&graph, left, &BTreeMap::new(), MAX_PROJECTION).expect("lineage");
@@ -348,6 +333,38 @@ fn implicit_merge_and_stale_cursor_are_rejected() {
     cursor.generation = SUCCESSOR_GENERATION;
     assert_eq!(
         validate_cursor(&cursor, &snapshot),
-        Err(HistoryError::CursorMismatch)
+        Err(Error::CursorMismatch)
+    );
+}
+
+#[test]
+fn graph_rejects_invalid_named_bounds_in_policy_order() {
+    type LimitMutation = fn(&mut Limits);
+    let fields: [(LimitMutation, &str); 5] = [
+        (|value| value.max_events = 0, "max_events"),
+        (|value| value.max_parents = 0, "max_parents"),
+        (
+            |value| value.max_metadata_entries = 0,
+            "max_metadata_entries",
+        ),
+        (|value| value.max_label_bytes = 0, "max_label_bytes"),
+        (
+            |value| value.max_projection_events = 0,
+            "max_projection_events",
+        ),
+    ];
+    for (invalidate, field) in fields {
+        let mut policy = limits();
+        invalidate(&mut policy);
+        assert_eq!(Graph::new(policy), Err(Error::InvalidLimits { field }));
+    }
+    let mut policy = limits();
+    policy.max_parents = 0;
+    policy.max_label_bytes = 0;
+    assert_eq!(
+        Graph::new(policy),
+        Err(Error::InvalidLimits {
+            field: "max_parents"
+        })
     );
 }

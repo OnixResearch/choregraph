@@ -11,25 +11,25 @@
     reason = "Verus readiness witnesses use bounded vectors and explicit inductive proof steps"
 )]
 
-use super::*;
+use vstd::prelude::*;
 
 verus! {
 
 // r[impl choregraph.proof.single_step.readiness_completeness]
 pub open spec fn dependency_ready_spec(
-    dependencies: Seq<Vec<usize>>,
+    dependencies: Seq<alloc::vec::Vec<usize>>,
     states: Seq<u8>,
     node_index: usize,
 ) -> bool {
     node_index < dependencies.len()
         && node_index < states.len()
-        && states[node_index as int] == STATE_PENDING
-        && dependencies_complete_spec(dependencies[node_index as int]@, states)
+        && states[node_index as int] == super::codes::status::STATE_PENDING
+        && super::primitive::validity::dependencies_complete_spec(dependencies[node_index as int]@, states)
 }
 
 // r[impl choregraph.proof.single_step.readiness_completeness]
 pub fn dependency_ready(
-    dependencies: &[Vec<usize>],
+    dependencies: &[alloc::vec::Vec<usize>],
     states: &[u8],
     node_index: usize,
 ) -> (result: bool)
@@ -38,13 +38,13 @@ pub fn dependency_ready(
     if node_index >= dependencies.len() || node_index >= states.len() {
         return false;
     }
-    states[node_index] == STATE_PENDING
-        && dependencies_complete(&dependencies[node_index], states)
+    states[node_index] == super::codes::status::STATE_PENDING
+        && super::primitive::validity::dependencies_complete(&dependencies[node_index], states)
 }
 
 pub open spec fn ready_frontier_build_spec(
     order: Seq<usize>,
-    dependencies: Seq<Vec<usize>>,
+    dependencies: Seq<alloc::vec::Vec<usize>>,
     states: Seq<u8>,
     from: int,
 ) -> Seq<usize>
@@ -64,7 +64,7 @@ pub open spec fn ready_frontier_build_spec(
 
 pub open spec fn ready_frontier_spec(
     order: Seq<usize>,
-    dependencies: Seq<Vec<usize>>,
+    dependencies: Seq<alloc::vec::Vec<usize>>,
     states: Seq<u8>,
 ) -> Seq<usize> {
     ready_frontier_build_spec(order, dependencies, states, 0)
@@ -73,12 +73,12 @@ pub open spec fn ready_frontier_spec(
 // r[impl choregraph.proof.single_step.readiness_frontier]
 pub fn ready_frontier(
     order: &[usize],
-    dependencies: &[Vec<usize>],
+    dependencies: &[alloc::vec::Vec<usize>],
     states: &[u8],
-) -> (result: Vec<usize>)
+) -> (result: alloc::vec::Vec<usize>)
     ensures result@ == ready_frontier_spec(order@, dependencies@, states@)
 {
-    let mut result = Vec::new();
+    let mut result = alloc::vec::Vec::new();
     let mut index: usize = 0;
     let ghost full = ready_frontier_spec(order@, dependencies@, states@);
     while index < order.len()
@@ -113,7 +113,7 @@ pub open spec fn pairwise_distinct_spec(values: Seq<usize>) -> bool {
 
 proof fn ready_frontier_element_source(
     order: Seq<usize>,
-    dependencies: Seq<Vec<usize>>,
+    dependencies: Seq<alloc::vec::Vec<usize>>,
     states: Seq<u8>,
     from: int,
     result_index: int,
@@ -167,7 +167,7 @@ proof fn ready_frontier_element_source(
 
 proof fn ready_frontier_build_contains_eligible(
     order: Seq<usize>,
-    dependencies: Seq<Vec<usize>>,
+    dependencies: Seq<alloc::vec::Vec<usize>>,
     states: Seq<u8>,
     from: int,
     position: int,
@@ -207,7 +207,7 @@ proof fn ready_frontier_build_contains_eligible(
 
 proof fn ready_frontier_no_duplicates_from(
     order: Seq<usize>,
-    dependencies: Seq<Vec<usize>>,
+    dependencies: Seq<alloc::vec::Vec<usize>>,
     states: Seq<u8>,
     from: int,
 )
@@ -270,7 +270,7 @@ proof fn ready_frontier_no_duplicates_from(
 // r[verify choregraph.proof.single_step.readiness_frontier]
 pub proof fn ready_frontier_contains_each_eligible_node_once(
     order: Seq<usize>,
-    dependencies: Seq<Vec<usize>>,
+    dependencies: Seq<alloc::vec::Vec<usize>>,
     states: Seq<u8>,
 )
     requires pairwise_distinct_spec(order)
@@ -282,7 +282,7 @@ pub proof fn ready_frontier_contains_each_eligible_node_once(
 // r[verify choregraph.proof.single_step.readiness_frontier]
 pub proof fn ready_frontier_contains_every_eligible_node(
     order: Seq<usize>,
-    dependencies: Seq<Vec<usize>>,
+    dependencies: Seq<alloc::vec::Vec<usize>>,
     states: Seq<u8>,
 )
     ensures forall|position: int| #![trigger order[position]]
@@ -307,7 +307,7 @@ pub proof fn ready_frontier_contains_every_eligible_node(
 // r[verify choregraph.proof.single_step.readiness_frontier]
 pub proof fn ready_frontier_contains_only_eligible_nodes(
     order: Seq<usize>,
-    dependencies: Seq<Vec<usize>>,
+    dependencies: Seq<alloc::vec::Vec<usize>>,
     states: Seq<u8>,
 )
     ensures forall|result_index: int|
@@ -336,7 +336,7 @@ pub proof fn ready_frontier_contains_only_eligible_nodes(
 
 pub open spec fn frontier_is_admitted_order_filter_spec(
     order: Seq<usize>,
-    dependencies: Seq<Vec<usize>>,
+    dependencies: Seq<alloc::vec::Vec<usize>>,
     states: Seq<u8>,
     frontier: Seq<usize>,
 ) -> bool {
@@ -346,7 +346,7 @@ pub open spec fn frontier_is_admitted_order_filter_spec(
 // r[verify choregraph.proof.single_step.readiness_frontier]
 pub proof fn ready_frontier_preserves_admitted_order(
     order: Seq<usize>,
-    dependencies: Seq<Vec<usize>>,
+    dependencies: Seq<alloc::vec::Vec<usize>>,
     states: Seq<u8>,
 )
     ensures frontier_is_admitted_order_filter_spec(

@@ -20,6 +20,37 @@ The data path has these stages:
 
 Projection is atomic. If one stage fails, the compiler emits no canonical local set.
 
+## Rust API ownership
+
+The crate root exposes `compile_evaluated` and `CLAIM_BOUNDARY`, not DTO or
+linkage re-exports. Source DTOs live in `model::schema::{RoleSource,
+ROLE_CHOREOGRAPHY_SCHEMA, REQUIRED_NON_CLAIMS}`; role IDs, declarations, kinds,
+imports, and spans in `model::participants`; protocol `Node` and `ChoiceBranch` in
+`model::tree`; fixed `Limits` and `MAX_*` values in `model::bounds`.
+Admission uses `admission::{admit_source, parse_evaluated_json, Admitted,
+Error}`, endpoint projection uses `endpoint::{project_all,
+validate_complete_set, Projected, GlobalProtocol, LocalProtocol, ...}`,
+diagnostics use `issue`, and canonical bundles use `linkage`.
+`linkage::digest` owns identity domains, framing, and validation;
+`linkage::output` owns canonical artifact records; `linkage::evidence` owns
+projection evidence and receipt records; `linkage::provenance` owns pinned
+producer metadata. These are Rust path changes only: Serde containers keep
+their original record labels (for example, `RoleSource` still serializes as
+`RoleChoreographySource` and `Node` as `ChoreographyNode`), and serialized
+field names, packed source/global/local encoding and identity domain labels
+are unchanged.
+The lowerer identity intentionally hashes `admission.rs` and `endpoint.rs`, so
+editing that implementation changes its digest and the derived receipt bytes;
+no historical receipt is silently treated as a new build's receipt.
+
+`admission::Error::Diagnostics` retains the ordered, span-bearing
+diagnostics for existing malformed inputs. `UnsupportedNode` instead reports
+an unrecognized Rust protocol-node shape without inventing a source span; it
+is a typed, unlocated Rust failure and is not serialized as a diagnostic.
+Nested unknown nodes propagate through validation and lowering, before any
+canonical bundle is emitted. New role kinds fail with `InvalidRoleKind` at
+the declaration's real span.
+
 ## Fixed limits
 
 The source must use the reviewed limits. A caller cannot widen them.

@@ -47,7 +47,7 @@ fun model_dependencies source_text =>
     history_machine_sources = [
       {
         path = "crates/choregraph-history-machine/src/lib.rs",
-        text = "#![no_std]\nextern crate alloc;\nchoregraph_core::replay(replay_input);\nchoregraph_core::replay_concrete(replay_input);\n",
+        text = "#![no_std]\nextern crate alloc;\nchoregraph_core::transition::replay(replay_input);\nchoregraph_core::transition::replay_concrete(replay_input);\n",
       },
     ],
     weave_sources = [

@@ -6,16 +6,21 @@ use preserves::{
 };
 use serde::Serialize;
 use serde::de::DeserializeOwned;
+use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{Display, Formatter};
 use std::io::{Error as IoError, ErrorKind, Write};
 
-pub const PRESERVES_CANONICAL_CODEC: &str =
-    "kamacite-preserves-packed-canonical-v2-preserves-rs-5.0.0-rc.7";
-pub const PRESERVES_LEGACY_PREFIXED_JSON_CODEC: &str =
-    "kamacite-legacy-labeled-deterministic-json-v1";
-pub const PRESERVES_PACKAGE_VERSION: &str = "5.0.0-rc.7";
-pub const PRESERVES_SPEC_VERSION: &str = "0.996.3";
+pub mod profile {
+    pub const PRESERVES_CANONICAL_CODEC: &str =
+        "kamacite-preserves-packed-canonical-v2-preserves-rs-5.0.0-rc.7";
+    pub const PRESERVES_LEGACY_PREFIXED_JSON_CODEC: &str =
+        "kamacite-legacy-labeled-deterministic-json-v1";
+    pub const PRESERVES_PACKAGE_VERSION: &str = "5.0.0-rc.7";
+    pub const PRESERVES_SPEC_VERSION: &str = "0.996.3";
+}
+
+use profile::PRESERVES_CANONICAL_CODEC;
 
 const DEFAULT_MAX_INPUT_BYTES: usize = 1_048_576;
 const DEFAULT_MAX_OUTPUT_BYTES: usize = 2_097_152;
@@ -29,10 +34,10 @@ const ROOT_DEPTH: usize = 1;
 pub struct PreservesLimits {
     pub max_input_bytes: usize,
     pub max_output_bytes: usize,
-    pub max_depth: usize,
-    pub max_collection_items: usize,
+    pub max_depth_count: usize,
+    pub max_collection_item_count: usize,
     pub max_atom_bytes: usize,
-    pub max_values: usize,
+    pub max_value_count: usize,
 }
 
 impl Default for PreservesLimits {
@@ -40,10 +45,10 @@ impl Default for PreservesLimits {
         Self {
             max_input_bytes: DEFAULT_MAX_INPUT_BYTES,
             max_output_bytes: DEFAULT_MAX_OUTPUT_BYTES,
-            max_depth: DEFAULT_MAX_DEPTH,
-            max_collection_items: DEFAULT_MAX_COLLECTION_ITEMS,
+            max_depth_count: DEFAULT_MAX_DEPTH,
+            max_collection_item_count: DEFAULT_MAX_COLLECTION_ITEMS,
             max_atom_bytes: DEFAULT_MAX_ATOM_BYTES,
-            max_values: DEFAULT_MAX_VALUES,
+            max_value_count: DEFAULT_MAX_VALUES,
         }
     }
 }
@@ -72,16 +77,37 @@ pub struct CanonicalPreservesArtifact {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PreservesCodecError {
     InvalidPolicy(&'static str),
-    InputLimit { actual: usize, limit: usize },
-    OutputLimit { actual: usize, limit: usize },
-    DepthLimit { actual: usize, limit: usize },
-    CollectionLimit { actual: usize, limit: usize },
-    AtomLimit { actual: usize, limit: usize },
-    ValueLimit { actual: usize, limit: usize },
-    Malformed(String),
+    InputLimit {
+        actual_bytes: usize,
+        limit_bytes: usize,
+    },
+    OutputLimit {
+        actual_bytes: usize,
+        limit_bytes: usize,
+    },
+    DepthLimit {
+        actual_count: usize,
+        max_depth_count: usize,
+    },
+    CollectionLimit {
+        actual_count: usize,
+        max_item_count: usize,
+    },
+    AtomLimit {
+        actual_bytes: usize,
+        limit_bytes: usize,
+    },
+    ValueLimit {
+        actual_count: usize,
+        max_value_count: usize,
+    },
+    Malformed(Cow<'static, str>),
     UnsupportedAnnotation,
     UnsupportedEmbeddedValue,
-    UnsupportedSchema { expected: String, actual: String },
+    UnsupportedSchema {
+        expected: String,
+        actual: String,
+    },
     NonCanonicalPacked,
     TypedDecode(String),
     TypedContentMismatch,
@@ -93,40 +119,58 @@ impl Display for PreservesCodecError {
             Self::InvalidPolicy(field) => {
                 write!(formatter, "Preserves limit {field} must be nonzero")
             }
-            Self::InputLimit { actual, limit } => {
+            Self::InputLimit {
+                actual_bytes,
+                limit_bytes,
+            } => {
                 write!(
                     formatter,
-                    "Preserves input size {actual} exceeds limit {limit}"
+                    "Preserves input size {actual_bytes} exceeds limit {limit_bytes}"
                 )
             }
-            Self::OutputLimit { actual, limit } => {
+            Self::OutputLimit {
+                actual_bytes,
+                limit_bytes,
+            } => {
                 write!(
                     formatter,
-                    "Preserves output size {actual} exceeds limit {limit}"
+                    "Preserves output size {actual_bytes} exceeds limit {limit_bytes}"
                 )
             }
-            Self::DepthLimit { actual, limit } => {
+            Self::DepthLimit {
+                actual_count,
+                max_depth_count,
+            } => {
                 write!(
                     formatter,
-                    "Preserves value depth {actual} exceeds limit {limit}"
+                    "Preserves value depth {actual_count} exceeds limit {max_depth_count}"
                 )
             }
-            Self::CollectionLimit { actual, limit } => {
+            Self::CollectionLimit {
+                actual_count,
+                max_item_count,
+            } => {
                 write!(
                     formatter,
-                    "Preserves collection size {actual} exceeds limit {limit}"
+                    "Preserves collection size {actual_count} exceeds limit {max_item_count}"
                 )
             }
-            Self::AtomLimit { actual, limit } => {
+            Self::AtomLimit {
+                actual_bytes,
+                limit_bytes,
+            } => {
                 write!(
                     formatter,
-                    "Preserves atom size {actual} exceeds limit {limit}"
+                    "Preserves atom size {actual_bytes} exceeds limit {limit_bytes}"
                 )
             }
-            Self::ValueLimit { actual, limit } => {
+            Self::ValueLimit {
+                actual_count,
+                max_value_count,
+            } => {
                 write!(
                     formatter,
-                    "Preserves value count {actual} exceeds limit {limit}"
+                    "Preserves value count {actual_count} exceeds limit {max_value_count}"
                 )
             }
             Self::Malformed(message) => write!(formatter, "malformed Preserves input: {message}"),
@@ -171,15 +215,15 @@ pub fn canonicalize_preserves(
     validate_limits(limits)?;
     if input.len() > limits.max_input_bytes {
         return Err(PreservesCodecError::InputLimit {
-            actual: input.len(),
-            limit: limits.max_input_bytes,
+            actual_bytes: input.len(),
+            limit_bytes: limits.max_input_bytes,
         });
     }
 
     let value = match syntax {
         PreservesSyntax::Text => {
             let text = std::str::from_utf8(input)
-                .map_err(|error| PreservesCodecError::Malformed(error.to_string()))?;
+                .map_err(|error| PreservesCodecError::Malformed(error.to_string().into()))?;
             let mut reader = TextReader::new(BytesBinarySource::new(text.as_bytes()));
             decode_one(&mut reader, limits)?
         }
@@ -248,10 +292,10 @@ fn validate_limits(limits: PreservesLimits) -> Result<(), PreservesCodecError> {
     let fields = [
         ("max_input_bytes", limits.max_input_bytes),
         ("max_output_bytes", limits.max_output_bytes),
-        ("max_depth", limits.max_depth),
-        ("max_collection_items", limits.max_collection_items),
+        ("max_depth", limits.max_depth_count),
+        ("max_collection_items", limits.max_collection_item_count),
         ("max_atom_bytes", limits.max_atom_bytes),
-        ("max_values", limits.max_values),
+        ("max_values", limits.max_value_count),
     ];
     for (field, value) in fields {
         if value == 0 {
@@ -294,13 +338,13 @@ fn decode_one<'de, R: Reader<'de>>(
     loop {
         if let Some(value) = completed.take() {
             if let Some(frame) = frames.last_mut() {
-                frame.accept(value, reader, limits.max_collection_items)?;
+                frame.accept(value, reader, limits.max_collection_item_count)?;
                 continue;
             }
             if reader.peek_class().map_err(reader_error)?.is_some() {
-                return Err(PreservesCodecError::Malformed(
-                    "trailing value after root".to_string(),
-                ));
+                return Err(PreservesCodecError::Malformed(Cow::Borrowed(
+                    "trailing value after root",
+                )));
             }
             return Ok(value);
         }
@@ -308,11 +352,13 @@ fn decode_one<'de, R: Reader<'de>>(
         if let Some(frame) = frames.last_mut()
             && frame.prepare_next(reader)? == FrameAction::Close
         {
-            let frame = frames.pop().ok_or_else(|| {
-                PreservesCodecError::Malformed("decoder frame underflow".to_string())
-            })?;
+            let frame = frames
+                .pop()
+                .ok_or(PreservesCodecError::Malformed(Cow::Borrowed(
+                    "decoder frame underflow",
+                )))?;
             let value = frame.finish()?;
-            register_value(&mut value_count, limits.max_values)?;
+            register_value(&mut value_count, limits.max_value_count)?;
             completed = Some(value);
             continue;
         }
@@ -322,25 +368,28 @@ fn decode_one<'de, R: Reader<'de>>(
                 .len()
                 .checked_add(ROOT_DEPTH)
                 .ok_or(PreservesCodecError::DepthLimit {
-                    actual: usize::MAX,
-                    limit: limits.max_depth,
+                    actual_count: usize::MAX,
+                    max_depth_count: limits.max_depth_count,
                 })?;
-        if depth > limits.max_depth {
+        if depth > limits.max_depth_count {
             return Err(PreservesCodecError::DepthLimit {
-                actual: depth,
-                limit: limits.max_depth,
+                actual_count: depth,
+                max_depth_count: limits.max_depth_count,
             });
         }
-        let token = reader
-            .peek_class()
-            .map_err(reader_error)?
-            .ok_or_else(|| PreservesCodecError::Malformed("unexpected end of input".to_string()))?;
+        let token =
+            reader
+                .peek_class()
+                .map_err(reader_error)?
+                .ok_or(PreservesCodecError::Malformed(Cow::Borrowed(
+                    "unexpected end of input",
+                )))?;
         match token {
             NextToken::Annotation => return Err(PreservesCodecError::UnsupportedAnnotation),
             NextToken::End => {
-                return Err(PreservesCodecError::Malformed(
-                    "unexpected close delimiter".to_string(),
-                ));
+                return Err(PreservesCodecError::Malformed(Cow::Borrowed(
+                    "unexpected close delimiter",
+                )));
             }
             NextToken::Value(ValueClass::Embedded) => {
                 return Err(PreservesCodecError::UnsupportedEmbeddedValue);
@@ -348,7 +397,7 @@ fn decode_one<'de, R: Reader<'de>>(
             NextToken::Value(ValueClass::Atomic(_)) => {
                 let atom = reader.next_atom().map_err(reader_error)?;
                 let value = atom_to_value(atom, limits.max_atom_bytes)?;
-                register_value(&mut value_count, limits.max_values)?;
+                register_value(&mut value_count, limits.max_value_count)?;
                 completed = Some(value);
             }
             NextToken::Value(ValueClass::Compound(class)) => {
@@ -358,17 +407,17 @@ fn decode_one<'de, R: Reader<'de>>(
     }
 }
 
-fn register_value(count: &mut usize, limit: usize) -> Result<(), PreservesCodecError> {
+fn register_value(count: &mut usize, max_value_count: usize) -> Result<(), PreservesCodecError> {
     *count = count
         .checked_add(1)
         .ok_or(PreservesCodecError::ValueLimit {
-            actual: usize::MAX,
-            limit,
+            actual_count: usize::MAX,
+            max_value_count,
         })?;
-    if *count > limit {
+    if *count > max_value_count {
         return Err(PreservesCodecError::ValueLimit {
-            actual: *count,
-            limit,
+            actual_count: *count,
+            max_value_count,
         });
     }
     Ok(())
@@ -394,9 +443,12 @@ fn atom_to_value(atom: Atom<'_>, max_atom_bytes: usize) -> Result<IOValue, Prese
     }
 }
 
-fn check_atom_limit(actual: usize, limit: usize) -> Result<(), PreservesCodecError> {
-    if actual > limit {
-        return Err(PreservesCodecError::AtomLimit { actual, limit });
+fn check_atom_limit(actual_bytes: usize, limit_bytes: usize) -> Result<(), PreservesCodecError> {
+    if actual_bytes > limit_bytes {
+        return Err(PreservesCodecError::AtomLimit {
+            actual_bytes,
+            limit_bytes,
+        });
     }
     Ok(())
 }
@@ -503,7 +555,7 @@ impl Frame {
         &mut self,
         value: IOValue,
         reader: &mut R,
-        collection_limit: usize,
+        max_collection_item_count: usize,
     ) -> Result<(), PreservesCodecError> {
         match self {
             Self::Record { label, fields, .. } => {
@@ -511,19 +563,19 @@ impl Frame {
                     *label = Some(value);
                     return Ok(());
                 }
-                check_collection_growth(fields.len(), collection_limit)?;
+                check_collection_growth(fields.len(), max_collection_item_count)?;
                 fields.push(value);
             }
             Self::Sequence { values, .. } => {
-                check_collection_growth(values.len(), collection_limit)?;
+                check_collection_growth(values.len(), max_collection_item_count)?;
                 values.push(value);
             }
             Self::Set { values, .. } => {
-                check_collection_growth(values.len(), collection_limit)?;
+                check_collection_growth(values.len(), max_collection_item_count)?;
                 if !values.insert(value) {
-                    return Err(PreservesCodecError::Malformed(
-                        "duplicate set element".to_string(),
-                    ));
+                    return Err(PreservesCodecError::Malformed(Cow::Borrowed(
+                        "duplicate set element",
+                    )));
                 }
             }
             Self::Dictionary {
@@ -537,14 +589,17 @@ impl Frame {
                     reader.boundary(boundary).map_err(reader_error)?;
                     return Ok(());
                 }
-                check_collection_growth(values.len(), collection_limit)?;
-                let key = pending_key.take().ok_or_else(|| {
-                    PreservesCodecError::Malformed("dictionary key state lost".to_string())
-                })?;
+                check_collection_growth(values.len(), max_collection_item_count)?;
+                let key =
+                    pending_key
+                        .take()
+                        .ok_or(PreservesCodecError::Malformed(Cow::Borrowed(
+                            "dictionary key state lost",
+                        )))?;
                 if values.insert(key, value).is_some() {
-                    return Err(PreservesCodecError::Malformed(
-                        "duplicate dictionary key".to_string(),
-                    ));
+                    return Err(PreservesCodecError::Malformed(Cow::Borrowed(
+                        "duplicate dictionary key",
+                    )));
                 }
             }
         }
@@ -554,9 +609,9 @@ impl Frame {
     fn finish(self) -> Result<IOValue, PreservesCodecError> {
         match self {
             Self::Record { label, fields, .. } => {
-                let label = label.ok_or_else(|| {
-                    PreservesCodecError::Malformed("record is missing a label".to_string())
-                })?;
+                let label = label.ok_or(PreservesCodecError::Malformed(Cow::Borrowed(
+                    "record is missing a label",
+                )))?;
                 Ok(IOValue::record(label, fields))
             }
             Self::Sequence { values, .. } => Ok(IOValue::new(values)),
@@ -567,9 +622,9 @@ impl Frame {
                 ..
             } => {
                 if pending_key.is_some() {
-                    return Err(PreservesCodecError::Malformed(
-                        "dictionary is missing a value".to_string(),
-                    ));
+                    return Err(PreservesCodecError::Malformed(Cow::Borrowed(
+                        "dictionary is missing a value",
+                    )));
                 }
                 Ok(IOValue::new(values))
             }
@@ -592,70 +647,76 @@ fn close_action<'de, R: Reader<'de>>(
     }
 }
 
-fn check_collection_growth(current: usize, limit: usize) -> Result<(), PreservesCodecError> {
+fn check_collection_growth(
+    current: usize,
+    max_item_count: usize,
+) -> Result<(), PreservesCodecError> {
     let next = current
         .checked_add(1)
         .ok_or(PreservesCodecError::CollectionLimit {
-            actual: usize::MAX,
-            limit,
+            actual_count: usize::MAX,
+            max_item_count,
         })?;
-    if next > limit {
+    if next > max_item_count {
         return Err(PreservesCodecError::CollectionLimit {
-            actual: next,
-            limit,
+            actual_count: next,
+            max_item_count,
         });
     }
     Ok(())
 }
 
 fn reader_error(error: preserves::Error) -> PreservesCodecError {
-    PreservesCodecError::Malformed(error.to_string())
+    PreservesCodecError::Malformed(error.to_string().into())
 }
 
-fn write_packed_bounded(value: &IOValue, limit: usize) -> Result<Vec<u8>, PreservesCodecError> {
-    let mut sink = LimitedVec::new(limit);
+fn write_packed_bounded(
+    value: &IOValue,
+    limit_bytes: usize,
+) -> Result<Vec<u8>, PreservesCodecError> {
+    let mut sink = LimitedVec::new(limit_bytes);
     preserves::write_iovalue_packed_into(value, false, &mut sink)
-        .map_err(|error| output_error(error, limit))?;
+        .map_err(|error| output_error(error, limit_bytes))?;
     Ok(sink.into_inner())
 }
 
-fn write_text_bounded(value: &IOValue, limit: usize) -> Result<String, PreservesCodecError> {
-    let mut sink = LimitedVec::new(limit);
+fn write_text_bounded(value: &IOValue, limit_bytes: usize) -> Result<String, PreservesCodecError> {
+    let mut sink = LimitedVec::new(limit_bytes);
     preserves::write_iovalue_text_into(value, false, &mut sink)
-        .map_err(|error| output_error(error, limit))?;
+        .map_err(|error| output_error(error, limit_bytes))?;
     String::from_utf8(sink.into_inner())
-        .map_err(|error| PreservesCodecError::Malformed(error.to_string()))
+        .map_err(|error| PreservesCodecError::Malformed(error.to_string().into()))
 }
 
-fn typed_encode_error(error: preserves::serde::Error, limit: usize) -> PreservesCodecError {
+fn typed_encode_error(error: preserves::serde::Error, limit_bytes: usize) -> PreservesCodecError {
     match error {
         preserves::serde::Error::Preserves(preserves::Error::Io(error)) => {
-            output_error(error, limit)
+            output_error(error, limit_bytes)
         }
-        other => PreservesCodecError::Malformed(other.to_string()),
+        other => PreservesCodecError::Malformed(other.to_string().into()),
     }
 }
 
-fn output_error(error: IoError, limit: usize) -> PreservesCodecError {
+fn output_error(error: IoError, limit_bytes: usize) -> PreservesCodecError {
     if error.kind() == ErrorKind::FileTooLarge {
         return PreservesCodecError::OutputLimit {
-            actual: limit.saturating_add(1),
-            limit,
+            actual_bytes: limit_bytes.saturating_add(1),
+            limit_bytes,
         };
     }
-    PreservesCodecError::Malformed(error.to_string())
+    PreservesCodecError::Malformed(error.to_string().into())
 }
 
 struct LimitedVec {
     bytes: Vec<u8>,
-    limit: usize,
+    limit_bytes: usize,
 }
 
 impl LimitedVec {
-    fn new(limit: usize) -> Self {
+    fn new(limit_bytes: usize) -> Self {
         Self {
             bytes: Vec::new(),
-            limit,
+            limit_bytes,
         }
     }
 
@@ -675,7 +736,7 @@ impl Write for LimitedVec {
             .len()
             .checked_add(buffer.len())
             .ok_or_else(|| IoError::from(ErrorKind::FileTooLarge))?;
-        if next > self.limit {
+        if next > self.limit_bytes {
             return Err(IoError::from(ErrorKind::FileTooLarge));
         }
         self.bytes.extend_from_slice(buffer);
@@ -688,280 +749,4 @@ impl Write for LimitedVec {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use serde::{Deserialize, Serialize};
-
-    const TEST_SCHEMA_VERSION: &str = "test.record.v1";
-    const TEST_ROOT_LABEL: &str = "BoundRecord";
-    const TEST_TEXT: &str = "<BoundRecord \"alpha\" [1 2]>";
-    const ALTERNATE_TEST_TEXT: &str = "<BoundRecord\n  \"alpha\"\n  [1, 2]\n>";
-    const EXPECTED_ITEM_COUNT: usize = 2;
-    const SHALLOW_DEPTH_LIMIT: usize = 2;
-    const SMALL_COLLECTION_LIMIT: usize = 1;
-    const SMALL_ATOM_LIMIT: usize = 2;
-    const SMALL_INPUT_LIMIT: usize = 8;
-    const SMALL_OUTPUT_LIMIT: usize = 8;
-    const LEGACY_PREFIXED_JSON_INPUT: &[u8] =
-        b"preserves-canonical-binary-v1:{\"name\":\"alpha\",\"values\":[1,2]}";
-    const NON_CANONICAL_RECORD: &[u8] = &[
-        0xb4, 0xb3, 0x0b, b'B', b'o', b'u', b'n', b'd', b'R', b'e', b'c', b'o', b'r', b'd', 0xb1,
-        0x05, b'a', b'l', b'p', b'h', b'a', 0xb5, 0xb0, 0x02, 0x00, 0x01, 0xb0, 0x01, 0x02, 0x84,
-        0x84,
-    ];
-
-    #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-    struct BoundRecord {
-        name: String,
-        values: Vec<u64>,
-    }
-
-    fn schema() -> PreservesSchema<'static> {
-        PreservesSchema {
-            schema_version: TEST_SCHEMA_VERSION,
-            root_label: TEST_ROOT_LABEL,
-        }
-    }
-
-    fn expected() -> BoundRecord {
-        BoundRecord {
-            name: "alpha".to_string(),
-            values: vec![1, 2],
-        }
-    }
-
-    #[test]
-    fn text_and_packed_transfer_syntaxes_converge() {
-        let first = canonicalize_preserves(
-            TEST_TEXT.as_bytes(),
-            PreservesSyntax::Text,
-            schema(),
-            PreservesLimits::default(),
-        );
-        let alternate = canonicalize_preserves(
-            ALTERNATE_TEST_TEXT.as_bytes(),
-            PreservesSyntax::Text,
-            schema(),
-            PreservesLimits::default(),
-        );
-        assert!(first.is_ok(), "first equivalent value must canonicalize");
-        assert!(
-            alternate.is_ok(),
-            "alternate equivalent value must canonicalize"
-        );
-        let (Ok(first), Ok(alternate)) = (first, alternate) else {
-            return;
-        };
-        assert_eq!(first.packed_bytes, alternate.packed_bytes);
-        let packed = canonicalize_preserves(
-            &first.packed_bytes,
-            PreservesSyntax::Packed,
-            schema(),
-            PreservesLimits::default(),
-        );
-        assert!(matches!(packed, Ok(ref artifact) if artifact.packed_bytes == first.packed_bytes));
-    }
-
-    #[test]
-    fn typed_roundtrip_binds_normative_fields() {
-        let encoded = encode_typed_preserves(&expected(), schema(), PreservesLimits::default());
-        assert!(encoded.is_ok(), "typed test value must encode");
-        let Ok(encoded) = encoded else {
-            return;
-        };
-        let decoded: Result<BoundRecord, _> = decode_typed_preserves(&encoded);
-        assert_eq!(decoded, Ok(expected()));
-        let mismatched = BoundRecord {
-            name: "other".to_string(),
-            values: vec![1, 2],
-        };
-        let verification = verify_typed_preserves(
-            &encoded.packed_bytes,
-            PreservesSyntax::Packed,
-            &mismatched,
-            schema(),
-            PreservesLimits::default(),
-        );
-        assert_eq!(
-            verification.err(),
-            Some(PreservesCodecError::TypedContentMismatch)
-        );
-    }
-
-    #[test]
-    fn rejects_malformed_trailing_and_unsupported_schema_inputs() {
-        let malformed = canonicalize_preserves(
-            b"<BoundRecord",
-            PreservesSyntax::Text,
-            schema(),
-            PreservesLimits::default(),
-        );
-        assert!(matches!(malformed, Err(PreservesCodecError::Malformed(_))));
-
-        let trailing = canonicalize_preserves(
-            b"<BoundRecord \"alpha\" [1 2]> extra",
-            PreservesSyntax::Text,
-            schema(),
-            PreservesLimits::default(),
-        );
-        assert!(matches!(trailing, Err(PreservesCodecError::Malformed(_))));
-
-        let wrong_schema = canonicalize_preserves(
-            b"<Other \"alpha\" [1 2]>",
-            PreservesSyntax::Text,
-            schema(),
-            PreservesLimits::default(),
-        );
-        assert!(matches!(
-            wrong_schema,
-            Err(PreservesCodecError::UnsupportedSchema { .. })
-        ));
-    }
-
-    #[test]
-    fn rejects_annotations_embedded_values_and_noncanonical_packed() {
-        let annotation = canonicalize_preserves(
-            b"@note <BoundRecord \"alpha\" [1 2]>",
-            PreservesSyntax::Text,
-            schema(),
-            PreservesLimits::default(),
-        );
-        assert_eq!(
-            annotation.err(),
-            Some(PreservesCodecError::UnsupportedAnnotation)
-        );
-
-        let embedded = canonicalize_preserves(
-            b"<BoundRecord #:\"opaque\" [1 2]>",
-            PreservesSyntax::Text,
-            schema(),
-            PreservesLimits::default(),
-        );
-        assert_eq!(
-            embedded.err(),
-            Some(PreservesCodecError::UnsupportedEmbeddedValue)
-        );
-
-        let noncanonical = canonicalize_preserves(
-            NON_CANONICAL_RECORD,
-            PreservesSyntax::Packed,
-            PreservesSchema {
-                schema_version: TEST_SCHEMA_VERSION,
-                root_label: TEST_ROOT_LABEL,
-            },
-            PreservesLimits::default(),
-        );
-        assert_eq!(
-            noncanonical.err(),
-            Some(PreservesCodecError::NonCanonicalPacked)
-        );
-    }
-
-    #[test]
-    fn rejects_legacy_prefixed_json_as_canonical_preserves() {
-        let result = canonicalize_preserves(
-            LEGACY_PREFIXED_JSON_INPUT,
-            PreservesSyntax::Text,
-            schema(),
-            PreservesLimits::default(),
-        );
-
-        assert!(matches!(result, Err(PreservesCodecError::Malformed(_))));
-    }
-
-    #[test]
-    fn enforces_every_named_limit_without_emitting_an_artifact() {
-        let base = PreservesLimits::default();
-        let input = canonicalize_preserves(
-            TEST_TEXT.as_bytes(),
-            PreservesSyntax::Text,
-            schema(),
-            PreservesLimits {
-                max_input_bytes: SMALL_INPUT_LIMIT,
-                ..base
-            },
-        );
-        assert!(matches!(input, Err(PreservesCodecError::InputLimit { .. })));
-
-        let depth = canonicalize_preserves(
-            TEST_TEXT.as_bytes(),
-            PreservesSyntax::Text,
-            schema(),
-            PreservesLimits {
-                max_depth: SHALLOW_DEPTH_LIMIT,
-                ..base
-            },
-        );
-        assert!(matches!(depth, Err(PreservesCodecError::DepthLimit { .. })));
-
-        let collection = canonicalize_preserves(
-            TEST_TEXT.as_bytes(),
-            PreservesSyntax::Text,
-            schema(),
-            PreservesLimits {
-                max_collection_items: SMALL_COLLECTION_LIMIT,
-                ..base
-            },
-        );
-        assert!(matches!(
-            collection,
-            Err(PreservesCodecError::CollectionLimit { .. })
-        ));
-
-        let atom = canonicalize_preserves(
-            TEST_TEXT.as_bytes(),
-            PreservesSyntax::Text,
-            schema(),
-            PreservesLimits {
-                max_atom_bytes: SMALL_ATOM_LIMIT,
-                ..base
-            },
-        );
-        assert!(matches!(atom, Err(PreservesCodecError::AtomLimit { .. })));
-
-        let values = canonicalize_preserves(
-            TEST_TEXT.as_bytes(),
-            PreservesSyntax::Text,
-            schema(),
-            PreservesLimits {
-                max_values: EXPECTED_ITEM_COUNT,
-                ..base
-            },
-        );
-        assert!(matches!(
-            values,
-            Err(PreservesCodecError::ValueLimit { .. })
-        ));
-
-        let output = canonicalize_preserves(
-            TEST_TEXT.as_bytes(),
-            PreservesSyntax::Text,
-            schema(),
-            PreservesLimits {
-                max_output_bytes: SMALL_OUTPUT_LIMIT,
-                ..base
-            },
-        );
-        assert!(matches!(
-            output,
-            Err(PreservesCodecError::OutputLimit { .. })
-        ));
-    }
-
-    #[test]
-    fn rejects_zero_limit_policy() {
-        let result = canonicalize_preserves(
-            TEST_TEXT.as_bytes(),
-            PreservesSyntax::Text,
-            schema(),
-            PreservesLimits {
-                max_depth: 0,
-                ..PreservesLimits::default()
-            },
-        );
-        assert_eq!(
-            result.err(),
-            Some(PreservesCodecError::InvalidPolicy("max_depth"))
-        );
-    }
-}
+mod tests;

@@ -1,189 +1,55 @@
-// Aggregate artifacts keep canonical ordering and established descriptor compatibility.
-#![allow(
-    unknown_lints,
-    assertion_density,
-    missing_const_fn,
-    non_trait_imports,
-    numeric_units,
-    path_segment_repetition,
-    reason = "aggregate artifacts keep canonical ordering and established descriptor compatibility"
-)]
-
-// r[impl choregraph.interchange.kamacite.aggregate]
-// r[impl choregraph.interchange.kamacite.adapter]
-// r[impl choregraph.interchange.kamacite.identity]
-use crate::codec::{
-    ADMITTED_IR_ROOT_LABEL, ADMITTED_IR_SCHEMA_VERSION, CanonicalArtifact, CodecBoundaryError,
-    MACHINE_ROOT_LABEL, MACHINE_SCHEMA_VERSION, PROFILE_ROOT_LABEL, PROFILE_SCHEMA_VERSION, decode,
-    encode,
+use crate::aggregate::policy::EXECUTION_GRAPH_REVISION;
+use crate::aggregate::policy::GLOBAL_STATE_CARDINALITY;
+use crate::aggregate::policy::GLOBAL_STATE_MODEL;
+use crate::aggregate::policy::KAMACITE_REVISION;
+use crate::aggregate::policy::LATTICE_REVISION;
+use crate::aggregate::policy::SupportedKamaciteProfile;
+use crate::aggregate::policy::build_profile_artifact;
+use crate::aggregate::record::AggregateMachineDescriptor;
+use crate::aggregate::record::CompatibilityMetadata;
+use crate::aggregate::record::DescriptorDependencySet;
+use crate::aggregate::record::DescriptorEdge;
+use crate::aggregate::record::DescriptorEffect;
+use crate::aggregate::record::DescriptorLimits;
+use crate::aggregate::record::DescriptorNode;
+use crate::aggregate::record::DescriptorSuspension;
+use crate::aggregate::record::DurableMachineDescriptor;
+use crate::codec::graph::{
+    ADMITTED_IR_ROOT_LABEL, ADMITTED_IR_SCHEMA_VERSION, MACHINE_ROOT_LABEL, MACHINE_SCHEMA_VERSION,
 };
+use crate::codec::{CanonicalArtifact, CodecBoundaryError, decode, encode};
 use crate::identity::{
     ArtifactDomain, ArtifactIdentity, IdentityChain, IdentityError, KamaciteIdentityDomain,
     compute_identity, compute_kamacite_identity,
 };
-use crate::lifecycle::{
+use crate::lifecycle::conversion::{
     LIFECYCLE_FSM_ID, LifecycleArtifact, LifecycleError, build_lifecycle_artifact,
 };
 use choregraph_core::{
-    Action, AdmissionLimits, AdmittedMachine, EdgeSpec, EffectDeclarationSpec, LocalState,
-    MachineSpec, NodeSpec, TransitionSelector,
+    model::automaton::AdmittedMachine, model::automaton::MachineSpec,
+    model::capacity::AdmissionLimits, model::dispatch::EffectDeclarationSpec,
+    model::graph::EdgeSpec, model::graph::NodeSpec, model::semantics::Action,
+    model::semantics::LocalState, model::semantics::TransitionSelector,
 };
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::fmt::{Display, Formatter};
 
-pub const KAMACITE_REVISION: &str = "6245a52498f7de511df660eabec3f9b350338cb6";
-pub const EXECUTION_GRAPH_REVISION: &str = "c415ddf2c8252dd9ba6cb267a4e6346158069823";
-pub const LATTICE_REVISION: &str = "c8d56ad83a57287064edb85f58808f53e4bf4536";
-pub const GLOBAL_STATE_MODEL: &str = "parameterized-map-from-node-id-to-local-state";
-pub const GLOBAL_STATE_CARDINALITY: &str = "not-enumerated";
 const DESCRIPTOR_SCHEMA_VERSION: u32 = 1;
 const DURABLE_DESCRIPTOR_SCHEMA_VERSION: u32 = 2;
-const PROFILE_SCHEMA_NUMBER: u32 = 1;
-const KAMACITE_LICENSE: &str = "MIT OR Apache-2.0";
-const MACHINE_SCHEMA_SOURCE_BLAKE3: &str =
-    "4cb7079deb17e77fe2806bd24a80f47e5df1ca7c405725429a3ea47236ecb0f6";
-const LINK_RECEIPT_SCHEMA_SOURCE_BLAKE3: &str =
-    "35fe04687697fe9d8027f924aade0a2ddccb65f5b9843a17c8692b8fa93212c1";
 const MACHINE_NON_CLAIM_COUNT: usize = 4;
 const DURABLE_MACHINE_NON_CLAIM_COUNT: usize = 5;
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct DescriptorLimits {
-    pub max_nodes: u64,
-    pub max_edges: u64,
-    pub max_operations: u64,
-    pub max_effect_declarations: u64,
-    pub max_identifier_bytes: u64,
-    pub max_reference_bytes: u64,
-    pub max_event_bytes: u64,
-    pub max_intent_bytes: u64,
-    pub max_intents_per_transition: u64,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct DescriptorNode {
-    pub node_id: String,
-    pub operations: Vec<String>,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct DescriptorEdge {
-    pub source: String,
-    pub target: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct DescriptorDependencySet {
-    pub node_id: String,
-    pub dependencies: Vec<String>,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct DescriptorEffect {
-    pub node_id: String,
-    pub from_state: String,
-    pub action: String,
-    pub operation: String,
-    pub resource: String,
-    pub ability: String,
-    pub request: String,
-    pub payload: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct CompatibilityMetadata {
-    pub execution_graph_revision: String,
-    pub lattice_revision: String,
-    pub kamacite_revision: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(rename = "choregraph-machine-v1", deny_unknown_fields)]
-pub struct AggregateMachineDescriptor {
-    pub schema_version: u32,
-    pub machine_schema: String,
-    pub lifecycle_profile_id: String,
-    pub lifecycle_profile_identity: ArtifactIdentity,
-    pub kamacite_profile_identity: ArtifactIdentity,
-    pub global_state_model: String,
-    pub global_state_cardinality: String,
-    pub limits: DescriptorLimits,
-    pub nodes: Vec<DescriptorNode>,
-    pub edges: Vec<DescriptorEdge>,
-    pub dependencies: Vec<DescriptorDependencySet>,
-    pub topological_order: Vec<String>,
-    pub effects: Vec<DescriptorEffect>,
-    pub compatibility: CompatibilityMetadata,
-    pub checked_laws: Vec<String>,
-    pub non_claims: Vec<String>,
-}
-
-/// One suspension declaration row in a durable machine descriptor.
-#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-pub struct DescriptorSuspension {
-    pub node_id: String,
-    pub class: String,
-    pub reference: String,
-}
-
-/// The durable-suspension machine descriptor. Version 2 keeps version 1
-/// artifacts byte-identical: linear machines never gain this field set.
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(rename = "choregraph-machine-durable-v1", deny_unknown_fields)]
-pub struct DurableMachineDescriptor {
-    pub schema_version: u32,
-    pub machine_schema: String,
-    pub lifecycle_profile_id: String,
-    pub lifecycle_profile_identity: ArtifactIdentity,
-    pub kamacite_profile_identity: ArtifactIdentity,
-    pub global_state_model: String,
-    pub global_state_cardinality: String,
-    pub limits: DescriptorLimits,
-    pub nodes: Vec<DescriptorNode>,
-    pub edges: Vec<DescriptorEdge>,
-    pub dependencies: Vec<DescriptorDependencySet>,
-    pub topological_order: Vec<String>,
-    pub effects: Vec<DescriptorEffect>,
-    pub suspensions: Vec<DescriptorSuspension>,
-    pub compatibility: CompatibilityMetadata,
-    pub checked_laws: Vec<String>,
-    pub non_claims: Vec<String>,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize)]
 #[serde(rename = "choregraph-admitted-ir-v1", deny_unknown_fields)]
-struct AdmittedIrDescriptor {
+struct AdmittedIrDescriptor<'a> {
     schema_version: u32,
-    machine_schema: String,
-    lifecycle_profile_id: String,
-    limits: DescriptorLimits,
-    nodes: Vec<DescriptorNode>,
-    edges: Vec<DescriptorEdge>,
-    dependencies: Vec<DescriptorDependencySet>,
-    topological_order: Vec<String>,
-    effects: Vec<DescriptorEffect>,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(rename = "choregraph-kamacite-profile-v1", deny_unknown_fields)]
-pub struct SupportedKamaciteProfile {
-    pub schema_version: u32,
-    pub kamacite_revision: String,
-    pub kamacite_license: String,
-    pub canonical_codec: String,
-    pub preserves_package_version: String,
-    pub preserves_spec_version: String,
-    pub machine_schema: String,
-    pub machine_schema_source_blake3: String,
-    pub link_receipt_schema_source_blake3: String,
-    pub fsm_spec_schema: String,
-    pub fsm_receipt_schema: String,
-    pub fsm_determinism_policy: String,
-    pub fsm_receipt_kinds: Vec<String>,
-    pub fsm_denial_no_effect_class: String,
-    pub lifecycle_fsm_id: String,
-    pub authority: String,
-    pub non_claims: Vec<String>,
+    machine_schema: &'a str,
+    lifecycle_profile_id: &'a str,
+    limits: &'a DescriptorLimits,
+    nodes: &'a [DescriptorNode],
+    edges: &'a [DescriptorEdge],
+    dependencies: &'a [DescriptorDependencySet],
+    topological_order: &'a [String],
+    effects: &'a [DescriptorEffect],
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -232,30 +98,54 @@ pub enum AggregateError {
 
 impl Display for AggregateError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Codec(error) => Display::fmt(error, formatter),
-            Self::Identity(error) => Display::fmt(error, formatter),
-            Self::Lifecycle(error) => Display::fmt(error, formatter),
-            Self::NumericLimitOverflow => {
-                formatter.write_str("descriptor numeric limit does not fit this target")
-            }
-            Self::UnsupportedProfile => formatter.write_str("unsupported Kamacite profile binding"),
-            Self::GlobalStateEnumeration => {
-                formatter.write_str("aggregate product-state enumeration is not admitted")
-            }
-            Self::DescriptorMismatch => {
-                formatter.write_str("canonical machine descriptor does not match admitted IR")
-            }
-            Self::AdmissionRejected => formatter.write_str("decoded machine failed core admission"),
-            Self::UnknownLifecycleValue => {
-                formatter.write_str("descriptor contains an unknown lifecycle value")
-            }
-            Self::MissingNormalizedEntry => {
-                formatter.write_str("admitted machine is missing a normalized index entry")
-            }
-            Self::EmptySourceEnvelope => {
-                formatter.write_str("source envelope identity material is empty")
-            }
+        if let Self::Codec(error) = self {
+            return Display::fmt(error, formatter);
+        }
+        if let Self::Identity(error) = self {
+            return Display::fmt(error, formatter);
+        }
+        if let Self::Lifecycle(error) = self {
+            return Display::fmt(error, formatter);
+        }
+        const DIAGNOSTICS: [(AggregateError, &str); 8] = [
+            (
+                AggregateError::NumericLimitOverflow,
+                "descriptor numeric limit does not fit this target",
+            ),
+            (
+                AggregateError::UnsupportedProfile,
+                "unsupported Kamacite profile binding",
+            ),
+            (
+                AggregateError::GlobalStateEnumeration,
+                "aggregate product-state enumeration is not admitted",
+            ),
+            (
+                AggregateError::DescriptorMismatch,
+                "canonical machine descriptor does not match admitted IR",
+            ),
+            (
+                AggregateError::AdmissionRejected,
+                "decoded machine failed core admission",
+            ),
+            (
+                AggregateError::UnknownLifecycleValue,
+                "descriptor contains an unknown lifecycle value",
+            ),
+            (
+                AggregateError::MissingNormalizedEntry,
+                "admitted machine is missing a normalized index entry",
+            ),
+            (
+                AggregateError::EmptySourceEnvelope,
+                "source envelope identity material is empty",
+            ),
+        ];
+        if let Some((_, message)) = DIAGNOSTICS.iter().find(|(category, _)| category == self) {
+            formatter.write_str(message)
+        } else {
+            // New categories retain their exact variant and payload in diagnostics.
+            std::fmt::Debug::fmt(self, formatter)
         }
     }
 }
@@ -279,51 +169,6 @@ impl From<LifecycleError> for AggregateError {
         Self::Lifecycle(error)
     }
 }
-
-fn profile() -> SupportedKamaciteProfile {
-    SupportedKamaciteProfile {
-        schema_version: PROFILE_SCHEMA_NUMBER,
-        kamacite_revision: String::from(KAMACITE_REVISION),
-        kamacite_license: String::from(KAMACITE_LICENSE),
-        canonical_codec: String::from(crate::selected_kamacite_codec::PRESERVES_CANONICAL_CODEC),
-        preserves_package_version: String::from(
-            crate::selected_kamacite_codec::PRESERVES_PACKAGE_VERSION,
-        ),
-        preserves_spec_version: String::from(
-            crate::selected_kamacite_codec::PRESERVES_SPEC_VERSION,
-        ),
-        machine_schema: String::from(MACHINE_SCHEMA_VERSION),
-        machine_schema_source_blake3: String::from(MACHINE_SCHEMA_SOURCE_BLAKE3),
-        link_receipt_schema_source_blake3: String::from(LINK_RECEIPT_SCHEMA_SOURCE_BLAKE3),
-        fsm_spec_schema: String::from(crate::codec::FSM_SPEC_SCHEMA_VERSION),
-        fsm_receipt_schema: String::from(crate::codec::FSM_RECEIPT_SCHEMA_VERSION),
-        fsm_determinism_policy: String::from("deterministic"),
-        fsm_receipt_kinds: vec![String::from("exhaustiveness"), String::from("trace")],
-        fsm_denial_no_effect_class: String::from("no-side-effect"),
-        lifecycle_fsm_id: String::from(LIFECYCLE_FSM_ID),
-        authority: String::from("canonical-packed-preserves"),
-        non_claims: vec![
-            String::from("profile identity does not prove transition correctness"),
-            String::from("profile identity does not prove source equivalence"),
-            String::from("profile identity does not authorize runtime effects"),
-        ],
-    }
-}
-
-pub fn build_profile_artifact() -> Result<
-    (
-        SupportedKamaciteProfile,
-        CanonicalArtifact,
-        ArtifactIdentity,
-    ),
-    AggregateError,
-> {
-    let profile = profile();
-    let artifact = encode(&profile, PROFILE_SCHEMA_VERSION, PROFILE_ROOT_LABEL)?;
-    let identity = compute_identity(ArtifactDomain::Profile, &artifact.packed_bytes)?;
-    Ok((profile, artifact, identity))
-}
-
 fn usize_to_u64(value: usize) -> Result<u64, AggregateError> {
     u64::try_from(value).map_err(|_| AggregateError::NumericLimitOverflow)
 }
@@ -425,24 +270,12 @@ fn normalized_parts(machine: &AdmittedMachine) -> Result<NormalizedParts, Aggreg
     for node_id in machine.node_ids() {
         let operations = machine
             .operations(node_id)
-            .ok_or(AggregateError::MissingNormalizedEntry)?
-            .iter()
-            .map(|operation| String::from(operation.as_str()))
-            .collect();
-        nodes.push(DescriptorNode {
-            node_id: String::from(node_id.as_str()),
-            operations,
-        });
+            .ok_or(AggregateError::MissingNormalizedEntry)?;
+        nodes.push(DescriptorNode::from((node_id, operations)));
         let dependency_ids = machine
             .dependencies(node_id)
-            .ok_or(AggregateError::MissingNormalizedEntry)?
-            .iter()
-            .map(|dependency| String::from(dependency.as_str()))
-            .collect();
-        dependencies.push(DescriptorDependencySet {
-            node_id: String::from(node_id.as_str()),
-            dependencies: dependency_ids,
-        });
+            .ok_or(AggregateError::MissingNormalizedEntry)?;
+        dependencies.push(DescriptorDependencySet::from((node_id, dependency_ids)));
     }
     let edges = machine
         .edges()
@@ -485,7 +318,8 @@ fn machine_descriptor(
     lifecycle_identity: ArtifactIdentity,
     profile_identity: ArtifactIdentity,
 ) -> Result<AggregateMachineDescriptor, AggregateError> {
-    if machine.lifecycle_profile() != choregraph_core::LifecycleProfile::LinearV1 {
+    if machine.lifecycle_profile() != choregraph_core::model::semantics::LifecycleProfile::LinearV1
+    {
         return Err(AggregateError::UnsupportedProfile);
     }
     let parts = normalized_parts(machine)?;
@@ -522,21 +356,18 @@ fn machine_descriptor(
     })
 }
 
-fn admitted_ir_descriptor(
-    machine: &AdmittedMachine,
-) -> Result<AdmittedIrDescriptor, AggregateError> {
-    let parts = normalized_parts(machine)?;
-    Ok(AdmittedIrDescriptor {
+fn admitted_ir_descriptor(descriptor: &AggregateMachineDescriptor) -> AdmittedIrDescriptor<'_> {
+    AdmittedIrDescriptor {
         schema_version: DESCRIPTOR_SCHEMA_VERSION,
-        machine_schema: String::from(machine.schema()),
-        lifecycle_profile_id: String::from(LIFECYCLE_FSM_ID),
-        limits: descriptor_limits(machine.limits())?,
-        nodes: parts.nodes,
-        edges: parts.edges,
-        dependencies: parts.dependencies,
-        topological_order: parts.topological_order,
-        effects: parts.effects,
-    })
+        machine_schema: &descriptor.machine_schema,
+        lifecycle_profile_id: &descriptor.lifecycle_profile_id,
+        limits: &descriptor.limits,
+        nodes: &descriptor.nodes,
+        edges: &descriptor.edges,
+        dependencies: &descriptor.dependencies,
+        topological_order: &descriptor.topological_order,
+        effects: &descriptor.effects,
+    }
 }
 
 pub fn encode_machine_descriptor(
@@ -562,7 +393,7 @@ pub fn build_artifact_set(
         profile_identity.clone(),
     )?;
     let machine_artifact = encode_machine_descriptor(&machine_descriptor)?;
-    let admitted_ir = admitted_ir_descriptor(machine)?;
+    let admitted_ir = admitted_ir_descriptor(&machine_descriptor);
     let admitted_ir_artifact = encode(
         &admitted_ir,
         ADMITTED_IR_SCHEMA_VERSION,
@@ -640,7 +471,9 @@ pub fn durable_machine_descriptor(
     lifecycle_identity: ArtifactIdentity,
     profile_identity: ArtifactIdentity,
 ) -> Result<DurableMachineDescriptor, AggregateError> {
-    if machine.lifecycle_profile() != choregraph_core::LifecycleProfile::DurableSuspensionV1 {
+    if machine.lifecycle_profile()
+        != choregraph_core::model::semantics::LifecycleProfile::DurableSuspensionV1
+    {
         return Err(AggregateError::UnsupportedProfile);
     }
     let parts = normalized_parts(machine)?;
@@ -656,7 +489,7 @@ pub fn durable_machine_descriptor(
     Ok(DurableMachineDescriptor {
         schema_version: DURABLE_DESCRIPTOR_SCHEMA_VERSION,
         machine_schema: String::from(machine.schema()),
-        lifecycle_profile_id: String::from(crate::lifecycle::DURABLE_FSM_ID),
+        lifecycle_profile_id: String::from(crate::lifecycle::conversion::DURABLE_FSM_ID),
         lifecycle_profile_identity: lifecycle_identity,
         kamacite_profile_identity: profile_identity,
         global_state_model: String::from(GLOBAL_STATE_MODEL),
@@ -697,7 +530,7 @@ pub fn encode_durable_machine_descriptor(
     encode(
         descriptor,
         MACHINE_SCHEMA_VERSION,
-        crate::codec::DURABLE_MACHINE_ROOT_LABEL,
+        crate::codec::graph::DURABLE_MACHINE_ROOT_LABEL,
     )
     .map_err(Into::into)
 }
@@ -740,11 +573,13 @@ fn durable_machine_spec(
     spec.suspensions = descriptor
         .suspensions
         .iter()
-        .map(|suspension| choregraph_core::SuspensionDeclarationSpec {
-            node_id: suspension.node_id.clone(),
-            class: suspension.class.clone(),
-            reference: suspension.reference.clone(),
-        })
+        .map(
+            |suspension| choregraph_core::model::pause::SuspensionDeclarationSpec {
+                node_id: suspension.node_id.clone(),
+                class: suspension.class.clone(),
+                reference: suspension.reference.clone(),
+            },
+        )
         .collect();
     Ok(spec)
 }
@@ -769,10 +604,10 @@ pub fn validate_durable_machine_artifact(
     let (descriptor, canonical): (DurableMachineDescriptor, CanonicalArtifact) = decode(
         input,
         MACHINE_SCHEMA_VERSION,
-        crate::codec::DURABLE_MACHINE_ROOT_LABEL,
+        crate::codec::graph::DURABLE_MACHINE_ROOT_LABEL,
     )?;
     if descriptor.schema_version != DURABLE_DESCRIPTOR_SCHEMA_VERSION
-        || descriptor.lifecycle_profile_id != crate::lifecycle::DURABLE_FSM_ID
+        || descriptor.lifecycle_profile_id != crate::lifecycle::conversion::DURABLE_FSM_ID
         || descriptor.compatibility.kamacite_revision != KAMACITE_REVISION
     {
         return Err(AggregateError::UnsupportedProfile);

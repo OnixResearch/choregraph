@@ -21,12 +21,7 @@ use cap_fs_ext::{FollowSymlinks, OpenOptionsFollowExt};
 use cap_root_core::{AdmissionMode, RootRelativePath};
 use cap_std::ambient_authority;
 use cap_std::fs::{Dir, OpenOptions};
-use choregraph_kamacite::{IdentityMaterials, build_artifact_set};
-use choregraph_nickel::{
-    DEFAULT_MAX_IMPORTS, EvaluatedSource, FrontendFailure, FrontendIssueCode, FrontendLimits,
-    LoweredSourceFormat, ObservedImport, lower_evaluated_json, parse_evaluated_json,
-    validate_restricted,
-};
+use choregraph_kamacite::aggregate::assembly::{IdentityMaterials, build_artifact_set};
 
 const CONTRACT_ENTRY_PATH: &str = "evaluated-graph-contract.ncl";
 const CONTRACT_LIBRARY_PATH: &str = "restricted-graph-contracts.ncl";
@@ -37,7 +32,6 @@ const CONTRACT_LIBRARY_BYTES: &[u8] =
 const PROOF_SET_BYTES: &[u8] =
     include_bytes!("../../../evidence/generated/trace-replay-proof.json");
 const GENERATOR_BYTES: &[u8] = include_bytes!("capability.rs");
-const ADAPTER_BYTES: &[u8] = crate::corpus::KAMACITE_AGGREGATE_SOURCE;
 const TOOLCHAIN_BYTES: &[u8] = include_bytes!("../../../rust-toolchain.toml");
 const TEMP_FILE_SUFFIX: &str = ".choregraph-tmp";
 const EVALUATOR_TIMEOUT_MS: u64 = 10_000;
@@ -62,12 +56,12 @@ pub struct CompileNickelRequest {
     pub output_root: PathBuf,
     pub output_path: PathBuf,
     pub import_roots: Vec<OperatorRootSpec>,
-    pub limits: FrontendLimits,
+    pub limits: choregraph_nickel::profile::FrontendLimits,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CompilationReport {
-    pub source_format: LoweredSourceFormat,
+    pub source_format: choregraph_nickel::lower::LoweredSourceFormat,
     pub import_count: usize,
     pub import_bytes: usize,
     pub machine_identity: String,
@@ -92,45 +86,60 @@ struct LoadedImport {
     bytes: Vec<u8>,
 }
 
-fn fail(code: FrontendIssueCode) -> FrontendFailure {
-    FrontendFailure::one(code)
+fn fail(
+    code: choregraph_nickel::diagnostic::FrontendIssueCode,
+) -> choregraph_nickel::diagnostic::FrontendFailure {
+    choregraph_nickel::diagnostic::FrontendFailure::one(code)
 }
 
-fn open_root(path: &Path) -> Result<OpenRoot, FrontendFailure> {
+fn open_root(path: &Path) -> Result<OpenRoot, choregraph_nickel::diagnostic::FrontendFailure> {
     if !path.is_absolute() {
-        return Err(fail(FrontendIssueCode::CapabilityRootUnavailable));
+        return Err(fail(
+            choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityRootUnavailable,
+        ));
     }
-    let dir = Dir::open_ambient_dir(path, ambient_authority())
-        .map_err(|_| fail(FrontendIssueCode::CapabilityRootUnavailable))?;
+    let dir = Dir::open_ambient_dir(path, ambient_authority()).map_err(|_| {
+        fail(choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityRootUnavailable)
+    })?;
     Ok(OpenRoot {
         ambient_path: path.to_path_buf(),
         dir,
     })
 }
 
-pub(crate) fn open_capability_dir(path: &Path) -> Result<Dir, FrontendFailure> {
+pub(crate) fn open_capability_dir(
+    path: &Path,
+) -> Result<Dir, choregraph_nickel::diagnostic::FrontendFailure> {
     Ok(open_root(path)?.dir)
 }
 
-fn open_roots(request: &CompileNickelRequest) -> Result<OpenRoots, FrontendFailure> {
+fn open_roots(
+    request: &CompileNickelRequest,
+) -> Result<OpenRoots, choregraph_nickel::diagnostic::FrontendFailure> {
     let source = open_root(&request.source_root)?;
     let contract = open_root(&request.contract_root)?;
     let scratch = open_root(&request.scratch_root)?;
     let output = open_root(&request.output_root)?;
-    if request.import_roots.len() > DEFAULT_MAX_IMPORTS {
-        return Err(fail(FrontendIssueCode::CapabilityRootUnavailable));
+    if request.import_roots.len() > choregraph_nickel::profile::DEFAULT_MAX_IMPORTS {
+        return Err(fail(
+            choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityRootUnavailable,
+        ));
     }
     if request.import_roots.iter().any(|root| root.id.is_empty()) {
-        return Err(fail(FrontendIssueCode::CapabilityRootUnavailable));
+        return Err(fail(
+            choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityRootUnavailable,
+        ));
     }
     let root_entries = request
         .import_roots
         .iter()
         .map(|root| Ok((root.id.clone(), open_root(&root.ambient_path)?)))
-        .collect::<Result<Vec<_>, FrontendFailure>>()?;
+        .collect::<Result<Vec<_>, choregraph_nickel::diagnostic::FrontendFailure>>()?;
     let root_registry = root_entries.into_iter().collect::<BTreeMap<_, _>>();
     if root_registry.len() != request.import_roots.len() {
-        return Err(fail(FrontendIssueCode::CapabilityRootUnavailable));
+        return Err(fail(
+            choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityRootUnavailable,
+        ));
     }
     Ok(OpenRoots {
         source,
@@ -141,25 +150,28 @@ fn open_roots(request: &CompileNickelRequest) -> Result<OpenRoots, FrontendFailu
     })
 }
 
-fn admitted_path(path: &Path) -> Result<RootRelativePath, FrontendFailure> {
+fn admitted_path(
+    path: &Path,
+) -> Result<RootRelativePath, choregraph_nickel::diagnostic::FrontendFailure> {
     RootRelativePath::new(path, AdmissionMode::NonEmptyRelative)
-        .map_err(|_| fail(FrontendIssueCode::CapabilityPathRejected))
+        .map_err(|_| fail(choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityPathRejected))
 }
 
 fn open_parent(
     root: &Dir,
     path: &RootRelativePath,
-    failure_code: FrontendIssueCode,
-) -> Result<(Dir, OsString), FrontendFailure> {
-    let file_name = path
-        .file_name()
-        .map(OsStr::to_os_string)
-        .ok_or_else(|| fail(FrontendIssueCode::CapabilityPathRejected))?;
+    failure_code: choregraph_nickel::diagnostic::FrontendIssueCode,
+) -> Result<(Dir, OsString), choregraph_nickel::diagnostic::FrontendFailure> {
+    let file_name = path.file_name().map(OsStr::to_os_string).ok_or_else(|| {
+        fail(choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityPathRejected)
+    })?;
     let mut parent = root.try_clone().map_err(|_| fail(failure_code))?;
     if let Some(parent_path) = path.parent() {
         for component in parent_path.components() {
             let Component::Normal(segment) = component else {
-                return Err(fail(FrontendIssueCode::CapabilityPathRejected));
+                return Err(fail(
+                    choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityPathRejected,
+                ));
             };
             parent = cap_fs_ext::DirExt::open_dir_nofollow(&parent, segment)
                 .map_err(|_| fail(failure_code))?;
@@ -172,40 +184,49 @@ pub(crate) fn read_relative(
     root: &Dir,
     relative_path: &Path,
     max_bytes: usize,
-) -> Result<Vec<u8>, FrontendFailure> {
+) -> Result<Vec<u8>, choregraph_nickel::diagnostic::FrontendFailure> {
     let admitted = admitted_path(relative_path)?;
     let (parent, file_name) = open_parent(
         root,
         &admitted,
-        FrontendIssueCode::CapabilityInputUnavailable,
+        choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityInputUnavailable,
     )?;
     let mut options = OpenOptions::new();
     options.read(true).follow(FollowSymlinks::No);
-    let file = parent
-        .open_with(&file_name, &options)
-        .map_err(|_| fail(FrontendIssueCode::CapabilityInputUnavailable))?;
-    let metadata = file
-        .metadata()
-        .map_err(|_| fail(FrontendIssueCode::CapabilityInputUnavailable))?;
+    let file = parent.open_with(&file_name, &options).map_err(|_| {
+        fail(choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityInputUnavailable)
+    })?;
+    let metadata = file.metadata().map_err(|_| {
+        fail(choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityInputUnavailable)
+    })?;
     if !metadata.is_file() {
-        return Err(fail(FrontendIssueCode::CapabilityInputNotRegular));
+        return Err(fail(
+            choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityInputNotRegular,
+        ));
     }
-    let read_limit_bytes = max_bytes
-        .checked_add(1)
-        .ok_or_else(|| fail(FrontendIssueCode::CapabilityInputTooLarge))?;
-    let read_limit_bytes = u64::try_from(read_limit_bytes)
-        .map_err(|_| fail(FrontendIssueCode::CapabilityInputTooLarge))?;
+    let read_limit_bytes = max_bytes.checked_add(1).ok_or_else(|| {
+        fail(choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityInputTooLarge)
+    })?;
+    let read_limit_bytes = u64::try_from(read_limit_bytes).map_err(|_| {
+        fail(choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityInputTooLarge)
+    })?;
     let mut bytes = Vec::new();
     file.take(read_limit_bytes)
         .read_to_end(&mut bytes)
-        .map_err(|_| fail(FrontendIssueCode::CapabilityInputUnavailable))?;
+        .map_err(|_| {
+            fail(choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityInputUnavailable)
+        })?;
     if bytes.len() > max_bytes {
-        return Err(fail(FrontendIssueCode::CapabilityInputTooLarge));
+        return Err(fail(
+            choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityInputTooLarge,
+        ));
     }
     Ok(bytes)
 }
 
-fn verify_contract(root: &OpenRoot) -> Result<PathBuf, FrontendFailure> {
+fn verify_contract(
+    root: &OpenRoot,
+) -> Result<PathBuf, choregraph_nickel::diagnostic::FrontendFailure> {
     let entry = read_relative(
         &root.dir,
         Path::new(CONTRACT_ENTRY_PATH),
@@ -217,12 +238,16 @@ fn verify_contract(root: &OpenRoot) -> Result<PathBuf, FrontendFailure> {
         CONTRACT_LIBRARY_BYTES.len(),
     )?;
     if entry != CONTRACT_ENTRY_BYTES || library != CONTRACT_LIBRARY_BYTES {
-        return Err(fail(FrontendIssueCode::EvaluatorExecutionRejected));
+        return Err(fail(
+            choregraph_nickel::diagnostic::FrontendIssueCode::EvaluatorExecutionRejected,
+        ));
     }
     Ok(root.ambient_path.join(CONTRACT_ENTRY_PATH))
 }
 
-fn evaluator_limits(frontend_limits: FrontendLimits) -> ExecutionLimits {
+fn evaluator_limits(
+    frontend_limits: choregraph_nickel::profile::FrontendLimits,
+) -> ExecutionLimits {
     ExecutionLimits {
         timeout_ms: EVALUATOR_TIMEOUT_MS,
         stdin_max_bytes: frontend_limits.max_evaluated_bytes,
@@ -237,10 +262,11 @@ fn run_evaluator(
     request: &CompileNickelRequest,
     roots: &OpenRoots,
     source: &[u8],
-) -> Result<Vec<u8>, FrontendFailure> {
+) -> Result<Vec<u8>, choregraph_nickel::diagnostic::FrontendFailure> {
     let contract_path = verify_contract(&roots.contract)?;
-    let policy = OutcomePolicy::new(vec![SUCCESS_EXIT_CODE], true, true)
-        .map_err(|_| fail(FrontendIssueCode::EvaluatorExecutionRejected))?;
+    let policy = OutcomePolicy::new(vec![SUCCESS_EXIT_CODE], true, true).map_err(|_| {
+        fail(choregraph_nickel::diagnostic::FrontendIssueCode::EvaluatorExecutionRejected)
+    })?;
     let execution = bounded_exec::run(RunRequest {
         command: CommandSpec {
             program: request.evaluator.clone(),
@@ -264,30 +290,40 @@ fn run_evaluator(
         termination_scope: TerminationScope::ProcessGroup,
         outcome_policy: policy,
     })
-    .map_err(|_| fail(FrontendIssueCode::EvaluatorExecutionRejected))?;
+    .map_err(|_| {
+        fail(choregraph_nickel::diagnostic::FrontendIssueCode::EvaluatorExecutionRejected)
+    })?;
     if execution.disposition != Disposition::Succeeded {
-        return Err(fail(FrontendIssueCode::EvaluatorExecutionRejected));
+        return Err(fail(
+            choregraph_nickel::diagnostic::FrontendIssueCode::EvaluatorExecutionRejected,
+        ));
     }
     if execution.stdout.bytes.is_empty() || execution.stdout.truncated || execution.stderr.truncated
     {
-        return Err(fail(FrontendIssueCode::EvaluatorOutputRejected));
+        return Err(fail(
+            choregraph_nickel::diagnostic::FrontendIssueCode::EvaluatorOutputRejected,
+        ));
     }
     Ok(execution.stdout.bytes)
 }
 
 fn load_imports(
-    source: &EvaluatedSource,
+    source: &choregraph_nickel::model::admission::EvaluatedSource,
     roots: &OpenRoots,
-    limits: FrontendLimits,
-) -> Result<Vec<LoadedImport>, FrontendFailure> {
-    let mut loaded = Vec::with_capacity(source.imports().len());
-    for declaration in source.imports() {
+    limits: choregraph_nickel::profile::FrontendLimits,
+) -> Result<Vec<LoadedImport>, choregraph_nickel::diagnostic::FrontendFailure> {
+    let declarations = source.imports()?;
+    let mut loaded = Vec::with_capacity(declarations.len());
+    for declaration in declarations {
         let root = roots
             .root_registry
             .get(&declaration.root_id)
-            .ok_or_else(|| fail(FrontendIssueCode::UnknownCapabilityRoot))?;
-        let declared_max = usize::try_from(declaration.max_bytes)
-            .map_err(|_| fail(FrontendIssueCode::CapabilityInputTooLarge))?;
+            .ok_or_else(|| {
+                fail(choregraph_nickel::diagnostic::FrontendIssueCode::UnknownCapabilityRoot)
+            })?;
+        let declared_max = usize::try_from(declaration.max_bytes).map_err(|_| {
+            fail(choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityInputTooLarge)
+        })?;
         let selected_max = declared_max.min(limits.max_import_bytes);
         let bytes = read_relative(
             &root.dir,
@@ -302,10 +338,10 @@ fn load_imports(
     Ok(loaded)
 }
 
-fn observations(imports: &[LoadedImport]) -> Vec<ObservedImport<'_>> {
+fn observations(imports: &[LoadedImport]) -> Vec<choregraph_nickel::imports::ObservedImport<'_>> {
     imports
         .iter()
-        .map(|import| ObservedImport {
+        .map(|import| choregraph_nickel::imports::ObservedImport {
             logical_id: &import.logical_id,
             bytes: &import.bytes,
         })
@@ -327,15 +363,17 @@ pub(crate) fn publish_atomic(
     output_root: &Dir,
     relative_path: &Path,
     bytes: &[u8],
-) -> Result<(), FrontendFailure> {
+) -> Result<(), choregraph_nickel::diagnostic::FrontendFailure> {
     let admitted = admitted_path(relative_path)?;
     let (parent, file_name) = open_parent(
         output_root,
         &admitted,
-        FrontendIssueCode::CapabilityOutputUnavailable,
+        choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityOutputUnavailable,
     )?;
     if parent.symlink_metadata(&file_name).is_ok() {
-        return Err(fail(FrontendIssueCode::CapabilityOutputExists));
+        return Err(fail(
+            choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityOutputExists,
+        ));
     }
     let temporary = temporary_name(&file_name);
     let mut options = OpenOptions::new();
@@ -345,28 +383,32 @@ pub(crate) fn publish_atomic(
         .follow(FollowSymlinks::No);
     let mut file = parent.open_with(&temporary, &options).map_err(|error| {
         if error.kind() == std::io::ErrorKind::AlreadyExists {
-            fail(FrontendIssueCode::CapabilityOutputExists)
+            fail(choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityOutputExists)
         } else {
-            fail(FrontendIssueCode::CapabilityOutputUnavailable)
+            fail(choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityOutputUnavailable)
         }
     })?;
     if file.write_all(bytes).is_err() || file.sync_all().is_err() {
         remove_if_present(&parent, &temporary);
-        return Err(fail(FrontendIssueCode::AtomicPublicationRejected));
+        return Err(fail(
+            choregraph_nickel::diagnostic::FrontendIssueCode::AtomicPublicationRejected,
+        ));
     }
     if let Err(error) = parent.hard_link(&temporary, &parent, &file_name) {
         remove_if_present(&parent, &temporary);
         let code = if error.kind() == std::io::ErrorKind::AlreadyExists {
-            FrontendIssueCode::CapabilityOutputExists
+            choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityOutputExists
         } else {
-            FrontendIssueCode::AtomicPublicationRejected
+            choregraph_nickel::diagnostic::FrontendIssueCode::AtomicPublicationRejected
         };
         return Err(fail(code));
     }
     if parent.remove_file(&temporary).is_err() {
         remove_if_present(&parent, &file_name);
         remove_if_present(&parent, &temporary);
-        return Err(fail(FrontendIssueCode::AtomicPublicationRejected));
+        return Err(fail(
+            choregraph_nickel::diagnostic::FrontendIssueCode::AtomicPublicationRejected,
+        ));
     }
     Ok(())
 }
@@ -374,9 +416,13 @@ pub(crate) fn publish_atomic(
 fn compile_with_evaluator<F>(
     request: &CompileNickelRequest,
     evaluator: F,
-) -> Result<CompilationReport, FrontendFailure>
+) -> Result<CompilationReport, choregraph_nickel::diagnostic::FrontendFailure>
 where
-    F: FnOnce(&CompileNickelRequest, &OpenRoots, &[u8]) -> Result<Vec<u8>, FrontendFailure>,
+    F: FnOnce(
+        &CompileNickelRequest,
+        &OpenRoots,
+        &[u8],
+    ) -> Result<Vec<u8>, choregraph_nickel::diagnostic::FrontendFailure>,
 {
     let roots = open_roots(request)?;
     let source = read_relative(
@@ -384,25 +430,32 @@ where
         &request.source_path,
         request.limits.max_evaluated_bytes,
     )?;
-    let max_evaluated_bytes = u64::try_from(request.limits.max_evaluated_bytes)
-        .map_err(|_| fail(FrontendIssueCode::NickelSourceTooLarge))?;
-    validate_restricted(&source, max_evaluated_bytes)?;
+    let max_evaluated_bytes = u64::try_from(request.limits.max_evaluated_bytes).map_err(|_| {
+        fail(choregraph_nickel::diagnostic::FrontendIssueCode::NickelSourceTooLarge)
+    })?;
+    choregraph_nickel::source::validate_restricted(&source, max_evaluated_bytes)?;
     let evaluated = evaluator(request, &roots, &source)?;
-    let parsed = parse_evaluated_json(&evaluated, max_evaluated_bytes)?;
+    let parsed = choregraph_nickel::lower::parse_evaluated_json(&evaluated, max_evaluated_bytes)?;
     let closure_inputs = load_imports(&parsed, &roots, request.limits)?;
     let observed = observations(&closure_inputs);
-    let lowered = lower_evaluated_json(&evaluated, &observed, request.limits)?;
+    let lowered =
+        choregraph_nickel::lower::lower_evaluated_json(&evaluated, &observed, request.limits)?;
+    let adapter_material = crate::corpus::adapter_material().map_err(|_| {
+        fail(choregraph_nickel::diagnostic::FrontendIssueCode::ArtifactConstructionRejected)
+    })?;
     let artifacts = build_artifact_set(
         &lowered.machine,
         IdentityMaterials {
             source_envelope: &source,
             proof_set: PROOF_SET_BYTES,
             generator: GENERATOR_BYTES,
-            adapter: ADAPTER_BYTES,
+            adapter: &adapter_material,
             toolchain: TOOLCHAIN_BYTES,
         },
     )
-    .map_err(|_| fail(FrontendIssueCode::ArtifactConstructionRejected))?;
+    .map_err(|_| {
+        fail(choregraph_nickel::diagnostic::FrontendIssueCode::ArtifactConstructionRejected)
+    })?;
     publish_atomic(
         &roots.output.dir,
         &request.output_path,
@@ -419,7 +472,7 @@ where
 
 pub fn compile_nickel(
     request: &CompileNickelRequest,
-) -> Result<CompilationReport, FrontendFailure> {
+) -> Result<CompilationReport, choregraph_nickel::diagnostic::FrontendFailure> {
     compile_with_evaluator(request, run_evaluator)
 }
 
@@ -433,7 +486,6 @@ mod tests {
     use super::{
         CompileNickelRequest, OperatorRootSpec, compile_with_evaluator, fail, read_relative,
     };
-    use choregraph_nickel::{FrontendIssueCode, LoweredSourceFormat};
 
     const SOURCE_PATH: &str = "graph/source.ncl";
     const OUTPUT_PATH: &str = "artifacts/machine.preserves";
@@ -508,7 +560,7 @@ mod tests {
                 id: String::from("source"),
                 ambient_path: fixture.source_root.clone(),
             }],
-            limits: choregraph_nickel::reviewed_frontend_limits(),
+            limits: choregraph_nickel::profile::reviewed_frontend_limits(),
         }
     }
 
@@ -525,7 +577,7 @@ mod tests {
         ));
         assert_eq!(
             compilation_result.source_format,
-            LoweredSourceFormat::ChoregraphV1
+            choregraph_nickel::lower::LoweredSourceFormat::ChoregraphV1
         );
         assert_eq!(compilation_result.import_count, 0);
         assert_eq!(compilation_result.import_bytes, 0);
@@ -561,7 +613,7 @@ mod tests {
         ));
         assert_eq!(
             failure.issues[0].code(),
-            FrontendIssueCode::CapabilityPathRejected
+            choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityPathRejected
         );
         assert!(!fixture.output_root.join(OUTPUT_PATH).exists());
     }
@@ -577,7 +629,7 @@ mod tests {
         ));
         assert_eq!(
             failure.issues[0].code(),
-            FrontendIssueCode::UnknownCapabilityRoot
+            choregraph_nickel::diagnostic::FrontendIssueCode::UnknownCapabilityRoot
         );
 
         let fixture = fixture();
@@ -592,7 +644,7 @@ mod tests {
         ));
         assert_eq!(
             failure.issues[0].code(),
-            FrontendIssueCode::CapabilityOutputExists
+            choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityOutputExists
         );
     }
 
@@ -609,11 +661,15 @@ mod tests {
         let request = request(&fixture);
         let failure = must_err(compile_with_evaluator(
             &request,
-            |_request, _roots, _source| Err(fail(FrontendIssueCode::EvaluatorExecutionRejected)),
+            |_request, _roots, _source| {
+                Err(fail(
+                    choregraph_nickel::diagnostic::FrontendIssueCode::EvaluatorExecutionRejected,
+                ))
+            },
         ));
         assert_eq!(
             failure.issues[0].code(),
-            FrontendIssueCode::CapabilityInputUnavailable
+            choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityInputUnavailable
         );
     }
 
@@ -627,7 +683,7 @@ mod tests {
         let failure = must_err(read_relative(&root, Path::new(SOURCE_PATH), 1));
         assert_eq!(
             failure.issues[0].code(),
-            FrontendIssueCode::CapabilityInputTooLarge
+            choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityInputTooLarge
         );
     }
 }

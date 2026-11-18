@@ -16,15 +16,15 @@ verus! {
 proof fn empty_trace_mutates_state(
     dependencies: Seq<Vec<usize>>,
     states: Seq<u8>,
-    suspensions: Seq<Option<verified::IndexedSuspensionFact>>,
+    suspensions: Seq<Option<verified::primitive::support::IndexedSuspensionFact>>,
     profile: u8,
 )
-    ensures verified_trace::replay_final_states_from_spec(
+    ensures verified_trace::specification::replay_final_states_from_spec(
         dependencies,
         states,
         suspensions,
         profile,
-        Seq::<verified_trace::IndexedReplayEvent>::empty(),
+        Seq::<verified_trace::specification::IndexedReplayEvent>::empty(),
         0,
     ) != states
 {}

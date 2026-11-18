@@ -57,7 +57,7 @@ pub struct MetadataIdentity {
 
 /// Named bounds for one history graph.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct HistoryLimits {
+pub struct Limits {
     /// Maximum admitted events.
     pub max_events: u32,
     /// Maximum parents for one event.
@@ -70,54 +70,42 @@ pub struct HistoryLimits {
     pub max_projection_events: u32,
 }
 
-impl HistoryLimits {
-    /// Creates a positive bounded policy.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`HistoryError::InvalidLimits`] if a bound is zero.
-    pub fn new(
-        max_events: u32,
-        max_parents: u32,
-        max_metadata_entries: u32,
-        max_label_bytes: u32,
-        max_projection_events: u32,
-    ) -> Result<Self, HistoryError> {
-        let policy = Self {
-            max_events,
-            max_parents,
-            max_metadata_entries,
-            max_label_bytes,
-            max_projection_events,
-        };
-        policy.validate()?;
-        Ok(policy)
+impl Limits {
+    /// Validates all selected bounds in admission precedence order.
+    pub const fn validate(self) -> Result<(), Error> {
+        match self.validate_event_bounds() {
+            Ok(()) => self.validate_projection_bounds(),
+            Err(error) => Err(error),
+        }
     }
 
-    /// Validates all selected bounds.
-    pub const fn validate(self) -> Result<(), HistoryError> {
+    const fn validate_event_bounds(self) -> Result<(), Error> {
         if self.max_events == 0 {
-            return Err(HistoryError::InvalidLimits {
+            return Err(Error::InvalidLimits {
                 field: "max_events",
             });
         }
         if self.max_parents == 0 {
-            return Err(HistoryError::InvalidLimits {
+            return Err(Error::InvalidLimits {
                 field: "max_parents",
             });
         }
         if self.max_metadata_entries == 0 {
-            return Err(HistoryError::InvalidLimits {
+            return Err(Error::InvalidLimits {
                 field: "max_metadata_entries",
             });
         }
+        Ok(())
+    }
+
+    const fn validate_projection_bounds(self) -> Result<(), Error> {
         if self.max_label_bytes == 0 {
-            return Err(HistoryError::InvalidLimits {
+            return Err(Error::InvalidLimits {
                 field: "max_label_bytes",
             });
         }
         if self.max_projection_events == 0 {
-            return Err(HistoryError::InvalidLimits {
+            return Err(Error::InvalidLimits {
                 field: "max_projection_events",
             });
         }
@@ -184,12 +172,12 @@ impl EventDraft {
 
 /// One admitted immutable history event.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct HistoryEvent {
+pub struct Event {
     pub(crate) identity: crate::identity::EventId,
     pub(crate) draft: EventDraft,
 }
 
-impl HistoryEvent {
+impl Event {
     /// Returns the immutable event identity.
     #[must_use]
     pub const fn identity(&self) -> crate::identity::EventId {
@@ -220,15 +208,15 @@ pub struct MergeEnvelope {
 
 impl MergeEnvelope {
     /// Converts a supplied resolution into an immutable merge event draft.
-    pub fn into_draft(self) -> Result<EventDraft, HistoryError> {
+    pub fn into_draft(self) -> Result<EventDraft, Error> {
         let parent_count = crate::identity::count_from_length(self.parents.len())
-            .ok_or(HistoryError::CountOverflow { field: "parents" })?;
+            .ok_or(Error::CountOverflow { field: "parents" })?;
         if parent_count < MINIMUM_MERGE_PARENTS {
-            return Err(HistoryError::MergeNeedsMultipleParents);
+            return Err(Error::MergeNeedsMultipleParents);
         }
         let resolution_identity = self
             .resolution_identity
-            .ok_or(HistoryError::MissingMergeResolution)?;
+            .ok_or(Error::MissingMergeResolution)?;
         Ok(EventDraft {
             version: HISTORY_EVENT_VERSION_V1,
             class: EventClass::Merge,
@@ -243,7 +231,7 @@ impl MergeEnvelope {
 
 /// Typed fail-closed history errors.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum HistoryError {
+pub enum Error {
     InvalidLimits {
         field: &'static str,
     },
@@ -315,7 +303,7 @@ pub enum HistoryError {
     CursorMismatch,
     CursorOutOfBounds {
         position: u32,
-        length: u32,
+        event_count: u32,
     },
 }
 

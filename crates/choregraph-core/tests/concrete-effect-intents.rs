@@ -16,12 +16,19 @@
 )]
 
 use choregraph_core::{
-    Action, AdmissionDiagnosticCode, AdmissionLimits, AdmittedMachine,
-    CANONICAL_REFERENCE_PROFILE_V1, ConcreteBindingInput, ConcreteBoundedTrace, ConcreteDecision,
-    ConcreteEffectDeclarationSpec, ConcreteEffectRequest, ConcreteEvent, ConcreteReferenceSpec,
-    ConcreteReplayInput, Decision, DenialReason, LocalState, MachineSpec, MachineSpecV2, NodeSpec,
-    ReferenceBindingSpec, ReplayBindings, ReplayDecision, ReplayLimits, TraceBinding,
-    TransitionSelector, concrete_effects_allowed, replay_concrete, step, step_concrete,
+    concrete::concrete_effects_allowed, concrete::effect::ConcreteEffectDeclarationSpec,
+    concrete::effect::ConcreteEffectRequest, concrete::event::ConcreteDecision,
+    concrete::event::ConcreteEvent, concrete::machine::MachineSpecV2,
+    concrete::reference::CANONICAL_REFERENCE_PROFILE_V1, concrete::reference::ConcreteBindingInput,
+    concrete::reference::ConcreteReferenceSpec, concrete::reference::ReferenceBindingSpec,
+    concrete::replay::ConcreteBoundedTrace, concrete::replay::ConcreteReplayInput,
+    model::automaton::AdmittedMachine, model::automaton::MachineSpec,
+    model::capacity::AdmissionLimits, model::graph::NodeSpec, model::history::ReplayBindings,
+    model::history::ReplayDecision, model::history::ReplayLimits, model::history::TraceBinding,
+    model::outcome::AdmissionDiagnosticCode, model::outcome::Decision,
+    model::outcome::DenialReason, model::semantics::Action, model::semantics::LocalState,
+    model::semantics::TransitionSelector, transition::replay_concrete, transition::step,
+    transition::step_concrete,
 };
 
 const NODE: &str = "effect-node";
@@ -155,7 +162,7 @@ fn slot_request(request_identity: &str, payload_identity: &str) -> ConcreteEffec
     }
 }
 
-fn ready_state(machine: &AdmittedMachine) -> choregraph_core::MachineState {
+fn ready_state(machine: &AdmittedMachine) -> choregraph_core::model::automaton::MachineState {
     match step_concrete(
         machine,
         &machine.initial_state(),
@@ -187,13 +194,17 @@ fn start_event(reversed: bool, request_identity: &str, payload_identity: &str) -
 
 fn bindings() -> ReplayBindings {
     ReplayBindings::new(
-        TraceBinding::from_bytes([MACHINE_BINDING_BYTE; choregraph_core::TRACE_BINDING_BYTES]),
-        TraceBinding::from_bytes([STATE_BINDING_BYTE; choregraph_core::TRACE_BINDING_BYTES]),
+        TraceBinding::from_bytes(
+            [MACHINE_BINDING_BYTE; choregraph_core::model::history::TRACE_BINDING_BYTES],
+        ),
+        TraceBinding::from_bytes(
+            [STATE_BINDING_BYTE; choregraph_core::model::history::TRACE_BINDING_BYTES],
+        ),
     )
 }
 
 fn diagnostic_codes(
-    result: Result<AdmittedMachine, Vec<choregraph_core::AdmissionDiagnostic>>,
+    result: Result<AdmittedMachine, Vec<choregraph_core::model::outcome::AdmissionDiagnostic>>,
 ) -> Vec<AdmissionDiagnosticCode> {
     match result {
         Ok(_) => panic!("invalid v2 machine was admitted"),
@@ -396,7 +407,7 @@ fn v1_and_v2_wrappers_reject_the_wrong_schema() {
         step(
             &v2,
             &v2.initial_state(),
-            &choregraph_core::Event::new(NODE, Action::MarkReady),
+            &choregraph_core::model::dispatch::Event::new(NODE, Action::MarkReady),
         ),
         Decision::Deny {
             reason: DenialReason::UnsupportedMachineSchema,

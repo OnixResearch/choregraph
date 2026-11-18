@@ -62,5 +62,5 @@ pub struct SourceUnit {
 pub struct ValidationIssue {
     pub code: &'static str,
     pub subject: String,
-    pub detail: String,
+    pub detail: std::borrow::Cow<'static, str>,
 }

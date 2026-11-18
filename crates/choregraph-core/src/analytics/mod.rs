@@ -13,15 +13,18 @@ use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 use core::cmp::Ordering;
 
-use crate::NodeId;
+use crate::id::bounded::NodeId;
 use crate::invariant::{invariant, validate_invariant};
-use crate::model::{
-    AdmittedMachine, Bottleneck, InvariantIssue, LocalState, MachineState, ParallelGroup,
-    ResumeDecision,
+use crate::{
+    model::analysis::Bottleneck, model::analysis::ParallelGroup, model::analysis::ResumeDecision,
+    model::automaton::AdmittedMachine, model::automaton::MachineState,
+    model::outcome::InvariantIssue, model::semantics::LocalState,
 };
-use crate::verified::{
-    STATE_CANCELLED, STATE_COMPLETED, STATE_FAILED, STATE_PENDING, STATE_READY, STATE_RUNNING,
-    STATE_SUSPENDED,
+use crate::{
+    verified::codes::status::STATE_CANCELLED, verified::codes::status::STATE_COMPLETED,
+    verified::codes::status::STATE_FAILED, verified::codes::status::STATE_PENDING,
+    verified::codes::status::STATE_READY, verified::codes::status::STATE_RUNNING,
+    verified::codes::status::STATE_SUSPENDED,
 };
 
 const ROOT_LEVEL: usize = 0;
@@ -99,7 +102,7 @@ pub fn ready_nodes(
         return Err(issues);
     }
     let states = indexed_states(machine, state);
-    let ready_indices = crate::verified::ready_frontier(
+    let ready_indices = crate::verified::readiness::ready_frontier(
         &machine.topological_indices,
         &machine.dependency_indices,
         &states,

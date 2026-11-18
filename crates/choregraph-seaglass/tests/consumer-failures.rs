@@ -7,15 +7,13 @@
 
 // r[verify choregraph.conformance.negative]
 use choregraph_core::{
-    Action, BoundedTrace, ConsumedCount, Decision, DenialReason, EffectIntent, EffectRequest,
-    Event, EventIndex, LocalState, MachineState, ReplayBindings, ReplayDecision,
-    ReplayFailureReason, ReplayInput, ReplayLimits, TRACE_BINDING_BYTES, TraceBinding, replay,
-    step,
-};
-use choregraph_nickel::{
-    FrontendIssueCode, TranslationMaterials, TranslationReceipts, build_translation_receipts,
-    lower_evaluated_json, reviewed_frontend_limits, validate_restricted,
-    validate_translation_receipts,
+    model::automaton::MachineState, model::dispatch::EffectIntent, model::dispatch::EffectRequest,
+    model::dispatch::Event, model::history::BoundedTrace, model::history::ConsumedCount,
+    model::history::EventIndex, model::history::ReplayBindings, model::history::ReplayDecision,
+    model::history::ReplayFailureReason, model::history::ReplayInput, model::history::ReplayLimits,
+    model::history::TRACE_BINDING_BYTES, model::history::TraceBinding, model::outcome::Decision,
+    model::outcome::DenialReason, model::semantics::Action, model::semantics::LocalState,
+    transition::replay, transition::step,
 };
 
 const DIAMOND_JSON: &[u8] =
@@ -70,7 +68,7 @@ fn must<T, E: core::fmt::Debug>(result: Result<T, E>) -> T {
     reason = "a conformance test must stop when a required setup transition is denied"
 )]
 fn accept(
-    machine: &choregraph_core::AdmittedMachine,
+    machine: &choregraph_core::model::automaton::AdmittedMachine,
     state: &MachineState,
     event: &Event,
 ) -> (MachineState, Vec<EffectIntent>) {
@@ -87,8 +85,8 @@ fn bindings() -> ReplayBindings {
     )
 }
 
-fn materials(source: &[u8]) -> TranslationMaterials<'_> {
-    TranslationMaterials {
+fn materials(source: &[u8]) -> choregraph_nickel::identity::TranslationMaterials<'_> {
+    choregraph_nickel::identity::TranslationMaterials {
         source,
         import_closure: IMPORT_CLOSURE,
         evaluator: EVALUATOR,
@@ -118,10 +116,10 @@ fn effect_request() -> EffectRequest {
     reason = "the negative replay fixture must stop if the expected failure variant is absent"
 )]
 fn replay_rejects_the_first_invalid_suffix_event_without_dispatch_authority() {
-    let lowered = must(lower_evaluated_json(
+    let lowered = must(choregraph_nickel::lower::lower_evaluated_json(
         DIAMOND_JSON,
         &[],
-        reviewed_frontend_limits(),
+        choregraph_nickel::profile::reviewed_frontend_limits(),
     ));
     let machine = lowered.machine;
     let initial = machine.initial_state();
@@ -175,10 +173,10 @@ fn replay_rejects_the_first_invalid_suffix_event_without_dispatch_authority() {
 
 #[test]
 fn authorization_denial_result_fails_the_node_without_reusing_the_intent() {
-    let lowered = must(lower_evaluated_json(
+    let lowered = must(choregraph_nickel::lower::lower_evaluated_json(
         EFFECT_AUTHORITY_JSON,
         &[],
-        reviewed_frontend_limits(),
+        choregraph_nickel::profile::reviewed_frontend_limits(),
     ));
     let machine = lowered.machine;
     let initial = machine.initial_state();
@@ -205,36 +203,51 @@ fn authorization_denial_result_fails_the_node_without_reusing_the_intent() {
 
 #[test]
 fn stale_source_and_mismatched_translation_receipts_fail_closed() {
-    let baseline = must(build_translation_receipts(materials(SOURCE_V1)));
-    let stale_source = validate_translation_receipts(&baseline, materials(SOURCE_V2));
+    let baseline = must(choregraph_nickel::identity::build_translation_receipts(
+        materials(SOURCE_V1),
+    ));
+    let stale_source =
+        choregraph_nickel::identity::validate_translation_receipts(&baseline, materials(SOURCE_V2));
     assert_eq!(
         stale_source.err().map(|error| error.issues[0].code()),
-        Some(FrontendIssueCode::StaleTranslationReceipt)
+        Some(choregraph_nickel::diagnostic::FrontendIssueCode::StaleTranslationReceipt)
     );
 
-    let alternate = must(build_translation_receipts(materials(SOURCE_V2)));
-    let mismatched = TranslationReceipts {
+    let alternate = must(choregraph_nickel::identity::build_translation_receipts(
+        materials(SOURCE_V2),
+    ));
+    let mismatched = choregraph_nickel::identity::TranslationReceipts {
         source: baseline.source,
         evaluator: alternate.evaluator,
     };
-    let receipt_mismatch = validate_translation_receipts(&mismatched, materials(SOURCE_V1));
+    let receipt_mismatch = choregraph_nickel::identity::validate_translation_receipts(
+        &mismatched,
+        materials(SOURCE_V1),
+    );
     assert_eq!(
         receipt_mismatch.err().map(|error| error.issues[0].code()),
-        Some(FrontendIssueCode::StaleTranslationReceipt)
+        Some(choregraph_nickel::diagnostic::FrontendIssueCode::StaleTranslationReceipt)
     );
 }
 
 #[test]
 fn malformed_graph_and_forbidden_import_have_no_fallback_path() {
-    let malformed = lower_evaluated_json(b"{}", &[], reviewed_frontend_limits());
+    let malformed = choregraph_nickel::lower::lower_evaluated_json(
+        b"{}",
+        &[],
+        choregraph_nickel::profile::reviewed_frontend_limits(),
+    );
     assert_eq!(
         malformed.err().map(|error| error.issues[0].code()),
-        Some(FrontendIssueCode::MalformedEvaluatedValue)
+        Some(choregraph_nickel::diagnostic::FrontendIssueCode::MalformedEvaluatedValue)
     );
 
-    let forbidden = validate_restricted(FORBIDDEN_IMPORT_SOURCE, TEST_MAX_SOURCE_BYTES);
+    let forbidden = choregraph_nickel::source::validate_restricted(
+        FORBIDDEN_IMPORT_SOURCE,
+        TEST_MAX_SOURCE_BYTES,
+    );
     assert_eq!(
         forbidden.err().map(|error| error.issues[0].code()),
-        Some(FrontendIssueCode::ForbiddenNickelAuthority)
+        Some(choregraph_nickel::diagnostic::FrontendIssueCode::ForbiddenNickelAuthority)
     );
 }

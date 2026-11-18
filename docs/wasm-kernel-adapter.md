@@ -20,6 +20,16 @@ The request and result lists contain canonical packed Preserves. JSON and Preser
 
 The request root is `choregraph-wasm-call-v1`. The result root is `choregraph-wasm-result-v1`. Both envelopes contain ABI version `1`.
 
+The Rust SDK exposes schema types through `choregraph_wasm::schema`:
+`input` owns calls and supplied artifacts, `profile` owns ABI constants and
+operation identities, `snapshot` owns machine state, `invocation` owns events
+and effect bindings, `history` owns replay bindings and failures, `decision`
+owns kernel results, and `diagnostic` owns adapter errors. There are no flat
+schema re-exports. This Rust namespace cutover preserves the WIT interface,
+canonical record names, field names and ABI version. `OperationRequest::tag`
+returns an optional ABI-v1 identity; an operation outside that profile fails
+version admission before kernel dispatch.
+
 ## Operations
 
 The call envelope supports these operations:
@@ -98,6 +108,21 @@ nix build .#checks.x86_64-linux.wasm-kernel-evidence
 ```
 
 The parity corpus covers empty, linear, diamond, reordered, durable-suspension, and concrete-v2 artifacts. It also covers stale identities, wrong schemas, invalid states, undeclared and duplicate effects, replay mismatches, malformed input, and version rejection. Each fixture must produce equal native and component bytes in fresh and reused Wasmtime instances.
+
+Refresh source identities only after the selected component build and parity
+corpus have completed successfully. Keep the observed component and corpus
+identities; changed source bytes alone do not establish new parity evidence.
+Proof references must link to manifests supported by their own positive and
+negative proof evidence, not merely to newly computed hashes.
+
+Source and proof-reference identities use the BLAKE3 derive-key contexts
+recorded in the manifest (`choregraph wasm source file v1:<path>` for proof
+references). After updating the reviewed Nickel manifest, regenerate its JSON
+with `nickel export evidence/wasm-kernel-adapter.ncl --format json` without
+the proof manifests' `jq -S .` sorting step. Record the generated file's plain
+BLAKE3 digest in `evidence/generated/wasm-kernel-adapter.blake3`, then run the
+complete `wasm-kernel-evidence` gate. A stale identity blocks current evidence;
+it does not invalidate or promote a theorem's original bounded claim.
 
 ## Host duties
 

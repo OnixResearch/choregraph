@@ -10,8 +10,12 @@
     };
     crane.url = "github:ipetkov/crane/b556d7bbae5ff86e378451511873dfd07e4504cd";
     octet = {
-      url = "github:OnixResearch/octet?rev=374bd16b26cee2af34211a29bfa531c016811f51";
+      url = "github:OnixResearch/octet?rev=5b1e119c1dad202be7987eeff21e35770b5a4fff";
       inputs.crane.follows = "crane";
+      # Preserve exact public producer revisions without SSH acquisition.
+      inputs.cairn.url = "git+https://github.com/OnixResearch/cairn.git?rev=695124d459574ba7aeba6097310d237f393c243c";
+      inputs.cairn.inputs.artifact.url = "git+https://github.com/OnixResearch/onix-artifact.git?rev=e41340bec587b6d049b5cc518ec7db925dde84be";
+      inputs.valence.url = "git+https://github.com/OnixResearch/valence.git?rev=7546a78b4eeef8686c6837e187aa12420f4f03bb";
     };
   };
 
@@ -353,7 +357,7 @@
                 jq --exit-status '
                   .config.schema == "choregraph.octet-deny-all.v1"
                   and .config.mode == "deny-all"
-                  and .config.octet_revision == "374bd16b26cee2af34211a29bfa531c016811f51"
+                  and .config.octet_revision == "5b1e119c1dad202be7987eeff21e35770b5a4fff"
                   and (.config.lints | length) > 0
                   and (.config.lints | length) == (.config.lints | unique | length)
                   and (.config.lints[0] == "unknown_lints")
@@ -506,14 +510,15 @@
                   grep -F "$expected" "$TMPDIR/negative.stderr" > /dev/null
                 done
 
-                if grep -E '#\[verifier::external_body\]|assume_specification|\bassume[[:space:]]*\(|\baxiom\b' \
-                  crates/choregraph-core/src/verified.rs; then
+                if grep -R -E '#\[verifier::external_body\]|assume_specification|\bassume[[:space:]]*\(|\baxiom\b' \
+                  crates/choregraph-core/src/verified.rs \
+                  crates/choregraph-core/src/verified; then
                   echo 'epoch-fence proof core gained an unrecorded trust escape' >&2
                   exit 1
                 fi
-                grep -F 'crate::verified::epoch_fence_decision(' \
+                grep -F 'crate::verified::primitive::ownership::epoch_fence_decision(' \
                   crates/choregraph-core/src/ownership/mod.rs > /dev/null
-                grep -F 'Some(crate::step(' \
+                grep -F 'Some(crate::transition::step(' \
                   crates/choregraph-core/src/ownership/mod.rs > /dev/null
                 grep -F '../../crates/choregraph-core/src/verified.rs' \
                   verus/proofs/epoch_fence.rs > /dev/null
@@ -646,28 +651,26 @@
 
                 if grep -R -E '#\[verifier::external_body\]|assume_specification|\bassume[[:space:]]*\(|\baxiom\b' \
                   crates/choregraph-core/src/verified.rs \
-                  crates/choregraph-core/src/verified/kernel.rs \
-                  crates/choregraph-core/src/verified/readiness.rs \
-                  crates/choregraph-core/src/verified/topology.rs; then
+                  crates/choregraph-core/src/verified; then
                   echo 'single-step proof core gained an unrecorded trust escape' >&2
                   exit 1
                 fi
-                grep -F 'STATE_SUSPENDED' crates/choregraph-core/src/verified.rs > /dev/null
-                grep -F 'ACTION_RESUME_SIGNAL' crates/choregraph-core/src/verified.rs > /dev/null
-                grep -F 'suspensions_consistent_spec' crates/choregraph-core/src/verified.rs > /dev/null
-                test "$(grep -F -c 'crate::verified::indexed_step(' \
+                grep -F 'STATE_SUSPENDED' crates/choregraph-core/src/verified/codes/status.rs > /dev/null
+                grep -F 'ACTION_RESUME_SIGNAL' crates/choregraph-core/src/verified/codes/action.rs > /dev/null
+                grep -F 'suspensions_consistent_spec' crates/choregraph-core/src/verified/primitive/support.rs > /dev/null
+                test "$(grep -F -c 'crate::verified::kernel::decision::indexed_step(' \
                   crates/choregraph-core/src/transition.rs)" -eq 2
-                grep -F 'crate::verified::lifecycle_target(' \
+                grep -F 'crate::verified::primitive::transition::lifecycle_target(' \
                   crates/choregraph-core/src/transition.rs > /dev/null
-                test "$(grep -F -c 'crate::verified::concrete_binding_accepts(' \
+                test "$(grep -F -c 'crate::verified::primitive::matching::concrete_binding_accepts(' \
                   crates/choregraph-core/src/concrete.rs)" -eq 2
                 grep -F 'request_reference: request_binding.reference' \
                   crates/choregraph-core/src/concrete.rs > /dev/null
                 grep -F 'payload_reference: payload_binding.reference' \
                   crates/choregraph-core/src/concrete.rs > /dev/null
-                grep -F 'crate::verified_topology::admitted_graph_valid(' \
+                grep -F 'crate::verified_topology::admission::admitted_graph_valid(' \
                   crates/choregraph-core/src/invariant.rs > /dev/null
-                test "$(grep -F -c 'crate::verified::ready_frontier(' \
+                test "$(grep -F -c 'crate::verified::readiness::ready_frontier(' \
                   crates/choregraph-core/src/analytics/mod.rs)" -eq 1
                 if grep -F '(LocalState::Pending, Action::MarkReady)' \
                   crates/choregraph-core/src/transition.rs; then
@@ -730,6 +733,26 @@
               ''
                 set -eu
                 cd "$src"
+                stage='verifier identity and closure'
+                report_trace_failure() {
+                  status="$?"
+                  if [ "$status" -ne 0 ]; then
+                    printf 'trace-replay-verus failed at %s (exit %s)\n' "$stage" "$status" >&2
+                    case "$stage" in
+                      'verifier identity and closure') logs='verus-identity.txt' ;;
+                      'positive trace proof') logs='positive.stdout positive.stderr' ;;
+                      'negative trace fixture:'*) logs='negative.stdout negative.stderr' ;;
+                      *) logs= ;;
+                    esac
+                    for log in $logs; do
+                      if [ -f "$TMPDIR/$log" ]; then
+                        printf '%s\n' "--- $log ---" >&2
+                        cat "$TMPDIR/$log" >&2
+                      fi
+                    done
+                  fi
+                }
+                trap report_trace_failure EXIT
 
                 octet-production-verus --identity > "$TMPDIR/verus-identity.txt"
                 grep -F 'proof-verifier: verus@0.2026.05.17.e479cce' \
@@ -746,15 +769,18 @@
                   "$TMPDIR/verus-identity.txt" > /dev/null
                 closure_digest="$(cat ${productionVerusClosureManifest}/octet-production-verus-closure.graph.blake3)"
                 test "$closure_digest" = '5f20a8243ed93278d1574e4269838858e99489abd1158f23ab2ffa8471a8d43b'
+                stage='positive trace proof'
 
                 octet-production-verus --crate-type=lib verus/proofs/trace_replay.rs \
                   -o "$TMPDIR/trace-replay.rlib" \
                   > "$TMPDIR/positive.stdout" 2> "$TMPDIR/positive.stderr"
                 grep -E 'verification results:: [1-9][0-9]* verified, 0 errors' \
                   "$TMPDIR/positive.stdout" > /dev/null
+                stage='negative trace fixtures'
 
                 for fixture in verus/trace-failure-fixtures/*.rs; do
                   fixture_name="$(basename "$fixture")"
+                  stage="negative trace fixture: $fixture_name"
                   case "$fixture_name" in
                     empty_trace_mutation.rs) expected='replay_final_states_from_spec' ;;
                     failure_index_skips_denial.rs) expected='replay_failure_index_from_spec' ;;
@@ -775,10 +801,11 @@
                   grep -F 'postcondition not satisfied' "$TMPDIR/negative.stderr" > /dev/null
                   grep -F "$expected" "$TMPDIR/negative.stderr" > /dev/null
                 done
+                stage='production linkage and trust guards'
 
                 if grep -R -E '#\[verifier::external_body\]|assume_specification|\bassume[[:space:]]*\(|\baxiom\b' \
                   crates/choregraph-core/src/verified.rs \
-                  crates/choregraph-core/src/verified/trace.rs; then
+                  crates/choregraph-core/src/verified; then
                   echo 'trace proof core gained an unrecorded trust escape' >&2
                   exit 1
                 fi
@@ -795,16 +822,18 @@
                 grep -F '../../crates/choregraph-core/src/verified/trace.rs' \
                   verus/proofs/trace_replay.rs > /dev/null
                 if grep -A12 -F 'pub enum ReplayDecision' \
-                  crates/choregraph-core/src/model.rs | grep -E 'intents|dispatch'; then
+                  crates/choregraph-core/src/model/history.rs | grep -E 'intents|dispatch'; then
                   echo 'replay decision gained dispatch authority' >&2
                   exit 1
                 fi
-                if grep -F '(STATE_PENDING, ACTION_MARK_READY)' \
-                  crates/choregraph-core/src/verified/trace.rs; then
+                if grep -R -F '(STATE_PENDING, ACTION_MARK_READY)' \
+                  crates/choregraph-core/src/verified/trace.rs \
+                  crates/choregraph-core/src/verified/trace; then
                   echo 'trace proof regained an independent lifecycle table' >&2
                   exit 1
                 fi
 
+                stage='trace proof manifest'
                 nickel export --format json evidence/trace-replay-proof.ncl \
                   > "$TMPDIR/proof-manifest-raw.json"
                 jq -S . "$TMPDIR/proof-manifest-raw.json" \
@@ -825,11 +854,16 @@
                   and .proof.trusted_surface.project_trusted_declarations == []
                   and (.proof.non_claims | length) >= 5
                 ' "$TMPDIR/proof-manifest.json" > /dev/null
+                stage='trace proof source digests'
                 jq --raw-output '.proof.sources[] | [.path, .blake3] | @tsv' \
                   "$TMPDIR/proof-manifest.json" \
                   | while IFS="$(printf '\t')" read -r source_path expected_hash; do
                       observed_hash="$(b3sum "$source_path")"
-                      test "''${observed_hash%% *}" = "$expected_hash"
+                      if [ "''${observed_hash%% *}" != "$expected_hash" ]; then
+                        printf 'trace proof source digest mismatch: %s expected=%s observed=%s\n' \
+                          "$source_path" "$expected_hash" "''${observed_hash%% *}" >&2
+                        exit 1
+                      fi
                     done
 
                 mkdir -p "$out"
@@ -1150,14 +1184,24 @@
 
                 grep -F 'GNU AFFERO GENERAL PUBLIC LICENSE' LICENSE > /dev/null
                 grep -F '20535e48e12c86043b577b8518234ff5dbb26957' flake.nix > /dev/null
-                grep -F '374bd16b26cee2af34211a29bfa531c016811f51' flake.nix > /dev/null
+                grep -F '5b1e119c1dad202be7987eeff21e35770b5a4fff' flake.nix > /dev/null
                 rustc --version > "$TMPDIR/rust-version.txt"
                 grep -F 'rustc 1.97.1 ' "$TMPDIR/rust-version.txt" > /dev/null
                 nickel export --format json vendor/kamacite-core-selected/SOURCE.ncl \
                   > "$TMPDIR/kamacite-codec-source.json"
-                expected_codec_hash="$(jq --raw-output '.source.source_blake3' "$TMPDIR/kamacite-codec-source.json")"
+                codec_correction_path="$(jq --raw-output '.source.correction_path' "$TMPDIR/kamacite-codec-source.json")"
+                test "$codec_correction_path" = "tools/kamacite-codec-correction.patch"
+                expected_correction_hash="$(jq --raw-output '.source.correction_blake3' "$TMPDIR/kamacite-codec-source.json")"
+                observed_correction_hash="$(b3sum "$codec_correction_path")"
+                test "''${observed_correction_hash%% *}" = "$expected_correction_hash"
+                expected_codec_hash="$(jq --raw-output '.source.corrected_source_blake3' "$TMPDIR/kamacite-codec-source.json")"
                 observed_codec_hash="$(b3sum vendor/kamacite-core-selected/preserves/codec.rs)"
                 test "''${observed_codec_hash%% *}" = "$expected_codec_hash"
+                test "$(jq --raw-output '.source.corrected_tests_source_path' "$TMPDIR/kamacite-codec-source.json")" = "crates/kamacite-core/src/preserves_codec/tests.rs"
+                test "$(jq --raw-output '.source.corrected_tests_destination' "$TMPDIR/kamacite-codec-source.json")" = "preserves/tests.rs"
+                expected_codec_tests_hash="$(jq --raw-output '.source.corrected_tests_blake3' "$TMPDIR/kamacite-codec-source.json")"
+                observed_codec_tests_hash="$(b3sum vendor/kamacite-core-selected/preserves/tests.rs)"
+                test "''${observed_codec_tests_hash%% *}" = "$expected_codec_tests_hash"
                 expected_apache_hash="$(jq --raw-output '.source.apache_license_blake3' "$TMPDIR/kamacite-codec-source.json")"
                 observed_apache_hash="$(b3sum vendor/kamacite-core-selected/LICENSE-APACHE)"
                 test "''${observed_apache_hash%% *}" = "$expected_apache_hash"

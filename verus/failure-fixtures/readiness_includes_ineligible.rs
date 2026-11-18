@@ -5,9 +5,9 @@ extern crate alloc;
 use alloc::vec::Vec;
 
 #[path = "../../crates/choregraph-core/src/verified.rs"]
-mod production_verified;
+mod verified;
 
-use production_verified::{dependency_ready_spec, ready_frontier_spec};
+use verified::{readiness::dependency_ready_spec, readiness::ready_frontier_spec};
 use vstd::prelude::*;
 
 verus! {

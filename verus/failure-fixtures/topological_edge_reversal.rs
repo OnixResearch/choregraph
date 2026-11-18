@@ -3,9 +3,9 @@
 extern crate alloc;
 
 #[path = "../../crates/choregraph-core/src/verified/topology.rs"]
-mod production_topology;
+mod verified_topology;
 
-use production_topology::topological_order_spec;
+use verified_topology::{precedence::topological_order_spec};
 use vstd::prelude::*;
 
 verus! {

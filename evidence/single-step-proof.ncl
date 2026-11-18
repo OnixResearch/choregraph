@@ -122,7 +122,7 @@ let ProofManifest = {
     sources = [
       {
         path = "Cargo.lock",
-        blake3 = "e0b24ca120e5b1afb35202d4e7aa7235fd29f3fadc9514933847b13e32b8dce5",
+        blake3 = "64ca131ba9bf317079109083ac6a5c84a374424b33081d2a1996642c345ad78f",
         role = "resolved Rust dependency identity",
       },
       {
@@ -132,7 +132,7 @@ let ProofManifest = {
       },
       {
         path = "config/toolchain.ncl",
-        blake3 = "b2c7874666d71c528c5ce6ca07016d0e57b6f215cedb03350d6b884efa9c05cc",
+        blake3 = "913b564a4797e32a1fe4421d4869f27ee98ca517c0625b3213ea09761d8cfd95",
         role = "reviewed toolchain identity",
       },
       {
@@ -142,62 +142,62 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/analytics/mod.rs",
-        blake3 = "cc6bb985f4c5b5c870331033cdc5529d8c2295440acc762ae4a00aa218e820d7",
+        blake3 = "c70b59e1a90badbab1249c59f8471b9b965f70da9a311d74eb4aca3b34cc5fe1",
         role = "production readiness frontier delegation and public identifier mapping",
       },
       {
         path = "crates/choregraph-core/src/admission.rs",
-        blake3 = "91fcc4fe3b4125131f812f9127627e5c1e5fd15aedac14748d13aa74841b19a4",
+        blake3 = "83e4d722a54b9ec4bfffe0984f39ee8e57410e04ea1f9e4e371dcfc56944c153",
         role = "production indexed graph construction",
       },
       {
         path = "crates/choregraph-core/src/concrete.rs",
-        blake3 = "46a856dd917648d909170f54f4fc70713cae7bb44dc621527609764c67fe9273",
+        blake3 = "820549c379f2d011cd1b374d57930c6fb5035fb6672fdf2b01a4ed612ca0bbf1",
         role = "production concrete binding resolver and exact intent construction",
       },
       {
         path = "crates/choregraph-core/src/invariant.rs",
-        blake3 = "d14a5cd9ce0f3e07ce7f0452771362f8de1046e6ce3e09e5dae4a6344fe67458",
+        blake3 = "8774cdce7edf40f04a68ae845ed0e7124cbddddc6c7a2f2aa31fdc97712bef99",
         role = "production graph and post-step gates",
       },
       {
         path = "crates/choregraph-core/src/lib.rs",
-        blake3 = "60f30828f6a4efe49f11a5cd14e7747b840189cae75c1607de08f4be371ada03",
+        blake3 = "361d463ca5bd725bba0a01f0147f0c0f3d8564e906b1dfe0cc7fad9d7e7f0f03",
         role = "production module linkage",
       },
       {
         path = "crates/choregraph-core/src/model.rs",
-        blake3 = "7e379a958051bdf1d095da0d9ea4329a3b232f4825e5c1f1d96067ede3c0bf61",
+        blake3 = "9c71a510408c83e5b6ebbea845d2d4bd5fb7966d9490565b4287e932d11a469c",
         role = "production indexed machine fields",
       },
       {
         path = "crates/choregraph-core/tests/readiness-completeness.rs",
-        blake3 = "2744cd83baec290893a35e3469808b9f853eacf25496a38c92c3fc33f25dae92",
+        blake3 = "1b1c4c7a8f4d196d2060d3ce2e7b0cb31ff2c4c157f7b621ef063d84f01a1994",
         role = "positive and negative public readiness completeness fixtures",
       },
       {
         path = "crates/choregraph-core/src/transition.rs",
-        blake3 = "0ceb97566ae5308a1fff9d560fd56c330819e5f359673035ea36365c89c5ac83",
+        blake3 = "9d8c6d178139361738ca14a325a320afc9107c5b0c4feb2542c1161a614a8ff6",
         role = "production transition shell and kernel delegation",
       },
       {
         path = "crates/choregraph-core/src/verified.rs",
-        blake3 = "e451e74bbb1b9124f0a47c4459cc79bfbbb6ceda802fbee3f971b6a867f06a76",
+        blake3 = "b010b26797d52b95c9db0ec6c66f1d40813a78c8300371b660b512fd1993c965",
         role = "verified primitives and module linkage",
       },
       {
         path = "crates/choregraph-core/src/verified/kernel.rs",
-        blake3 = "940e78df77cbdb4ee549f56197d42e5142d735112c4fd683e75e42559b8de442",
+        blake3 = "3fe79821068bde8cd2556986a0b01a6f09d9bac83a7d7d5a52b758578dc1a70e",
         role = "production-called verified transition kernel",
       },
       {
         path = "crates/choregraph-core/src/verified/readiness.rs",
-        blake3 = "ce26c81b5f2f6b08c5adbb64c4cd55641ec5cf1951457f508f716195397a74b9",
+        blake3 = "5ef37907840372363edf5d6be6699dbb927dff9fbb65c9a3f21ca3238909852e",
         role = "production-called verified dependency readiness frontier",
       },
       {
         path = "crates/choregraph-core/src/verified/topology.rs",
-        blake3 = "4d28285eab8a9e1374a73b78d165340b285f79002bf9223aed7ec41655bbbb2d",
+        blake3 = "022c97236544c95b6774b4bd1b640b3f8bb28989429df2b444ec75ff395c03e1",
         role = "production-called verified graph admission gate",
       },
       {
@@ -222,98 +222,323 @@ let ProofManifest = {
       },
       {
         path = "tools/choregraph-foundation-check/src/source.rs",
-        blake3 = "a807f86e14af5eb8d5468e41606b71c8308af091ff8ee1d7606e10762f40eb8f",
+        blake3 = "e94a3532ed72c59ca74234bea17b73b17e9939733fdf6f3aadb18552311038b6",
         role = "production readiness delegation and proof trust source guard",
       },
       {
         path = "tools/choregraph-foundation-check/src/tests.rs",
-        blake3 = "a42a67c8fd3bedc6c95c92ec24e2d9ece32648ca84d7bb7b99b0628c3a964db5",
+        blake3 = "bd09f4b28c6d2d9f451be35b8f29c92db0bc6a11f9adbd999578745cebad0068",
         role = "positive and negative source guard tests",
       },
       {
         path = "flake.nix",
-        blake3 = "5918bc107086795f588d45d197899745b70043e4c8915efc6a93c88e5554cf38",
+        blake3 = "b1754325e3bb1f575cde31c75800eff522a37288e2b3e3f5b5ad8f17d7e35499",
         role = "maintained proof and failure-fixture gate",
       },
       {
         path = "verus/failure-fixtures/concrete_reference_mutation.rs",
-        blake3 = "5a9a398c120f48e41c5e7243d63c7c28515b5f357f8e35f0fcf2dda50e22f00e",
+        blake3 = "af0e9f79b717aed14b53c5bcef7e91308b08ca0fea2fb14f46712889dcd18c59",
         role = "negative concrete reference preservation fixture",
       },
       {
         path = "verus/failure-fixtures/denial_with_intent.rs",
-        blake3 = "4de64276c0f609796ffe2160dfa4222b800fa75321545f4ae8eb43378025f5bb",
+        blake3 = "bd3991cf4c16947efb4cbdba81c75180edd40b1e8ec875a7a397e6589370ea75",
         role = "negative denial fixture",
       },
       {
         path = "verus/failure-fixtures/premature_readiness.rs",
-        blake3 = "d866a8659ca27339098f51b4916d03570ea2c85b30ad5542431e60fb77e1240c",
+        blake3 = "dc2edd871fae1a44480ca8a0b331c3738d28a09da05e68f4c406ef446f392195",
         role = "negative readiness fixture",
       },
       {
         path = "verus/failure-fixtures/readiness_duplicates_member.rs",
-        blake3 = "3a2d6b162d85d71b13187bc0a441508b2411e1235e2fced9d50852e789d73055",
+        blake3 = "8a7ec166cf8394e8a5d9c0c6d22641772c872c23f6d3c33359e5cd525cd71293",
         role = "negative duplicate readiness frontier fixture",
       },
       {
         path = "verus/failure-fixtures/readiness_includes_ineligible.rs",
-        blake3 = "194edb70b96ad31eaf041e60f9c5b98255886ff6198eca4ae7e11216452fa0be",
+        blake3 = "48c058342c1a6f5361950a9543f256aeb7338bfd3e62b06562e58217e48135f7",
         role = "negative extra readiness frontier fixture",
       },
       {
         path = "verus/failure-fixtures/readiness_omits_eligible.rs",
-        blake3 = "5142356f587e22331853bc5f0892179f97c2b1d9f4c3067543541d9e835ab001",
+        blake3 = "a86cac083ea86643f442c049a7c3b7b1f0d84c08d7880e1d95ca15bee96f9239",
         role = "negative omitted readiness frontier fixture",
       },
       {
         path = "verus/failure-fixtures/readiness_rejects_eligible_mark_ready.rs",
-        blake3 = "dbb330cf445960812e6774e783f508b3b2916c67fa91aa1e114d65bf5c6ee920",
+        blake3 = "171360b75716fe0ef36676f5de48d898336b71b6271c4ffd186178066216f3dd",
         role = "negative eligible MarkReady rejection fixture",
       },
       {
         path = "verus/failure-fixtures/readiness_reverses_order.rs",
-        blake3 = "a915a0525cd9d14ab614fd34f607e25c5a6619ce878de4159ba9c3077c052b6e",
+        blake3 = "4ce70d186cd2e818306b708ef6694644b48a6d26a2c0710a7ae6376d3489e76e",
         role = "negative reversed readiness frontier fixture",
       },
       {
         path = "verus/failure-fixtures/state_map_mismatch.rs",
-        blake3 = "97b7d87f487b7a1463d50acefefb51355929b3a4f7f10e6394810718d6dd3cf3",
+        blake3 = "f2acace639f287e5123b84e630edfae61f01abedc4ef3971c980c9cdfee77e0b",
         role = "negative state-shape fixture",
       },
       {
         path = "verus/failure-fixtures/suspended_mark_ready.rs",
-        blake3 = "a7c93e4f77686e4815b02eac13c8997eddc3a5de535889da8a4fb7933016df9b",
+        blake3 = "6392917f3d849a9260ace12a86899f8b9c9f0ca382223acf7d62e2535ca645fb",
         role = "negative suspended readiness fixture",
       },
       {
         path = "verus/failure-fixtures/suspension_effect_intent.rs",
-        blake3 = "e8362e129f79dc3bda08d6bef9c1acc5bbea879ede45a0fccd7563c6e93300bc",
+        blake3 = "97ef068c3ef5ef63b6a60774a2d7b900442d13f9f86b0a9e5f620a7593550d0f",
         role = "negative suspension effect fixture",
       },
       {
         path = "verus/failure-fixtures/suspension_resume_mismatch.rs",
-        blake3 = "23b4763f2c1955f9de0b4f885ed75afc889cbb45f8525b740c20408e123addca",
+        blake3 = "f77f3dffd3c2a9870c1d25eb57546635320b8cb8a21f4233360d097b08aa5872",
         role = "negative resume-binding fixture",
       },
       {
         path = "verus/failure-fixtures/terminal_mutation.rs",
-        blake3 = "9b4db193e53e8edadfb4fcdc64c49fad043bf08597d9f8ecf0e5442a84a6d12b",
+        blake3 = "e7fd939f49388991fba26343d7dba80807e7ea1187588d7847fa45809942813a",
         role = "negative terminal-state fixture",
       },
       {
         path = "verus/failure-fixtures/topological_edge_reversal.rs",
-        blake3 = "86b8cc37f5aca10041ed0aa13d6092289740309e397a701e4592161241488589",
+        blake3 = "3515a1b58fce7ac37040e56ee628d1f884558ad80682a6421b512d7418c10c8a",
         role = "negative graph-order fixture",
       },
       {
         path = "verus/failure-fixtures/undeclared_intent.rs",
-        blake3 = "c346a7e621ea6a938975188950831d26fbf40b654a9d42673b2ff39991bf4bd2",
+        blake3 = "71e1278ec72bba35db2119a4c0209f96244cc56a1c113df57d442c0dd86141d9",
         role = "negative effect-intent fixture",
       },
       {
         path = "verus/proofs/single_step.rs",
-        blake3 = "6b255a130a0a20d2e7369e4f1e0764129efadb6cf6c1c97ce322c7e4b65fd24e",
+        blake3 = "91e53918a3450651ec28d1f2f982f68c5530b3272c7866ebc52bb24197ccd78e",
         role = "positive proof root that includes production sources",
+      },
+      {
+        path = "crates/choregraph-core/src/boundary.rs",
+        blake3 = "22dc9fd98919fe75c1d85b13517d18bf22cc0b857dcee59c3b8f441046c0cd25",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/concrete/effect.rs",
+        blake3 = "0d7fd859c037ace5cb9af0300fc2b9aafc2b087c6a5824205be307dfa38efeed",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/concrete/event.rs",
+        blake3 = "d2d3d4dfc2dc4081d810d45f7ef49881d5ad667f316099d66e3c4e1b71ad530c",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/concrete/machine.rs",
+        blake3 = "e703018dec1ecfa60762c730a0eb1ba79d008f6ac667fbd60e13a0494552117a",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/concrete/reference.rs",
+        blake3 = "cecf64e525a80857c605003e9a81b394096426569a80d854eeaba69a306bf313",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/concrete/replay.rs",
+        blake3 = "5b4fe54c25748fecac5ae2702e861edb4fce514da8475dbfc2748bd57f509a4d",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/id.rs",
+        blake3 = "99a0d54542d8f68f767172ffa965b5e8620809866c33807054e43800bc80b0ff",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/id/bounded.rs",
+        blake3 = "59c08bf219531624efd96f6aa7974d283e2214a5b4db915b710f275efe82188d",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/id/domains.rs",
+        blake3 = "63817140746ea2ab0db2056ea9da921d2026ff32061eee26f21a4f6aae37944c",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/id/reference.rs",
+        blake3 = "8f0e75add17ea67253de65c716b68f4eb9efbe4a4b9391dc9bc4836bb6d452a6",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/model/analysis.rs",
+        blake3 = "c8b043046e8206a82319ae9a04830fd75989108f55cbd8fda159722ac6cad599",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/model/automaton.rs",
+        blake3 = "eb484f15e22ec1b75e995cdebd781564704376d432810b59cb08b2d6f4529e46",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/model/capacity.rs",
+        blake3 = "8a17cdcdfc538376e8a10e2a9cae71755f0d2e4e40cf00982fcfeb3cdfce9548",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/model/dispatch.rs",
+        blake3 = "f17ec2d2de27798f8d7d62d1ccedd39036a95b65722061cd54faaca80528c300",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/model/graph.rs",
+        blake3 = "c09d90e818f66726547529cb999a03cd73a1d7b07d6be3be2e751fb05b9f38a2",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/model/history.rs",
+        blake3 = "71cbf18f32c8dbac48273c15b00f2ea8902e50078c47ddb782462429b99ee41b",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/model/outcome.rs",
+        blake3 = "cb69664e2468d313768112cbccf99ac124481cdff2dcac68f3e539393061bb48",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/model/pause.rs",
+        blake3 = "8d0d6bbcdf6e821126b2672b57bdfe22b94d26ae8ff59d11a3152b91b7bc3cc3",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/model/semantics.rs",
+        blake3 = "206ed3d32c41c8f2225dbb41ef47350a9857ee807e77d01d140ac1adc3306fec",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/ownership/mod.rs",
+        blake3 = "2a915df3b08d4ace07591516e7abf870294a7a93e017e3cce7200cf791f0a501",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/codes.rs",
+        blake3 = "ddf69829fc81ee1f3812664fe57f10571af644f8d80101593b6e7514b8791243",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/codes/action.rs",
+        blake3 = "f5eb60e80ff2323e931ce24ed342b498b92117fb1af8bf274258104ffbacc50a",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/codes/denial.rs",
+        blake3 = "0b5d7b69c7dfce76ec89af734038aa4aa632d82ed1604a3b8199595500f14b04",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/codes/denial/suspension.rs",
+        blake3 = "9d0ca1068b3a254603832012597b58b37c4583c3d23e943b257c2573db854bcd",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/codes/denial/transition.rs",
+        blake3 = "d8cfc4cdfc680cf508b41e55ab34ef40dc8548e0364694331c5f2c3c2e4f52ca",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/codes/profile.rs",
+        blake3 = "a037e48fa6ed4ddc03257a61c0aef7eb4556d040c51db32e6a8d595f258adefa",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/codes/status.rs",
+        blake3 = "c1f44c669d270468f073a6c300c52bf107a465b0bac8013431ec8ac5c3584f57",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/kernel/decision.rs",
+        blake3 = "70f98598e1be11a97867421bfa617090e289059ee3ce29034c3e843e770f8efc",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/kernel/snapshot.rs",
+        blake3 = "6d5e6e439e982656c27b88237106c0d928c66ab26babcdbaa17a8ebe0ed6de92",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/kernel/target.rs",
+        blake3 = "5047dfd1edc9420872caf004f1600ed6f6139e88c68796be0d79e00307fe3632",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/kernel/theorem.rs",
+        blake3 = "3b769426a94feb4c06df3dfe994b95c67c1b6bf18cfd7934fda0aec4723b23cf",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/primitive.rs",
+        blake3 = "9363729a6f94532d0d5586777bd9885f9fc6e1b67f8b2f7425f8c09baddb5a0f",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/primitive/matching.rs",
+        blake3 = "e14bb1d90d62313deff940a95a35576d606c1b7b1656baad99ca7f53b1491750",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/primitive/membership.rs",
+        blake3 = "ed8dec62a885a3ce277b117bc60c1e4943f07073b60ce1f69b5b02732938bfe3",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/primitive/ownership.rs",
+        blake3 = "00b0bb46e23ca43c1e30bac7fd095009a2d211d004d59c06d898c7a910a47058",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/primitive/support.rs",
+        blake3 = "5cfcb696e93cfcd4626743865826b6f0d051343201ece45dcf83ad4bcc803bc9",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/primitive/transition.rs",
+        blake3 = "92675113af8a6690befb0b42c65d330f7e9391e0c1e6569f8f17b42ace6f181c",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/primitive/validity.rs",
+        blake3 = "1d39160c3c0be1dc85727da6b19956bfc60f5c392518be78dd3f094cd8c1ffbd",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/topology/admission.rs",
+        blake3 = "ed5f8541fa702e1bfc22b2359de6462400862d2f17ccaac74e4755cee2c581dd",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/topology/bounds.rs",
+        blake3 = "825d8e0e87de04bac0555591ab4e2b53929108b5df8ab635ada2cb4fa1b4dc60",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/topology/cardinality.rs",
+        blake3 = "0d9ec7a0bccfee995670aea8be64fc4188dd01a2d44b6c9dd56a401ffb7f1088",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/topology/precedence.rs",
+        blake3 = "e4232e8cc9d7101a91592c889d7d1a5aa2aa5266b916c44536829e84cbedc1b1",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/trace.rs",
+        blake3 = "89b358d694901d69d2c5fdebb008a73ac418ed2cb96578c8af2445f5204f21bd",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/trace/specification.rs",
+        blake3 = "f2eea3b57fdc654cbab178ee20d4cc424bff38990a6f670dec7ec57a6af839ce",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
+      },
+      {
+        path = "crates/choregraph-core/src/verified/trace/theorem.rs",
+        blake3 = "40846e70f75aecf578c19090d6c2d1402e6493e42108ec3fc045448aec563af7",
+        role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
       },
     ],
     negative_fixtures = [

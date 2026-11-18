@@ -9,24 +9,33 @@
 )]
 
 // r[impl choregraph.interchange.kamacite.fixtures]
-use crate::aggregate::{ArtifactSet, IdentityMaterials};
-use crate::codec::{
-    FSM_SPEC_ROOT_LABEL, FSM_SPEC_SCHEMA_VERSION, MACHINE_ROOT_LABEL, MACHINE_SCHEMA_VERSION,
-    encode,
+use crate::aggregate::assembly::{
+    AggregateError, build_artifact_set, encode_machine_descriptor, validate_machine_artifact,
 };
+use crate::aggregate::assembly::{ArtifactSet, IdentityMaterials};
+use crate::aggregate::policy::build_profile_artifact;
+use crate::aggregate::record::{
+    AggregateMachineDescriptor, DescriptorDependencySet, DescriptorEdge, DescriptorEffect,
+    DescriptorLimits, DescriptorNode,
+};
+use crate::codec::CodecBoundaryError;
+use crate::codec::encode;
+use crate::codec::graph::{MACHINE_ROOT_LABEL, MACHINE_SCHEMA_VERSION};
+use crate::codec::state::{FSM_SPEC_ROOT_LABEL, FSM_SPEC_SCHEMA_VERSION};
 use crate::identity::{ArtifactDomain, KamaciteIdentityDomain};
-use crate::receipt::{LinkReceiptRole, TraceObservation};
-use crate::{
-    AggregateError, AggregateMachineDescriptor, CodecBoundaryError, DescriptorDependencySet,
-    DescriptorEdge, DescriptorEffect, DescriptorLimits, DescriptorNode, LinkReceiptBody,
-    ReceiptError, build_artifact_set, build_profile_artifact, build_receipt_bundle,
-    compute_identity, compute_kamacite_identity, encode_fsm_receipt_body, encode_link_receipt_body,
-    encode_machine_descriptor, validate_fsm_receipt, validate_lifecycle_artifact,
-    validate_link_receipt, validate_machine_artifact, validate_receipt_bundle,
+use crate::identity::{compute_identity, compute_kamacite_identity};
+use crate::lifecycle::conversion::validate_lifecycle_artifact;
+use crate::receipt::record::LinkReceiptBody;
+use crate::receipt::record::{LinkReceiptRole, TraceObservation};
+use crate::receipt::validation::{
+    ReceiptError, build_receipt_bundle, encode_fsm_receipt_body, encode_link_receipt_body,
+    validate_fsm_receipt, validate_link_receipt, validate_receipt_bundle,
 };
 use choregraph_core::{
-    Action, AdmissionLimits, AdmittedMachine, EdgeSpec, EffectDeclarationSpec, LocalState,
-    MachineSpec, NodeSpec, SuspensionDeclarationSpec, TransitionSelector,
+    model::automaton::AdmittedMachine, model::automaton::MachineSpec,
+    model::capacity::AdmissionLimits, model::dispatch::EffectDeclarationSpec,
+    model::graph::EdgeSpec, model::graph::NodeSpec, model::pause::SuspensionDeclarationSpec,
+    model::semantics::Action, model::semantics::LocalState, model::semantics::TransitionSelector,
 };
 use serde::Serialize;
 
@@ -198,35 +207,45 @@ fn canonical_artifacts_round_trip_with_stable_normalized_identities() {
 #[test]
 fn durable_artifacts_round_trip_with_exact_suspension_facts() {
     let machine = durable_machine();
-    let lifecycle = must(crate::build_durable_lifecycle_artifact(None));
+    let lifecycle = must(crate::lifecycle::conversion::build_durable_lifecycle_artifact(None));
     let (_profile, _profile_artifact, profile_identity) = must(build_profile_artifact());
-    let descriptor = must(crate::durable_machine_descriptor(
+    let descriptor = must(crate::aggregate::assembly::durable_machine_descriptor(
         &machine,
         lifecycle.project_identity.clone(),
         profile_identity.clone(),
     ));
-    let artifact = must(crate::encode_durable_machine_descriptor(&descriptor));
-    let validated = must(crate::validate_durable_machine_artifact(
-        &artifact.packed_bytes,
-        &lifecycle,
-        &profile_identity,
-    ));
+    let artifact = must(crate::aggregate::assembly::encode_durable_machine_descriptor(&descriptor));
+    let validated = must(
+        crate::aggregate::assembly::validate_durable_machine_artifact(
+            &artifact.packed_bytes,
+            &lifecycle,
+            &profile_identity,
+        ),
+    );
     assert_eq!(validated.machine, machine);
     assert_eq!(validated.descriptor.suspensions.len(), 1);
     let restarted = validated.machine.declared_suspension_state();
     let gate = must(
-        choregraph_core::NodeId::parse("gate", AdmissionLimits::default().max_identifier_bytes)
-            .map_err(|error| format!("gate node id: {error:?}")),
+        choregraph_core::id::bounded::NodeId::parse(
+            "gate",
+            AdmissionLimits::default().max_identifier_bytes,
+        )
+        .map_err(|error| format!("gate node id: {error:?}")),
     );
     assert_eq!(
         restarted.state(&gate),
-        Some(choregraph_core::LocalState::Suspended)
+        Some(choregraph_core::model::semantics::LocalState::Suspended)
     );
 
-    let decoded = must(crate::validate_durable_lifecycle_artifact(
-        &lifecycle.canonical.packed_bytes,
-    ));
-    assert_eq!(decoded.descriptor.fsm_id, crate::DURABLE_FSM_ID);
+    let decoded = must(
+        crate::lifecycle::conversion::validate_durable_lifecycle_artifact(
+            &lifecycle.canonical.packed_bytes,
+        ),
+    );
+    assert_eq!(
+        decoded.descriptor.fsm_id,
+        crate::lifecycle::conversion::DURABLE_FSM_ID
+    );
     assert_eq!(
         decoded.descriptor.transitions.len() + decoded.descriptor.denials.len(),
         DURABLE_MATRIX_CELLS
@@ -263,22 +282,22 @@ fn durable_artifacts_round_trip_with_exact_suspension_facts() {
 #[test]
 fn durable_descriptor_tampering_and_profile_inference_fail_closed() {
     let machine = durable_machine();
-    let lifecycle = must(crate::build_durable_lifecycle_artifact(None));
+    let lifecycle = must(crate::lifecycle::conversion::build_durable_lifecycle_artifact(None));
     let (_profile, _profile_artifact, profile_identity) = must(build_profile_artifact());
-    let descriptor = must(crate::durable_machine_descriptor(
+    let descriptor = must(crate::aggregate::assembly::durable_machine_descriptor(
         &machine,
         lifecycle.project_identity.clone(),
         profile_identity.clone(),
     ));
-    let artifact = must(crate::encode_durable_machine_descriptor(&descriptor));
+    let artifact = must(crate::aggregate::assembly::encode_durable_machine_descriptor(&descriptor));
 
     let as_v1 = validate_machine_artifact(&artifact.packed_bytes, &lifecycle, &profile_identity);
     assert!(as_v1.is_err());
 
     let mut malformed = descriptor.clone();
     malformed.suspensions[0].class = String::from("bad class!");
-    let malformed = must(crate::encode_durable_machine_descriptor(&malformed));
-    let failure = crate::validate_durable_machine_artifact(
+    let malformed = must(crate::aggregate::assembly::encode_durable_machine_descriptor(&malformed));
+    let failure = crate::aggregate::assembly::validate_durable_machine_artifact(
         &malformed.packed_bytes,
         &lifecycle,
         &profile_identity,
@@ -287,8 +306,9 @@ fn durable_descriptor_tampering_and_profile_inference_fail_closed() {
 
     let mut wrong_version = descriptor.clone();
     wrong_version.schema_version = 1;
-    let wrong_version = must(crate::encode_durable_machine_descriptor(&wrong_version));
-    let failure = crate::validate_durable_machine_artifact(
+    let wrong_version =
+        must(crate::aggregate::assembly::encode_durable_machine_descriptor(&wrong_version));
+    let failure = crate::aggregate::assembly::validate_durable_machine_artifact(
         &wrong_version.packed_bytes,
         &lifecycle,
         &profile_identity,
@@ -296,7 +316,7 @@ fn durable_descriptor_tampering_and_profile_inference_fail_closed() {
     assert!(matches!(failure, Err(AggregateError::UnsupportedProfile)));
 
     let linear = admitted(false);
-    let inference = crate::durable_machine_descriptor(
+    let inference = crate::aggregate::assembly::durable_machine_descriptor(
         &linear,
         lifecycle.project_identity.clone(),
         profile_identity.clone(),
@@ -315,7 +335,7 @@ fn durable_machine() -> AdmittedMachine {
         ],
         vec![EdgeSpec::new("source", "gate")],
     );
-    spec.lifecycle_profile = String::from(choregraph_core::DURABLE_SUSPENSION_V1);
+    spec.lifecycle_profile = String::from(choregraph_core::model::semantics::DURABLE_SUSPENSION_V1);
     spec.suspensions.push(SuspensionDeclarationSpec {
         node_id: String::from("gate"),
         class: String::from(SUSPENSION_CLASS),
@@ -431,7 +451,7 @@ fn incomplete_local_lifecycle_matrix_is_rejected() {
     ));
     assert!(matches!(
         validate_lifecycle_artifact(&encoded.packed_bytes),
-        Err(crate::LifecycleError::ProfileMismatch)
+        Err(crate::lifecycle::conversion::LifecycleError::ProfileMismatch)
     ));
 }
 
@@ -470,8 +490,8 @@ struct DescriptorWithGlobalStates<'a> {
     schema_version: u32,
     machine_schema: &'a str,
     lifecycle_profile_id: &'a str,
-    lifecycle_profile_identity: &'a crate::ArtifactIdentity,
-    kamacite_profile_identity: &'a crate::ArtifactIdentity,
+    lifecycle_profile_identity: &'a crate::identity::ArtifactIdentity,
+    kamacite_profile_identity: &'a crate::identity::ArtifactIdentity,
     global_state_model: &'a str,
     global_state_cardinality: &'a str,
     limits: &'a DescriptorLimits,
@@ -480,7 +500,7 @@ struct DescriptorWithGlobalStates<'a> {
     dependencies: &'a [DescriptorDependencySet],
     topological_order: &'a [String],
     effects: &'a [DescriptorEffect],
-    compatibility: &'a crate::CompatibilityMetadata,
+    compatibility: &'a crate::aggregate::record::CompatibilityMetadata,
     checked_laws: &'a [String],
     non_claims: &'a [String],
     global_states: Vec<Vec<String>>,
@@ -537,8 +557,8 @@ struct DescriptorWithDuplicateField<'a> {
     #[serde(rename = "machine_schema")]
     duplicate_machine_schema: &'a str,
     lifecycle_profile_id: &'a str,
-    lifecycle_profile_identity: &'a crate::ArtifactIdentity,
-    kamacite_profile_identity: &'a crate::ArtifactIdentity,
+    lifecycle_profile_identity: &'a crate::identity::ArtifactIdentity,
+    kamacite_profile_identity: &'a crate::identity::ArtifactIdentity,
     global_state_model: &'a str,
     global_state_cardinality: &'a str,
     limits: &'a DescriptorLimits,
@@ -547,7 +567,7 @@ struct DescriptorWithDuplicateField<'a> {
     dependencies: &'a [DescriptorDependencySet],
     topological_order: &'a [String],
     effects: &'a [DescriptorEffect],
-    compatibility: &'a crate::CompatibilityMetadata,
+    compatibility: &'a crate::aggregate::record::CompatibilityMetadata,
     checked_laws: &'a [String],
     non_claims: &'a [String],
 }
@@ -690,7 +710,10 @@ fn trace_mismatch_and_overclaim_receipts_are_rejected() {
 fn profile_and_adapter_identities_are_exact_and_bounded() {
     let set = artifact_set();
     let (profile, artifact, identity) = must(build_profile_artifact());
-    assert_eq!(profile.kamacite_revision, crate::KAMACITE_REVISION);
+    assert_eq!(
+        profile.kamacite_revision,
+        crate::aggregate::policy::KAMACITE_REVISION
+    );
     assert_eq!(identity, set.identities.profile);
     assert_eq!(artifact, set.profile_artifact);
     assert_eq!(
@@ -711,18 +734,22 @@ mod concrete {
         reason = "the canonical v2 corpus keeps explicit byte and linkage failures"
     )]
 
-    use crate::{
-        ArtifactDomain, ConcreteArtifactError, build_concrete_intent_artifact,
-        build_concrete_intent_receipt, build_concrete_machine_artifact, compute_identity,
-        encode_concrete_intent_descriptor, encode_concrete_intent_receipt_body,
-        validate_concrete_intent_artifact, validate_concrete_intent_receipt,
-        validate_concrete_machine_artifact,
+    use crate::concrete::conversion::{
+        ConcreteArtifactError, build_concrete_intent_artifact, build_concrete_intent_receipt,
+        build_concrete_machine_artifact, encode_concrete_intent_descriptor,
+        encode_concrete_intent_receipt_body, validate_concrete_intent_artifact,
+        validate_concrete_intent_receipt, validate_concrete_machine_artifact,
     };
+    use crate::identity::{ArtifactDomain, compute_identity};
     use choregraph_core::{
-        Action, AdmissionLimits, AdmittedMachine, CANONICAL_REFERENCE_PROFILE_V1,
-        ConcreteBindingInput, ConcreteDecision, ConcreteEffectDeclarationSpec,
-        ConcreteEffectRequest, ConcreteEvent, ConcreteReferenceSpec, LocalState, MachineSpecV2,
-        NodeSpec, ReferenceBindingSpec, TransitionSelector, step_concrete,
+        concrete::effect::ConcreteEffectDeclarationSpec, concrete::effect::ConcreteEffectRequest,
+        concrete::event::ConcreteDecision, concrete::event::ConcreteEvent,
+        concrete::machine::MachineSpecV2, concrete::reference::CANONICAL_REFERENCE_PROFILE_V1,
+        concrete::reference::ConcreteBindingInput, concrete::reference::ConcreteReferenceSpec,
+        concrete::reference::ReferenceBindingSpec, model::automaton::AdmittedMachine,
+        model::capacity::AdmissionLimits, model::graph::NodeSpec, model::semantics::Action,
+        model::semantics::LocalState, model::semantics::TransitionSelector,
+        transition::step_concrete,
     };
 
     const NODE: &str = "effect-node";
@@ -798,7 +825,7 @@ mod concrete {
     fn intent(
         machine: &AdmittedMachine,
         request_identity: &str,
-    ) -> choregraph_core::ConcreteEffectIntent {
+    ) -> choregraph_core::concrete::effect::ConcreteEffectIntent {
         let ready = match step_concrete(
             machine,
             &machine.initial_state(),
@@ -961,4 +988,93 @@ mod concrete {
             Err(ConcreteArtifactError::Overclaim)
         ));
     }
+}
+
+#[test]
+fn bounded_error_categories_preserve_diagnostics() {
+    use crate::lifecycle::conversion::LifecycleError;
+
+    let aggregate_categories = [
+        (
+            AggregateError::NumericLimitOverflow,
+            "descriptor numeric limit does not fit this target",
+        ),
+        (
+            AggregateError::UnsupportedProfile,
+            "unsupported Kamacite profile binding",
+        ),
+        (
+            AggregateError::GlobalStateEnumeration,
+            "aggregate product-state enumeration is not admitted",
+        ),
+        (
+            AggregateError::DescriptorMismatch,
+            "canonical machine descriptor does not match admitted IR",
+        ),
+        (
+            AggregateError::AdmissionRejected,
+            "decoded machine failed core admission",
+        ),
+        (
+            AggregateError::UnknownLifecycleValue,
+            "descriptor contains an unknown lifecycle value",
+        ),
+        (
+            AggregateError::MissingNormalizedEntry,
+            "admitted machine is missing a normalized index entry",
+        ),
+        (
+            AggregateError::EmptySourceEnvelope,
+            "source envelope identity material is empty",
+        ),
+    ];
+    for (error, expected) in aggregate_categories {
+        assert_eq!(error.to_string(), expected);
+    }
+    let lifecycle_categories = [
+        (
+            LifecycleError::UnsupportedProfile,
+            "unsupported Kamacite lifecycle profile",
+        ),
+        (
+            LifecycleError::ProfileMismatch,
+            "lifecycle descriptor does not match the selected closed profile",
+        ),
+        (
+            LifecycleError::MatrixNotClosed {
+                covered: 0,
+                expected: LOCAL_LIFECYCLE_MATRIX_CELLS,
+            },
+            "lifecycle matrix covers 0 cells, expected 30",
+        ),
+    ];
+    for (error, expected) in lifecycle_categories {
+        assert_eq!(error.to_string(), expected);
+    }
+    let json = CodecBoundaryError::JsonProjectionIsNotAuthority;
+    assert_eq!(
+        json.to_string(),
+        "JSON projection cannot replace canonical packed Preserves"
+    );
+    let codec = CodecBoundaryError::Preserves(String::from("canonical codec detail"));
+    assert_eq!(codec.to_string(), "canonical codec detail");
+    assert_eq!(
+        AggregateError::Codec(codec.clone()).to_string(),
+        codec.to_string()
+    );
+    assert_eq!(
+        LifecycleError::Codec(codec).to_string(),
+        "canonical codec detail"
+    );
+    let lifecycle = LifecycleError::Identity(String::from("identity detail"));
+    assert_eq!(lifecycle.to_string(), "identity detail");
+    assert_eq!(
+        AggregateError::Lifecycle(lifecycle).to_string(),
+        "identity detail"
+    );
+    let identity = crate::identity::IdentityError::EmptyMaterial {
+        domain: ArtifactDomain::Machine,
+    };
+    let expected = identity.to_string();
+    assert_eq!(AggregateError::Identity(identity).to_string(), expected);
 }

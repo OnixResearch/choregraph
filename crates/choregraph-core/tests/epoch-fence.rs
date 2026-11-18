@@ -11,10 +11,13 @@
 use std::collections::BTreeMap;
 
 use choregraph_core::{
-    Action, AdmissionLimits, AdmittedMachine, Decision, DenialReason,
-    EPOCH_FENCE_CONTRACT_IDENTITY, EPOCH_FENCE_IMPLEMENTATION_IDENTITY, EPOCH_FENCE_NON_CLAIMS,
-    EntityEpoch, EpochFence, EpochFenceDisposition, EpochFenceRejection, Event, LocalState,
-    MachineSpec, MachineState, NodeId, NodeSpec, step_epoch_fenced,
+    id::bounded::NodeId, model::automaton::AdmittedMachine, model::automaton::MachineSpec,
+    model::automaton::MachineState, model::capacity::AdmissionLimits, model::dispatch::Event,
+    model::graph::NodeSpec, model::outcome::Decision, model::outcome::DenialReason,
+    model::semantics::Action, model::semantics::LocalState,
+    ownership::EPOCH_FENCE_CONTRACT_IDENTITY, ownership::EPOCH_FENCE_IMPLEMENTATION_IDENTITY,
+    ownership::EPOCH_FENCE_NON_CLAIMS, ownership::EntityEpoch, ownership::EpochFence,
+    ownership::EpochFenceDisposition, ownership::EpochFenceRejection, ownership::step_epoch_fenced,
 };
 
 const ENTITY_A: &str = "entity/a";
@@ -188,11 +191,11 @@ fn identity_and_non_claims_stay_bounded_and_canonical() {
     assert!(EPOCH_FENCE_IMPLEMENTATION_IDENTITY.starts_with("blake3:"));
     assert_eq!(
         EPOCH_FENCE_CONTRACT_IDENTITY.len(),
-        choregraph_core::BLAKE3_REFERENCE_BYTES
+        choregraph_core::id::reference::BLAKE3_REFERENCE_BYTES
     );
     assert_eq!(
         EPOCH_FENCE_IMPLEMENTATION_IDENTITY.len(),
-        choregraph_core::BLAKE3_REFERENCE_BYTES
+        choregraph_core::id::reference::BLAKE3_REFERENCE_BYTES
     );
     assert!(!EPOCH_FENCE_NON_CLAIMS.is_empty());
     for non_claim in EPOCH_FENCE_NON_CLAIMS {

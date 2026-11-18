@@ -3,9 +3,9 @@
 extern crate alloc;
 
 #[path = "../../crates/choregraph-core/src/verified.rs"]
-mod production_verified;
+mod verified;
 
-use production_verified::{deny, IndexedDecision, DENIAL_INVALID_STATE};
+use verified::{kernel::decision::deny, primitive::support::IndexedDecision, codes::denial::transition::DENIAL_INVALID_STATE};
 use vstd::prelude::*;
 
 verus! {

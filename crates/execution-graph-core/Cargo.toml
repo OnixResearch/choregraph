@@ -14,3 +14,6 @@ workspace = true
 [dependencies]
 choregraph-core.workspace = true
 serde = { version = "=1.0.228", default-features = false, features = ["alloc", "derive"] }
+
+[dev-dependencies]
+serde_json.workspace = true

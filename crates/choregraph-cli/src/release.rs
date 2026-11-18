@@ -11,13 +11,16 @@
 use std::path::{Path, PathBuf};
 
 use cap_std::fs::Dir;
-use choregraph_release::{
-    ACQUISITION_ADAPTER, ArtifactDigest, ArtifactObservation, BundleIdentity, PROJECT_LICENSE,
-    PublicationCandidateInput, REQUIRED_NON_CLAIMS, REQUIRED_PACKAGES, ReleaseBundle, ReleaseRole,
-    build_publication_candidate, build_release_bundle, expected_schema, expected_status,
-    project_valence, verify_publication_candidate, verify_release_bundle,
-    verify_valence_projection,
+use choregraph_release::acquisition::{
+    ACQUISITION_ADAPTER, PROJECT_LICENSE, PublicationCandidateInput, REQUIRED_PACKAGES,
+    build_publication_candidate, verify_publication_candidate,
 };
+use choregraph_release::evidence::{ArtifactDigest, ArtifactObservation};
+use choregraph_release::linkage::{
+    Bundle, BundleIdentity, REQUIRED_NON_CLAIMS, build_bundle, verify_bundle,
+};
+use choregraph_release::mapping::{project_valence, verify_valence_projection};
+use choregraph_release::profile::{Role, expected_schema, expected_status};
 
 const MAX_ARTIFACT_BYTES: usize = 16_777_216;
 const MAX_TOTAL_ARTIFACT_BYTES: usize = 67_108_864;
@@ -26,154 +29,154 @@ const MAX_SOURCE_ARCHIVE_BYTES: usize = 33_554_432;
 const ARTIFACT_COUNT: usize = 36;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct ReleaseArtifactSpec {
-    pub role: ReleaseRole,
+pub(crate) struct ReleaseArtifactSpec {
+    pub role: Role,
     pub relative_path: &'static str,
 }
 
-pub const RELEASE_ARTIFACTS: [ReleaseArtifactSpec; ARTIFACT_COUNT] = [
+pub(crate) const RELEASE_ARTIFACTS: [ReleaseArtifactSpec; ARTIFACT_COUNT] = [
     ReleaseArtifactSpec {
-        role: ReleaseRole::SourceTree,
+        role: Role::SourceTree,
         relative_path: "evidence/generated/source-baseline.json",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::License,
+        role: Role::License,
         relative_path: "LICENSE",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::MachineSchema,
+        role: Role::MachineSchema,
         relative_path: "schemas/preserves/choregraph-machine-v1.preserves",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::ConcreteMachineSchema,
+        role: Role::ConcreteMachineSchema,
         relative_path: "schemas/preserves/choregraph-machine-v2.preserves",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::ConcreteIntentSchema,
+        role: Role::ConcreteIntentSchema,
         relative_path: "schemas/preserves/choregraph-concrete-intent-v2.preserves",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::LinkReceiptSchema,
+        role: Role::LinkReceiptSchema,
         relative_path: "schemas/preserves/choregraph-link-receipt-v1.preserves",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::CoreSource,
+        role: Role::CoreSource,
         relative_path: "evidence/release/observations/core-source.ncl",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::CoreLibrary,
+        role: Role::CoreLibrary,
         relative_path: "evidence/release/observations/core-library.ncl",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::SingleStepProofSource,
+        role: Role::SingleStepProofSource,
         relative_path: "verus/proofs/single_step.rs",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::SingleStepProofResult,
+        role: Role::SingleStepProofResult,
         relative_path: "evidence/generated/single-step-proof.json",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::TraceProofSource,
+        role: Role::TraceProofSource,
         relative_path: "verus/proofs/trace_replay.rs",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::TraceProofResult,
+        role: Role::TraceProofResult,
         relative_path: "evidence/generated/trace-replay-proof.json",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::TrustedSurface,
+        role: Role::TrustedSurface,
         relative_path: "evidence/release/observations/trusted-surface.ncl",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::RustToolchain,
+        role: Role::RustToolchain,
         relative_path: "rust-toolchain.toml",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::VerusToolchain,
+        role: Role::VerusToolchain,
         relative_path: "evidence/release/observations/verus-toolchain.ncl",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::SolverToolchain,
+        role: Role::SolverToolchain,
         relative_path: "evidence/release/observations/solver-toolchain.ncl",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::NickelToolchain,
+        role: Role::NickelToolchain,
         relative_path: "evidence/release/observations/nickel-toolchain.ncl",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::NixInputs,
+        role: Role::NixInputs,
         relative_path: "flake.lock",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::DependencyLock,
+        role: Role::DependencyLock,
         relative_path: "Cargo.lock",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::KamaciteMachine,
+        role: Role::KamaciteMachine,
         relative_path: "fixtures/kamacite/positive/machine.preserves",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::KamaciteConcreteMachine,
+        role: Role::KamaciteConcreteMachine,
         relative_path: "fixtures/kamacite/positive/machine-v2.preserves",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::KamaciteConcreteIntent,
+        role: Role::KamaciteConcreteIntent,
         relative_path: "fixtures/kamacite/positive/concrete-intent-v2.preserves",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::KamaciteConcreteIntentReceipt,
+        role: Role::KamaciteConcreteIntentReceipt,
         relative_path: "fixtures/kamacite/positive/concrete-intent.receipt.preserves",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::KamaciteLifecycle,
+        role: Role::KamaciteLifecycle,
         relative_path: "fixtures/kamacite/positive/lifecycle.preserves",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::KamaciteTraceReceipt,
+        role: Role::KamaciteTraceReceipt,
         relative_path: "fixtures/kamacite/positive/trace.receipt.preserves",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::KamaciteExhaustivenessReceipt,
+        role: Role::KamaciteExhaustivenessReceipt,
         relative_path: "fixtures/kamacite/positive/exhaustiveness.receipt.preserves",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::KamaciteSourceReceipt,
+        role: Role::KamaciteSourceReceipt,
         relative_path: "fixtures/kamacite/positive/source.receipt.preserves",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::KamaciteProofReferenceReceipt,
+        role: Role::KamaciteProofReferenceReceipt,
         relative_path: "fixtures/kamacite/positive/proof-reference.receipt.preserves",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::PositiveFixtureCorpus,
+        role: Role::PositiveFixtureCorpus,
         relative_path: "fixtures/kamacite/corpus.ncl",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::NegativeFixtureCorpus,
+        role: Role::NegativeFixtureCorpus,
         relative_path: "evidence/release/observations/negative-corpus.ncl",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::ExecutionGraphParity,
+        role: Role::ExecutionGraphParity,
         relative_path: ".cairn/archive/1970-01-01-add-seaglass-lattice-conformance/evidence/parity-validation-2026-07-27.md",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::LatticeDownstream,
+        role: Role::LatticeDownstream,
         relative_path: ".cairn/archive/1970-01-01-add-seaglass-lattice-conformance/evidence/lattice-downstream-validation-2026-07-27.md",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::LatticeConcreteHandoff,
+        role: Role::LatticeConcreteHandoff,
         relative_path: "fixtures/lattice-handoff/consumer.rs",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::CairnReceipt,
+        role: Role::CairnReceipt,
         relative_path: "evidence/release/observations/cairn-receipt.ncl",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::OctetReceipt,
+        role: Role::OctetReceipt,
         relative_path: "evidence/release/observations/octet-receipt.ncl",
     },
     ReleaseArtifactSpec {
-        role: ReleaseRole::NixReceipt,
+        role: Role::NixReceipt,
         relative_path: "evidence/release/observations/nix-receipt.ncl",
     },
 ];
@@ -237,11 +240,11 @@ pub enum ReleaseShellIssueCode {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ReleaseShellFailure {
     pub code: ReleaseShellIssueCode,
-    pub role: Option<ReleaseRole>,
+    pub role: Option<Role>,
 }
 
 impl ReleaseShellFailure {
-    const fn one(code: ReleaseShellIssueCode, role: Option<ReleaseRole>) -> Self {
+    const fn one(code: ReleaseShellIssueCode, role: Option<Role>) -> Self {
         Self { code, role }
     }
 }
@@ -249,6 +252,16 @@ impl ReleaseShellFailure {
 fn open_root(path: &Path) -> Result<Dir, ReleaseShellFailure> {
     crate::capability::open_capability_dir(path)
         .map_err(|_| ReleaseShellFailure::one(ReleaseShellIssueCode::RootUnavailable, None))
+}
+
+fn artifact_observation(spec: &ReleaseArtifactSpec, bytes: &[u8]) -> ArtifactObservation {
+    ArtifactObservation {
+        role: spec.role,
+        relative_path: String::from(spec.relative_path),
+        schema: String::from(expected_schema(spec.role)),
+        status: expected_status(spec.role),
+        digest: ArtifactDigest::from_bytes(*blake3::hash(bytes).as_bytes()),
+    }
 }
 
 fn observe_artifacts(
@@ -274,20 +287,14 @@ fn observe_artifacts(
                 Some(spec.role),
             ));
         }
-        observations.push(ArtifactObservation {
-            role: spec.role,
-            relative_path: String::from(spec.relative_path),
-            schema: String::from(expected_schema(spec.role)),
-            status: expected_status(spec.role),
-            digest: ArtifactDigest::from_bytes(*blake3::hash(&bytes).as_bytes()),
-        });
+        observations.push(artifact_observation(&spec, &bytes));
     }
     debug_assert_eq!(observations.len(), ARTIFACT_COUNT);
     debug_assert!(total_bytes <= MAX_TOTAL_ARTIFACT_BYTES);
     Ok((observations, total_bytes))
 }
 
-fn render_bundle(bundle: &ReleaseBundle) -> Vec<u8> {
+fn render_bundle(bundle: &Bundle) -> Vec<u8> {
     let projection = project_valence(bundle);
     let mut output = String::new();
     output.push_str("schema=");
@@ -329,13 +336,11 @@ fn render_bundle(bundle: &ReleaseBundle) -> Vec<u8> {
     output.into_bytes()
 }
 
-fn build_current_bundle(
-    artifact_root: &Dir,
-) -> Result<(ReleaseBundle, usize), ReleaseShellFailure> {
+fn build_current_bundle(artifact_root: &Dir) -> Result<(Bundle, usize), ReleaseShellFailure> {
     let (observations, artifact_bytes) = observe_artifacts(artifact_root)?;
-    let bundle = build_release_bundle(observations.clone())
+    let bundle = build_bundle(observations.clone())
         .map_err(|_| ReleaseShellFailure::one(ReleaseShellIssueCode::LinkageRejected, None))?;
-    verify_release_bundle(&bundle, observations)
+    verify_bundle(&bundle, observations)
         .map_err(|_| ReleaseShellFailure::one(ReleaseShellIssueCode::LinkageRejected, None))?;
     let projection = project_valence(&bundle);
     verify_valence_projection(&bundle, &projection)
@@ -350,7 +355,7 @@ struct ReleaseMeasurements {
     manifest_bytes: usize,
 }
 
-fn report(bundle: &ReleaseBundle, measurements: ReleaseMeasurements) -> ReleaseBundleReport {
+fn report(bundle: &Bundle, measurements: ReleaseMeasurements) -> ReleaseBundleReport {
     ReleaseBundleReport {
         bundle_blake3: bundle.identity.hex(),
         artifact_count: bundle.artifacts.len(),
@@ -518,43 +523,41 @@ mod tests {
         let lifecycle_paths: Vec<&str> = RELEASE_ARTIFACTS
             .iter()
             .filter_map(|spec| match spec.role {
-                ReleaseRole::ExecutionGraphParity | ReleaseRole::LatticeDownstream => {
-                    Some(spec.relative_path)
-                }
-                ReleaseRole::SourceTree
-                | ReleaseRole::License
-                | ReleaseRole::MachineSchema
-                | ReleaseRole::ConcreteMachineSchema
-                | ReleaseRole::ConcreteIntentSchema
-                | ReleaseRole::LinkReceiptSchema
-                | ReleaseRole::CoreSource
-                | ReleaseRole::CoreLibrary
-                | ReleaseRole::SingleStepProofSource
-                | ReleaseRole::SingleStepProofResult
-                | ReleaseRole::TraceProofSource
-                | ReleaseRole::TraceProofResult
-                | ReleaseRole::TrustedSurface
-                | ReleaseRole::RustToolchain
-                | ReleaseRole::VerusToolchain
-                | ReleaseRole::SolverToolchain
-                | ReleaseRole::NickelToolchain
-                | ReleaseRole::NixInputs
-                | ReleaseRole::DependencyLock
-                | ReleaseRole::KamaciteMachine
-                | ReleaseRole::KamaciteConcreteMachine
-                | ReleaseRole::KamaciteConcreteIntent
-                | ReleaseRole::KamaciteConcreteIntentReceipt
-                | ReleaseRole::KamaciteLifecycle
-                | ReleaseRole::KamaciteTraceReceipt
-                | ReleaseRole::KamaciteExhaustivenessReceipt
-                | ReleaseRole::KamaciteSourceReceipt
-                | ReleaseRole::KamaciteProofReferenceReceipt
-                | ReleaseRole::PositiveFixtureCorpus
-                | ReleaseRole::NegativeFixtureCorpus
-                | ReleaseRole::LatticeConcreteHandoff
-                | ReleaseRole::CairnReceipt
-                | ReleaseRole::OctetReceipt
-                | ReleaseRole::NixReceipt => None,
+                Role::ExecutionGraphParity | Role::LatticeDownstream => Some(spec.relative_path),
+                Role::SourceTree
+                | Role::License
+                | Role::MachineSchema
+                | Role::ConcreteMachineSchema
+                | Role::ConcreteIntentSchema
+                | Role::LinkReceiptSchema
+                | Role::CoreSource
+                | Role::CoreLibrary
+                | Role::SingleStepProofSource
+                | Role::SingleStepProofResult
+                | Role::TraceProofSource
+                | Role::TraceProofResult
+                | Role::TrustedSurface
+                | Role::RustToolchain
+                | Role::VerusToolchain
+                | Role::SolverToolchain
+                | Role::NickelToolchain
+                | Role::NixInputs
+                | Role::DependencyLock
+                | Role::KamaciteMachine
+                | Role::KamaciteConcreteMachine
+                | Role::KamaciteConcreteIntent
+                | Role::KamaciteConcreteIntentReceipt
+                | Role::KamaciteLifecycle
+                | Role::KamaciteTraceReceipt
+                | Role::KamaciteExhaustivenessReceipt
+                | Role::KamaciteSourceReceipt
+                | Role::KamaciteProofReferenceReceipt
+                | Role::PositiveFixtureCorpus
+                | Role::NegativeFixtureCorpus
+                | Role::LatticeConcreteHandoff
+                | Role::CairnReceipt
+                | Role::OctetReceipt
+                | Role::NixReceipt => None,
             })
             .collect();
 

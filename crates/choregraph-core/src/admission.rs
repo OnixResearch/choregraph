@@ -21,16 +21,18 @@ use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
-use crate::id::{
-    BLAKE3_REFERENCE_BYTES, BoundedId, IdentifierError, NodeId, PayloadRef, PayloadRefError,
-    SuspensionClass,
-};
+use crate::id::bounded::{BoundedId, IdentifierError, NodeId, SuspensionClass};
+use crate::id::reference::{BLAKE3_REFERENCE_BYTES, PayloadRef, PayloadRefError};
 use crate::invariant::well_formed;
-use crate::model::{
-    AdmissionDiagnostic, AdmissionDiagnosticCode, AdmissionLimits, AdmittedMachine, AdmittedNode,
-    DURABLE_SUSPENSION_V1, Edge, EffectDeclaration, EffectDeclarationSpec, EffectKey,
-    LINEAR_LIFECYCLE_V1, LifecycleProfile, LimitKind, MACHINE_SCHEMA_V1, MachineSchema,
-    MachineSpec, SuspensionDeclaration, SuspensionDeclarationSpec,
+use crate::model::automaton::{AdmittedMachine, AdmittedNode, EffectKey, MachineSpec};
+use crate::model::capacity::AdmissionLimits;
+use crate::model::dispatch::{EffectDeclaration, EffectDeclarationSpec};
+use crate::model::graph::Edge;
+use crate::model::outcome::{AdmissionDiagnostic, AdmissionDiagnosticCode, LimitKind};
+use crate::model::pause::{SuspensionDeclaration, SuspensionDeclarationSpec};
+use crate::model::semantics::Action;
+use crate::model::semantics::{
+    DURABLE_SUSPENSION_V1, LINEAR_LIFECYCLE_V1, LifecycleProfile, MACHINE_SCHEMA_V1, MachineSchema,
 };
 use crate::transition::lifecycle_target_for_profile;
 
@@ -251,13 +253,15 @@ fn admit_nodes(
 ) -> BTreeMap<NodeId, AdmittedNode> {
     let mut nodes = BTreeMap::new();
     for node in &spec.nodes {
-        let Some(node_id) = parse_id::<crate::id::NodeDomain>(&node.id, limits, diagnostics) else {
+        let Some(node_id) =
+            parse_id::<crate::id::domains::NodeDomain>(&node.id, limits, diagnostics)
+        else {
             continue;
         };
         let mut operations = BTreeSet::new();
         for raw_operation in &node.operations {
             let Some(operation) =
-                parse_id::<crate::id::OperationDomain>(raw_operation, limits, diagnostics)
+                parse_id::<crate::id::domains::OperationDomain>(raw_operation, limits, diagnostics)
             else {
                 continue;
             };
@@ -288,8 +292,8 @@ fn admit_edges(
 ) -> BTreeSet<Edge> {
     let mut edges = BTreeSet::new();
     for edge in &spec.edges {
-        let source = parse_id::<crate::id::NodeDomain>(&edge.source, limits, diagnostics);
-        let target = parse_id::<crate::id::NodeDomain>(&edge.target, limits, diagnostics);
+        let source = parse_id::<crate::id::domains::NodeDomain>(&edge.source, limits, diagnostics);
+        let target = parse_id::<crate::id::domains::NodeDomain>(&edge.target, limits, diagnostics);
         let (Some(source), Some(target)) = (source, target) else {
             continue;
         };
@@ -347,11 +351,13 @@ fn parse_effect_declaration(
     profile: LifecycleProfile,
     diagnostics: &mut Vec<AdmissionDiagnostic>,
 ) -> Option<EffectDeclaration> {
-    let node_id = parse_id::<crate::id::NodeDomain>(&raw.node_id, limits, diagnostics)?;
-    let operation = parse_id::<crate::id::OperationDomain>(&raw.operation, limits, diagnostics)?;
-    let resource = parse_id::<crate::id::ResourceDomain>(&raw.resource, limits, diagnostics)?;
-    let ability = parse_id::<crate::id::AbilityDomain>(&raw.ability, limits, diagnostics)?;
-    let request = parse_id::<crate::id::RequestDomain>(&raw.request, limits, diagnostics)?;
+    let node_id = parse_id::<crate::id::domains::NodeDomain>(&raw.node_id, limits, diagnostics)?;
+    let operation =
+        parse_id::<crate::id::domains::OperationDomain>(&raw.operation, limits, diagnostics)?;
+    let resource =
+        parse_id::<crate::id::domains::ResourceDomain>(&raw.resource, limits, diagnostics)?;
+    let ability = parse_id::<crate::id::domains::AbilityDomain>(&raw.ability, limits, diagnostics)?;
+    let request = parse_id::<crate::id::domains::RequestDomain>(&raw.request, limits, diagnostics)?;
     let payload = match PayloadRef::parse(&raw.payload, limits.max_reference_bytes) {
         Ok(payload) => payload,
         Err(error) => {
@@ -361,7 +367,7 @@ fn parse_effect_declaration(
     };
     if matches!(
         raw.transition.action,
-        crate::Action::Suspend | crate::Action::ResumeSignal
+        Action::Suspend | Action::ResumeSignal
     ) {
         diagnostics.push(diagnostic(
             AdmissionDiagnosticCode::SuspensionEffectTransition,
@@ -490,7 +496,7 @@ fn admit_suspension_declaration(
     declarations: &[SuspensionDeclaration],
     diagnostics: &mut Vec<AdmissionDiagnostic>,
 ) -> Option<SuspensionDeclaration> {
-    let node_id = parse_id::<crate::id::NodeDomain>(&raw.node_id, limits, diagnostics)?;
+    let node_id = parse_id::<crate::id::domains::NodeDomain>(&raw.node_id, limits, diagnostics)?;
     if !nodes.contains_key(&node_id) {
         diagnostics.push(diagnostic(
             AdmissionDiagnosticCode::SuspensionDeclarationNodeMissing,
@@ -636,51 +642,134 @@ fn topological_order(
     order
 }
 
+fn validate_bounds(
+    spec: &MachineSpec,
+    limits: AdmissionLimits,
+) -> Result<(), Vec<AdmissionDiagnostic>> {
+    let mut diagnostics = validate_limits(limits);
+    validate_top_level_counts(spec, limits, &mut diagnostics);
+    diagnostics.sort();
+    diagnostics.dedup();
+    if !diagnostics.is_empty() {
+        return Err(diagnostics);
+    }
+    Ok(())
+}
+
+fn admit_profile(spec: &MachineSpec) -> Result<LifecycleProfile, Vec<AdmissionDiagnostic>> {
+    let mut diagnostics = Vec::new();
+    if spec.schema != MACHINE_SCHEMA_V1 {
+        diagnostics.push(diagnostic(
+            AdmissionDiagnosticCode::UnsupportedSchema,
+            Some(&spec.schema),
+            None,
+        ));
+    }
+    let lifecycle_profile = if spec.lifecycle_profile == LINEAR_LIFECYCLE_V1 {
+        Some(LifecycleProfile::LinearV1)
+    } else if spec.lifecycle_profile == DURABLE_SUSPENSION_V1 {
+        Some(LifecycleProfile::DurableSuspensionV1)
+    } else {
+        diagnostics.push(diagnostic(
+            AdmissionDiagnosticCode::UnsupportedLifecycleProfile,
+            Some(&spec.lifecycle_profile),
+            None,
+        ));
+        None
+    };
+    diagnostics.sort();
+    diagnostics.dedup();
+    if !diagnostics.is_empty() {
+        return Err(diagnostics);
+    }
+    lifecycle_profile.ok_or_else(|| {
+        alloc::vec![diagnostic(
+            AdmissionDiagnosticCode::UnsupportedLifecycleProfile,
+            Some(&spec.lifecycle_profile),
+            None,
+        )]
+    })
+}
+
+fn index_edges(
+    edges: &[Edge],
+    node_indices: &BTreeMap<NodeId, usize>,
+) -> Result<Vec<(usize, usize)>, Vec<AdmissionDiagnostic>> {
+    let mut indices = Vec::with_capacity(edges.len());
+    for edge in edges {
+        let (Some(source), Some(target)) = (
+            node_indices.get(&edge.source).copied(),
+            node_indices.get(&edge.target).copied(),
+        ) else {
+            return Err(alloc::vec![diagnostic(
+                AdmissionDiagnosticCode::NormalizationInvariant,
+                None,
+                None,
+            )]);
+        };
+        indices.push((source, target));
+    }
+    Ok(indices)
+}
+
+fn index_dependencies(
+    node_order: &[NodeId],
+    dependencies: &BTreeMap<NodeId, Vec<NodeId>>,
+    node_indices: &BTreeMap<NodeId, usize>,
+) -> Result<Vec<Vec<usize>>, Vec<AdmissionDiagnostic>> {
+    let mut indices = Vec::with_capacity(node_order.len());
+    for node_id in node_order {
+        let Some(node_dependencies) = dependencies.get(node_id) else {
+            return Err(alloc::vec![diagnostic(
+                AdmissionDiagnosticCode::NormalizationInvariant,
+                None,
+                None,
+            )]);
+        };
+        let mut indexes = Vec::with_capacity(node_dependencies.len());
+        for dependency in node_dependencies {
+            let Some(index) = node_indices.get(dependency).copied() else {
+                return Err(alloc::vec![diagnostic(
+                    AdmissionDiagnosticCode::NormalizationInvariant,
+                    None,
+                    None,
+                )]);
+            };
+            indexes.push(index);
+        }
+        indices.push(indexes);
+    }
+    Ok(indices)
+}
+
+fn index_topological_order(
+    topological_order: &[NodeId],
+    node_indices: &BTreeMap<NodeId, usize>,
+) -> Result<Vec<usize>, Vec<AdmissionDiagnostic>> {
+    let mut indices = Vec::with_capacity(topological_order.len());
+    for node_id in topological_order {
+        let Some(index) = node_indices.get(node_id).copied() else {
+            return Err(alloc::vec![diagnostic(
+                AdmissionDiagnosticCode::NormalizationInvariant,
+                None,
+                None,
+            )]);
+        };
+        indices.push(index);
+    }
+    Ok(indices)
+}
+
 impl AdmittedMachine {
     /// Admits and normalizes one untrusted machine specification.
     pub fn admit(
         spec: MachineSpec,
         limits: AdmissionLimits,
     ) -> Result<Self, Vec<AdmissionDiagnostic>> {
-        let mut diagnostics = validate_limits(limits);
-        validate_top_level_counts(&spec, limits, &mut diagnostics);
-        diagnostics.sort();
-        diagnostics.dedup();
-        if !diagnostics.is_empty() {
-            return Err(diagnostics);
-        }
+        validate_bounds(&spec, limits)?;
 
-        if spec.schema != MACHINE_SCHEMA_V1 {
-            diagnostics.push(diagnostic(
-                AdmissionDiagnosticCode::UnsupportedSchema,
-                Some(&spec.schema),
-                None,
-            ));
-        }
-        let lifecycle_profile = if spec.lifecycle_profile == LINEAR_LIFECYCLE_V1 {
-            Some(LifecycleProfile::LinearV1)
-        } else if spec.lifecycle_profile == DURABLE_SUSPENSION_V1 {
-            Some(LifecycleProfile::DurableSuspensionV1)
-        } else {
-            diagnostics.push(diagnostic(
-                AdmissionDiagnosticCode::UnsupportedLifecycleProfile,
-                Some(&spec.lifecycle_profile),
-                None,
-            ));
-            None
-        };
-        diagnostics.sort();
-        diagnostics.dedup();
-        if !diagnostics.is_empty() {
-            return Err(diagnostics);
-        }
-        let Some(lifecycle_profile) = lifecycle_profile else {
-            return Err(alloc::vec![diagnostic(
-                AdmissionDiagnosticCode::UnsupportedLifecycleProfile,
-                Some(&spec.lifecycle_profile),
-                None,
-            )]);
-        };
+        let lifecycle_profile = admit_profile(&spec)?;
+        let mut diagnostics = Vec::new();
 
         let nodes = admit_nodes(&spec, limits, &mut diagnostics);
         let edges = admit_edges(&spec, limits, &nodes, &mut diagnostics);
@@ -711,53 +800,9 @@ impl AdmittedMachine {
             .map(|(index, node_id)| (node_id, index))
             .collect::<BTreeMap<_, _>>();
         let normalized_edges = edges.into_iter().collect::<Vec<_>>();
-        let mut edge_indices = Vec::with_capacity(normalized_edges.len());
-        for edge in &normalized_edges {
-            let (Some(source), Some(target)) = (
-                node_indices.get(&edge.source).copied(),
-                node_indices.get(&edge.target).copied(),
-            ) else {
-                return Err(alloc::vec![diagnostic(
-                    AdmissionDiagnosticCode::NormalizationInvariant,
-                    None,
-                    None,
-                )]);
-            };
-            edge_indices.push((source, target));
-        }
-        let mut dependency_indices = Vec::with_capacity(node_order.len());
-        for node_id in &node_order {
-            let Some(node_dependencies) = dependencies.get(node_id) else {
-                return Err(alloc::vec![diagnostic(
-                    AdmissionDiagnosticCode::NormalizationInvariant,
-                    None,
-                    None,
-                )]);
-            };
-            let mut indexes = Vec::with_capacity(node_dependencies.len());
-            for dependency in node_dependencies {
-                let Some(index) = node_indices.get(dependency).copied() else {
-                    return Err(alloc::vec![diagnostic(
-                        AdmissionDiagnosticCode::NormalizationInvariant,
-                        None,
-                        None,
-                    )]);
-                };
-                indexes.push(index);
-            }
-            dependency_indices.push(indexes);
-        }
-        let mut topological_indices = Vec::with_capacity(topological_order.len());
-        for node_id in &topological_order {
-            let Some(index) = node_indices.get(node_id).copied() else {
-                return Err(alloc::vec![diagnostic(
-                    AdmissionDiagnosticCode::NormalizationInvariant,
-                    None,
-                    None,
-                )]);
-            };
-            topological_indices.push(index);
-        }
+        let edge_indices = index_edges(&normalized_edges, &node_indices)?;
+        let dependency_indices = index_dependencies(&node_order, &dependencies, &node_indices)?;
+        let topological_indices = index_topological_order(&topological_order, &node_indices)?;
 
         let machine = Self {
             limits,

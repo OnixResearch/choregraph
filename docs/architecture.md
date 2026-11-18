@@ -59,6 +59,14 @@ The crate calls pinned Trellis production functions for projectability and endpo
 
 The adapter encodes distinct v1 and v2 machine constructors. It also encodes v2 concrete intents and exact linkage receipts.
 
+Its Rust surface is qualified by owner rather than flattened into root
+reexports: `aggregate::{record, assembly, policy}`,
+`concrete::{record, conversion}`, `lifecycle::{record, conversion}`,
+`receipt::{record, validation}`, `profile::{source, protocol, observation}`,
+`codec::{graph, effect, state}`, `identity`, and `boundary`. These source modules
+share the same canonical encoder and preserve existing wire and identity
+formats; they introduce no runtime authority or alternate codec.
+
 It does not read files, run processes, use clocks, access networks, authorize effects, or create behavioral proofs.
 
 `choregraph-cli write-kamacite-corpus` is the imperative shell that writes maintained fixtures. The adapter returns only in-memory values.

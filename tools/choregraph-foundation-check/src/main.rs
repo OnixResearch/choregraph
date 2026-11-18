@@ -53,27 +53,29 @@ fn normalize_package(
     workspace_root: &std::path::Path,
     internal_package_paths: &std::collections::BTreeSet<std::path::PathBuf>,
 ) -> choregraph_foundation_check::types::PackageModel {
-    let mut dependencies = Vec::with_capacity(package.dependencies.len());
-    for dependency in &package.dependencies {
-        let name = dependency.name.to_string();
-        let dependency_path = dependency.path.as_ref().map(|path| path.as_std_path());
-        let source = dependency_source(dependency_path, workspace_root, internal_package_paths);
-        let path = dependency_path
-            .map(|dependency_path| {
-                dependency_path
-                    .strip_prefix(workspace_root)
-                    .unwrap_or(dependency_path)
-                    .display()
-                    .to_string()
-            })
-            .unwrap_or_default();
-        dependencies.push(choregraph_foundation_check::types::DependencyModel {
-            name,
-            requirement: dependency.req.to_string(),
-            source,
-            path,
-        });
-    }
+    let mut dependencies: Vec<choregraph_foundation_check::types::DependencyModel> = package
+        .dependencies
+        .iter()
+        .map(|dependency| {
+            let dependency_path = dependency.path.as_ref().map(|path| path.as_std_path());
+            let source = dependency_source(dependency_path, workspace_root, internal_package_paths);
+            let path = dependency_path
+                .map(|dependency_path| {
+                    dependency_path
+                        .strip_prefix(workspace_root)
+                        .unwrap_or(dependency_path)
+                        .display()
+                        .to_string()
+                })
+                .unwrap_or_default();
+            choregraph_foundation_check::types::DependencyModel {
+                name: dependency.name.clone(),
+                requirement: dependency.req.to_string(),
+                source,
+                path,
+            }
+        })
+        .collect();
     dependencies.sort_by(|left, right| left.name.cmp(&right.name));
     debug_assert!(dependencies.len() <= package.dependencies.len());
     debug_assert!(
@@ -124,6 +126,21 @@ fn read_sorted_entries(current: &std::path::Path) -> Result<Vec<std::fs::DirEntr
     Ok(entries)
 }
 
+fn read_source_unit(
+    source_root: &std::path::Path,
+    path: &std::path::Path,
+) -> Result<choregraph_foundation_check::types::SourceUnit, String> {
+    let text = std::fs::read_to_string(path)
+        .map_err(|error| format!("cannot read {}: {error}", path.display()))?;
+    let relative = path
+        .strip_prefix(source_root)
+        .map_err(|error| format!("cannot normalize {}: {error}", path.display()))?;
+    Ok(choregraph_foundation_check::types::SourceUnit {
+        path: relative.display().to_string(),
+        text,
+    })
+}
+
 fn collect_source_units(
     source_root: &std::path::Path,
 ) -> Result<Vec<choregraph_foundation_check::types::SourceUnit>, String> {
@@ -153,15 +170,7 @@ fn collect_source_units(
             if units.len() >= MAX_CORE_SOURCE_ENTRIES {
                 return Err(String::from("core source file limit exceeded"));
             }
-            let text = std::fs::read_to_string(&path)
-                .map_err(|error| format!("cannot read {}: {error}", path.display()))?;
-            let relative = path
-                .strip_prefix(source_root)
-                .map_err(|error| format!("cannot normalize {}: {error}", path.display()))?;
-            units.push(choregraph_foundation_check::types::SourceUnit {
-                path: relative.display().to_string(),
-                text,
-            });
+            units.push(read_source_unit(source_root, &path)?);
         }
     }
     if !pending.is_empty() {

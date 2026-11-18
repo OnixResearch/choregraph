@@ -7,7 +7,7 @@
     reason = "explicit downstream fixture branches keep fallback values visible"
 )]
 
-use choregraph_seaglass::ConcreteIntentHandoff;
+use choregraph_seaglass::v2::ConcreteIntentHandoff;
 
 pub const HANDOFF_SCHEMA: &str = "choregraph.lattice-concrete-intent-handoff.v1";
 pub const NON_CLAIM: &str =

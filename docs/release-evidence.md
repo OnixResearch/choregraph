@@ -18,6 +18,15 @@ The core defines 36 closed artifact roles for:
 
 Each role has one required schema and status. A complete bundle has each role exactly once.
 
+The pure API has canonical module paths (no root-level compatibility exports):
+
+- `choregraph_release::profile`: `Role`, `REQUIRED_ROLES`, `expected_schema`, `expected_status`;
+- `choregraph_release::evidence`: `ArtifactObservation`, `ArtifactDigest`, `ArtifactStatus`;
+- `choregraph_release::linkage`: `Bundle`, `BundleIdentity`, `build_bundle`, `verify_bundle`;
+- `choregraph_release::rejection`: `IssueCode`, `Issue`, `Failure`;
+- `choregraph_release::mapping`: linkage-only Valence projection;
+- `choregraph_release::acquisition`: local publication candidate validation.
+
 ## Identity
 
 Project-owned bundle and candidate identities use BLAKE3 with separate derive-key contexts.

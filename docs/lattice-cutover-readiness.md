@@ -47,6 +47,24 @@ The candidate is published as `rad:zL2ncTUeASVYwcoGkEXv9JKgGbAF`. Consumers must
 
 A feature flag, path override, source switch, or runtime fallback does not complete a step.
 
+### Local Rust compatibility namespaces
+
+The local source API now uses semantic-owner modules, with no root aliases or
+re-exports. `choregraph_seaglass::topology` owns legacy graph declarations and
+cycle probes; `admission` owns diagnostics and admission; `aggregate` owns plans,
+sparse-state conversion and machine decisions; `lifecycle` owns local states,
+actions and transitions; `v2` owns concrete intent handoff; `boundary` owns the
+delegation capability declaration.
+
+`execution_graph_core::structure` exposes `Node`, `Edge`, `Topology`, `Group` and
+`Bottleneck`. Its `admission` module exposes `DiagnosticCode`, `Diagnostic`,
+`admit_graph` and `validate`; `aggregate` exposes `Plan`, readiness and resume
+decisions; `lifecycle` exposes local transition values and calls; `queries`
+exposes direct dependencies, dependents and cycle probes. These Rust paths do not
+change serialized fields, enum spellings, diagnostic messages or ordering.
+Consumer source must migrate paths explicitly; this local edit is not a new
+publication or a change to the candidate identity above.
+
 ## Source alignment requirements
 
 Each consumer must record the same Choregraph repository identity and revision in Cargo, Nix, lockfiles, source evidence, and release receipts.

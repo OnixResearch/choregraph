@@ -8,164 +8,82 @@
     reason = "bounded identifiers keep stable usize-based compatibility and explicit BLAKE3 arithmetic"
 )]
 
-use alloc::string::String;
-use core::fmt;
-use core::marker::PhantomData;
-
-pub const BLAKE3_REFERENCE_PREFIX: &str = "blake3:";
-pub const BLAKE3_DIGEST_HEX_BYTES: usize = 64;
-pub const BLAKE3_REFERENCE_BYTES: usize = BLAKE3_REFERENCE_PREFIX.len() + BLAKE3_DIGEST_HEX_BYTES;
-
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct NodeDomain;
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct OperationDomain;
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct ResourceDomain;
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct AbilityDomain;
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct RequestDomain;
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct DeclarationDomain;
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct SlotDomain;
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct SourceDomain;
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct SuspensionClassDomain;
-
-/// A validated bounded identifier in one semantic domain.
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct BoundedId<Domain> {
-    value: String,
-    marker: PhantomData<Domain>,
-}
-
-pub type NodeId = BoundedId<NodeDomain>;
-pub type OperationId = BoundedId<OperationDomain>;
-pub type ResourceId = BoundedId<ResourceDomain>;
-pub type AbilityId = BoundedId<AbilityDomain>;
-pub type RequestId = BoundedId<RequestDomain>;
-pub type DeclarationKey = BoundedId<DeclarationDomain>;
-pub type SlotId = BoundedId<SlotDomain>;
-pub type SourceRef = BoundedId<SourceDomain>;
-pub type SuspensionClass = BoundedId<SuspensionClassDomain>;
-
-/// A deterministic identifier validation error.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum IdentifierError {
-    Empty,
-    TooLong { observed: usize, maximum: usize },
-    InvalidByte { index: usize },
-}
-
-fn is_identifier_byte(byte: u8) -> bool {
-    byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.' | b':' | b'/' | b'@')
-}
-
-impl<Domain> BoundedId<Domain> {
-    /// Parses a bounded ASCII identifier.
-    pub fn parse(value: impl Into<String>, maximum_bytes: usize) -> Result<Self, IdentifierError> {
-        let value = value.into();
-        if value.is_empty() {
-            return Err(IdentifierError::Empty);
-        }
-        if value.len() > maximum_bytes {
-            return Err(IdentifierError::TooLong {
-                observed: value.len(),
-                maximum: maximum_bytes,
-            });
-        }
-        for (index, byte) in value.bytes().enumerate() {
-            if !is_identifier_byte(byte) {
-                return Err(IdentifierError::InvalidByte { index });
-            }
-        }
-        Ok(Self {
-            value,
-            marker: PhantomData,
-        })
-    }
-
-    #[must_use]
-    pub fn as_str(&self) -> &str {
-        &self.value
-    }
-}
-
-impl<Domain> fmt::Display for BoundedId<Domain> {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str(&self.value)
-    }
-}
-
-/// A canonical BLAKE3 payload reference.
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct PayloadRef(String);
-
-/// A deterministic canonical-reference validation error.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum PayloadRefError {
-    TooLong { observed: usize, maximum: usize },
-    Malformed,
-}
-
-impl PayloadRef {
-    /// Parses `blake3:` followed by one lowercase hexadecimal digest.
-    pub fn parse(value: impl Into<String>, maximum_bytes: usize) -> Result<Self, PayloadRefError> {
-        let value = value.into();
-        if value.len() > maximum_bytes {
-            return Err(PayloadRefError::TooLong {
-                observed: value.len(),
-                maximum: maximum_bytes,
-            });
-        }
-        let Some(digest) = value.strip_prefix(BLAKE3_REFERENCE_PREFIX) else {
-            return Err(PayloadRefError::Malformed);
-        };
-        if digest.len() != BLAKE3_DIGEST_HEX_BYTES {
-            return Err(PayloadRefError::Malformed);
-        }
-        if !digest
-            .bytes()
-            .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
-        {
-            return Err(PayloadRefError::Malformed);
-        }
-        Ok(Self(value))
-    }
-
-    #[must_use]
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-}
-
-impl fmt::Display for PayloadRef {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str(&self.0)
-    }
-}
+pub mod bounded;
+pub mod domains;
+pub mod reference;
 
 #[cfg(test)]
 mod tests {
     use alloc::string::String;
 
-    use super::{BLAKE3_DIGEST_HEX_BYTES, NodeId, PayloadRef};
+    use super::bounded::{IdentifierError, NodeId};
+    use super::reference::{
+        BLAKE3_DIGEST_HEX_BYTES, BLAKE3_REFERENCE_BYTES, PayloadRef, PayloadRefError,
+    };
 
     const IDENTIFIER_LIMIT: usize = 16;
+    const EMPTY_LIMIT: usize = 0;
+    const FIRST_NON_ASCII_BYTE: usize = 1;
 
     #[test]
     fn accepts_bounded_identifiers_and_blake3_references() {
         assert!(NodeId::parse("node/a", IDENTIFIER_LIMIT).is_ok());
         let reference = String::from("blake3:") + &"a".repeat(BLAKE3_DIGEST_HEX_BYTES);
-        assert!(PayloadRef::parse(reference, super::BLAKE3_REFERENCE_BYTES).is_ok());
+        assert!(PayloadRef::parse(reference, BLAKE3_REFERENCE_BYTES).is_ok());
     }
 
     #[test]
     fn rejects_whitespace_and_non_blake3_references() {
         assert!(NodeId::parse("node a", IDENTIFIER_LIMIT).is_err());
-        assert!(PayloadRef::parse("sha256:abc", super::BLAKE3_REFERENCE_BYTES).is_err());
+        assert!(PayloadRef::parse("sha256:abc", BLAKE3_REFERENCE_BYTES).is_err());
+    }
+
+    #[test]
+    fn identifier_errors_keep_empty_length_and_byte_precedence() {
+        assert_eq!(NodeId::parse("", EMPTY_LIMIT), Err(IdentifierError::Empty));
+        assert_eq!(
+            NodeId::parse(" ", EMPTY_LIMIT),
+            Err(IdentifierError::TooLong {
+                observed: " ".len(),
+                maximum: EMPTY_LIMIT,
+            })
+        );
+        assert_eq!(
+            NodeId::parse("aé", IDENTIFIER_LIMIT),
+            Err(IdentifierError::InvalidByte {
+                index: FIRST_NON_ASCII_BYTE,
+            })
+        );
+        let identifier = "aZ09-_.:/@";
+        let parsed = NodeId::parse(identifier, identifier.len());
+        assert_eq!(parsed.as_ref().map(NodeId::as_str), Ok(identifier));
+    }
+
+    #[test]
+    fn reference_errors_keep_length_before_canonical_validation() {
+        let malformed = "sha256:abc";
+        assert_eq!(
+            PayloadRef::parse(malformed, EMPTY_LIMIT),
+            Err(PayloadRefError::TooLong {
+                observed: malformed.len(),
+                maximum: EMPTY_LIMIT,
+            })
+        );
+        let uppercase = String::from("blake3:") + &"A".repeat(BLAKE3_DIGEST_HEX_BYTES);
+        assert_eq!(
+            PayloadRef::parse(uppercase, BLAKE3_REFERENCE_BYTES),
+            Err(PayloadRefError::Malformed)
+        );
+        let short = String::from("blake3:") + &"a".repeat(IDENTIFIER_LIMIT);
+        assert_eq!(
+            PayloadRef::parse(short, BLAKE3_REFERENCE_BYTES),
+            Err(PayloadRefError::Malformed)
+        );
+        let reference = String::from("blake3:") + &"0".repeat(BLAKE3_DIGEST_HEX_BYTES);
+        let parsed = PayloadRef::parse(reference.clone(), BLAKE3_REFERENCE_BYTES);
+        assert_eq!(
+            parsed.as_ref().map(PayloadRef::as_str),
+            Ok(reference.as_str())
+        );
     }
 }

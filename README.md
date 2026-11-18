@@ -67,12 +67,18 @@ nix build .#choregraph
 
 ## Embedding the kernel
 
-The central API is `choregraph_core::step(machine, state, event)`. Admission produces an immutable machine; callers retain the current state and submit events explicitly.
+The central API is `choregraph_core::transition::step(machine, state, event)`. Admission produces an immutable machine; callers retain the current state and submit events explicitly.
 
 ```rust
-use choregraph_core::{
-    Action, AdmissionLimits, AdmittedMachine, Decision, Event, MachineSpec, NodeSpec,
+use choregraph_core::model::{
+    automaton::{AdmittedMachine, MachineSpec},
+    capacity::AdmissionLimits,
+    dispatch::Event,
+    graph::NodeSpec,
+    outcome::Decision,
+    semantics::Action,
 };
+use choregraph_core::transition::step;
 
 let spec = MachineSpec::new(vec![NodeSpec::new("build", vec![])], vec![]);
 let machine = AdmittedMachine::admit(spec, AdmissionLimits::default())
@@ -80,7 +86,7 @@ let machine = AdmittedMachine::admit(spec, AdmissionLimits::default())
 let mut state = machine.initial_state();
 
 for action in [Action::MarkReady, Action::Start, Action::Complete] {
-    match choregraph_core::step(&machine, &state, &Event::new("build", action)) {
+    match step(&machine, &state, &Event::new("build", action)) {
         Decision::Accept { next, intents } => {
             assert!(intents.is_empty()); // This graph declares no effects.
             state = next;
@@ -111,10 +117,12 @@ Other core entry points include:
 | API | Purpose |
 | --- | --- |
 | `AdmittedMachine::admit` / `admit_v2` | Validate and normalize graph specifications under explicit bounds. |
-| `ready_nodes`, `parallel_groups`, `critical_path`, `bottlenecks` | Inspect readiness and graph structure; they do not launch concurrent tasks. |
-| `step_concrete` | Resolve v2 effect declarations with exact references or declared runtime slots. |
-| `replay` / `replay_concrete` | Fold a bounded trace through production transitions without returning dispatchable effects. |
-| `step_epoch_fenced` | Gate a transition on caller-supplied matching entity and epoch facts and a non-terminal state. |
+| `analytics::{ready_nodes, parallel_groups, critical_path, bottlenecks}` | Inspect readiness and graph structure; they do not launch concurrent tasks. |
+| `transition::step_concrete` | Resolve v2 effect declarations with exact references or declared runtime slots. |
+| `transition::{replay, replay_concrete}` | Fold a bounded trace through production transitions without returning dispatchable effects. |
+| `ownership::step_epoch_fenced` | Gate a transition on caller-supplied matching entity and epoch facts and a non-terminal state. |
+
+The core API is qualified by semantic owner rather than re-exported from the crate root. Canonical IR lives in `choregraph_core::model::{automaton, semantics, graph, dispatch, pause, history, outcome, capacity, analysis}`, identifiers in `id::{bounded, domains, reference}`, and concrete-effect IR in `concrete::{machine, effect, event, reference, replay}`. Graph queries, invariant predicates, capability claims and epoch fencing live in `analytics`, `invariant`, `boundary` and `ownership`. These namespaces do not alter canonical schemas, identity framing or transition semantics.
 
 ## Architecture and supported inputs
 

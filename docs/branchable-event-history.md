@@ -65,7 +65,7 @@ Choregraph validates the envelope shape and identity. It does not compute or app
 
 The machine adapter validates all history bindings before replay. It rejects non-linear projections, merges, unsupported classes, stale identities, and payload mismatches.
 
-Accepted aggregate events call `choregraph_core::replay`. Accepted concrete events call `choregraph_core::replay_concrete`.
+Accepted aggregate events call `choregraph_core::transition::replay`. Accepted concrete events call `choregraph_core::transition::replay_concrete`.
 
 Replay output contains no effect intents or dispatch authority.
 
@@ -96,6 +96,36 @@ The weave cohort is crates.io `universal-weave` version `0.4.1`. Its registry ch
 Choregraph uses new binary-framed BLAKE3 domains. It does not preserve Animus text-framed receipt identities.
 
 Consumers must map payloads to opaque identities. Consumers must also choose each multi-parent lineage explicitly.
+
+### Rust API cutover
+
+The history crate exposes focused modules instead of root re-exports. Migrate imports by module: `dag::{Admission, Graph}`; `identity::{DIGEST_BYTES, Digest, EventId}`; `model::{EventClass, EventDraft, Event, Error, Limits, MergeEnvelope, MetadataIdentity, ParentLink, HISTORY_EVENT_VERSION_V1}`; `refs::{BranchRef, Cursor, ReferenceMutationPlan, Snapshot, plan_branch_advance, validate_cursor}`; `traversal::{ParentChoices, Projection, ProjectionKind, ancestor_closure, linear_lineage}`. The former `HistoryGraph`, `HistoryLimits`, `HistoryEvent`, and `HistoryError` names are removed; consumers must update type imports, rather than relying on aliases.
+
+Construct limits with named fields and pass them to `Graph::new` for positive-bound validation:
+
+```rust
+use choregraph_history::{dag::Graph, model::Limits};
+
+let limits = Limits {
+    max_events: 128,
+    max_parents: 4,
+    max_metadata_entries: 16,
+    max_label_bytes: 64,
+    max_projection_events: 128,
+};
+let graph = Graph::new(limits)?;
+```
+
+The positional five-argument `Limits::new` is removed. Validation remains at graph admission; an invalid public-field value cannot bypass `Graph::new`. `Error::CursorOutOfBounds` reports `event_count` rather than the unitless `length` field. These are Rust source API changes only, not event encodings or BLAKE3 identity framing.
+
+The optional `choregraph-weave` crate exposes `Adapter`, `Policy`, `Limits`,
+`Operation`, `OperationKind`, `Mutation`, `Receipt`, and `Error` without redundant
+`Weave` prefixes or compatibility aliases. Construct a policy with
+`Policy::new(Limits { max_nodes, max_parent_fan_in })`; named limits prevent
+swapped positional bounds and are validated before native-size conversion.
+Mutation and snapshot assertions check admitted node bounds, target/parent
+retention, complete snapshots, and projection generation/count correspondence.
+The metadata-only authority boundary and receipt framing remain unchanged.
 
 ## Weft supersession
 

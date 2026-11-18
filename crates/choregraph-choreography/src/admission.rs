@@ -6,13 +6,16 @@
     reason = "bounded protocol-tree admission and exact Trellis lowering keep selected domain types and explicit recursive structure together; stable const evaluation cannot express the iterator and string checks"
 )]
 
-use crate::issue::{ChoreographyDiagnostic, DiagnosticCode, diagnostics_are_safe, span_is_valid};
-use crate::model::{
-    ChoreographyLimits, ChoreographyNode, ImportIdentity, MAX_BRANCHES, MAX_IDENTIFIER_BYTES,
-    MAX_IMPORTS, MAX_NESTING_DEPTH, MAX_ROLES, MAX_STEPS, MAX_VALUES, REQUIRED_NON_CLAIMS,
-    ROLE_CHOREOGRAPHY_SCHEMA, RoleChoreographySource, RoleDeclaration, RoleId, RoleKind,
-    SourceSpan, ValueDeclaration, ValueId,
+use crate::issue::{Diagnostic, DiagnosticCode, diagnostics_are_safe, span_is_valid};
+use crate::model::bounds::{
+    Limits, MAX_BRANCHES, MAX_IDENTIFIER_BYTES, MAX_IMPORTS, MAX_NESTING_DEPTH, MAX_ROLES,
+    MAX_STEPS, MAX_VALUES,
 };
+use crate::model::participants::{
+    ImportIdentity, RoleDeclaration, RoleId, RoleKind, SourceSpan, ValueDeclaration, ValueId,
+};
+use crate::model::schema::{REQUIRED_NON_CLAIMS, ROLE_CHOREOGRAPHY_SCHEMA, RoleSource};
+use crate::model::tree::{ChoiceBranch, Node};
 use verified_logic::choreography_global::{GlobalBranch, GlobalChoreo, PayloadTag};
 use verified_logic::choreography_ownership::{
     OwnershipEntry, admit_ownership, owner_of, transfer_owner,
@@ -23,10 +26,24 @@ const BLAKE3_HEX_BYTES: usize = 64;
 const BLAKE3_PREFIX: &str = "blake3:";
 
 #[derive(Debug)]
-pub struct AdmittedChoreography {
-    pub(crate) source: RoleChoreographySource,
+pub struct Admitted {
+    pub(crate) source: RoleSource,
     pub(crate) global: GlobalChoreo,
     pub(crate) roles: Vec<RoleId>,
+}
+
+/// Unknown protocol shapes have no known source span and cannot be represented
+/// by the serialized, span-bearing diagnostic record.
+#[derive(Debug)]
+pub enum Error {
+    Diagnostics(Vec<Diagnostic>),
+    UnsupportedNode,
+}
+
+impl From<Vec<Diagnostic>> for Error {
+    fn from(diagnostics: Vec<Diagnostic>) -> Self {
+        Self::Diagnostics(diagnostics)
+    }
 }
 
 #[derive(Clone)]
@@ -48,34 +65,31 @@ struct NodeValidationContext<'a, 'b> {
 
 struct ChoiceValidation<'a> {
     decider: RoleId,
-    branches: &'a [crate::model::ChoiceBranch],
+    branches: &'a [ChoiceBranch],
     span: SourceSpan,
 }
 
-fn one(diagnostic: ChoreographyDiagnostic) -> Vec<ChoreographyDiagnostic> {
+fn one(diagnostic: Diagnostic) -> Vec<Diagnostic> {
     vec![diagnostic]
 }
 
-fn issue(
-    code: DiagnosticCode,
-    span: SourceSpan,
-    note: &'static str,
-) -> Vec<ChoreographyDiagnostic> {
-    one(ChoreographyDiagnostic::error(code, span, note))
+fn issue(code: DiagnosticCode, span: SourceSpan, note: &'static str) -> Vec<Diagnostic> {
+    one(Diagnostic::error(code, span, note))
 }
 
-fn projection_issue(node: &ChoreographyNode) -> Vec<ChoreographyDiagnostic> {
-    let mut diagnostic = ChoreographyDiagnostic::error(
+fn projection_issue(node: &Node) -> Result<Vec<Diagnostic>, Error> {
+    let span = node.span().ok_or(Error::UnsupportedNode)?;
+    let mut diagnostic = Diagnostic::error(
         DiagnosticCode::TrellisProjectionRejected,
-        node.span(),
+        span,
         "Trellis rejected endpoint projectability",
     );
-    if let ChoreographyNode::Choice { branches, .. } = node {
+    if let Node::Choice { branches, .. } = node {
         diagnostic.secondary = branches.iter().map(|branch| branch.span).collect();
         diagnostic.secondary.sort_unstable();
         diagnostic.secondary.dedup();
     }
-    one(diagnostic)
+    Ok(one(diagnostic))
 }
 
 fn duplicate_issue(
@@ -83,8 +97,8 @@ fn duplicate_issue(
     primary: SourceSpan,
     secondary: SourceSpan,
     note: &'static str,
-) -> Vec<ChoreographyDiagnostic> {
-    one(ChoreographyDiagnostic::error(code, primary, note).with_secondary(secondary))
+) -> Vec<Diagnostic> {
+    one(Diagnostic::error(code, primary, note).with_secondary(secondary))
 }
 
 fn lowercase_hex(text: &str) -> bool {
@@ -114,7 +128,7 @@ fn validate_distinct_participants(
     from: RoleId,
     to: RoleId,
     span: SourceSpan,
-) -> Result<(), Vec<ChoreographyDiagnostic>> {
+) -> Result<(), Vec<Diagnostic>> {
     if !role_declared(roles, from) || !role_declared(roles, to) {
         return Err(issue(
             DiagnosticCode::UndeclaredRole,
@@ -141,7 +155,7 @@ fn value_declared(values: &[ValueDeclaration], value: ValueId) -> Option<ValueDe
         .find(|declaration| declaration.id == value)
 }
 
-fn validate_span(span: SourceSpan) -> Result<(), Vec<ChoreographyDiagnostic>> {
+fn validate_span(span: SourceSpan) -> Result<(), Vec<Diagnostic>> {
     if span_is_valid(span) {
         Ok(())
     } else {
@@ -153,14 +167,22 @@ fn validate_span(span: SourceSpan) -> Result<(), Vec<ChoreographyDiagnostic>> {
     }
 }
 
-fn validate_role_kind(role: &RoleDeclaration) -> Result<(), Vec<ChoreographyDiagnostic>> {
+fn validate_role_kind(role: &RoleDeclaration) -> Result<(), Vec<Diagnostic>> {
     match &role.kind {
         RoleKind::Native => Ok(()),
-        RoleKind::External {
-            contract_identity,
-            input_schema_identity,
-            output_schema_identity,
-        } => {
+        kind => {
+            let RoleKind::External {
+                contract_identity,
+                input_schema_identity,
+                output_schema_identity,
+            } = kind
+            else {
+                return Err(issue(
+                    DiagnosticCode::InvalidRoleKind,
+                    role.span,
+                    "unsupported role kind",
+                ));
+            };
             let is_valid = bounded_identifier(contract_identity)
                 && bounded_identifier(input_schema_identity)
                 && bounded_identifier(output_schema_identity)
@@ -180,10 +202,7 @@ fn validate_role_kind(role: &RoleDeclaration) -> Result<(), Vec<ChoreographyDiag
     }
 }
 
-fn validate_roles(
-    roles: &[RoleDeclaration],
-    root: SourceSpan,
-) -> Result<(), Vec<ChoreographyDiagnostic>> {
+fn validate_roles(roles: &[RoleDeclaration], root: SourceSpan) -> Result<(), Vec<Diagnostic>> {
     if roles.is_empty() {
         return Err(issue(
             DiagnosticCode::EmptyRoles,
@@ -222,7 +241,7 @@ fn validate_values(
     values: &[ValueDeclaration],
     roles: &[RoleDeclaration],
     root: SourceSpan,
-) -> Result<(), Vec<ChoreographyDiagnostic>> {
+) -> Result<(), Vec<Diagnostic>> {
     if values.len() > MAX_VALUES {
         return Err(issue(
             DiagnosticCode::ValueLimitExceeded,
@@ -260,10 +279,7 @@ fn validate_values(
     Ok(())
 }
 
-fn validate_imports(
-    imports: &[ImportIdentity],
-    root: SourceSpan,
-) -> Result<(), Vec<ChoreographyDiagnostic>> {
+fn validate_imports(imports: &[ImportIdentity], root: SourceSpan) -> Result<(), Vec<Diagnostic>> {
     if imports.len() > MAX_IMPORTS {
         return Err(issue(
             DiagnosticCode::ImportLimitExceeded,
@@ -302,8 +318,7 @@ fn validate_imports(
     Ok(())
 }
 
-fn validate_non_claims(source: &RoleChoreographySource) -> Result<(), Vec<ChoreographyDiagnostic>> {
-    let span = source.protocol.span();
+fn validate_non_claims(source: &RoleSource, span: SourceSpan) -> Result<(), Vec<Diagnostic>> {
     for required in REQUIRED_NON_CLAIMS {
         if !source.non_claims.iter().any(|item| item == required) {
             return Err(issue(
@@ -346,7 +361,7 @@ fn initial_ownership(values: &[ValueDeclaration]) -> OwnershipSnapshot {
 fn trellis_state(
     snapshot: &OwnershipSnapshot,
     span: SourceSpan,
-) -> Result<verified_logic::choreography_ownership::OwnershipState, Vec<ChoreographyDiagnostic>> {
+) -> Result<verified_logic::choreography_ownership::OwnershipState, Vec<Diagnostic>> {
     admit_ownership(&snapshot.entries).ok_or_else(|| {
         issue(
             DiagnosticCode::TrellisOwnershipRejected,
@@ -359,7 +374,7 @@ fn trellis_state(
 struct TransferValidation<'a> {
     from: RoleId,
     to: RoleId,
-    payload_tag: crate::model::PayloadTag,
+    payload_tag: crate::model::participants::PayloadTag,
     value: ValueId,
     span: SourceSpan,
     roles: &'a [RoleDeclaration],
@@ -369,7 +384,7 @@ struct TransferValidation<'a> {
 
 fn validate_transfer(
     transfer: TransferValidation<'_>,
-) -> Result<OwnershipSnapshot, Vec<ChoreographyDiagnostic>> {
+) -> Result<OwnershipSnapshot, Vec<Diagnostic>> {
     let TransferValidation {
         from,
         to,
@@ -433,20 +448,22 @@ fn validate_choice(
     snapshot: &OwnershipSnapshot,
     depth: usize,
     context: &mut NodeValidationContext<'_, '_>,
-) -> Result<(), Vec<ChoreographyDiagnostic>> {
+) -> Result<(), Error> {
     if !role_declared(context.roles, choice.decider) {
         return Err(issue(
             DiagnosticCode::UndeclaredRole,
             choice.span,
             "choice names an undeclared decider",
-        ));
+        )
+        .into());
     }
     if choice.branches.is_empty() {
         return Err(issue(
             DiagnosticCode::EmptyChoice,
             choice.span,
             "choice has no branches",
-        ));
+        )
+        .into());
     }
     context.count.branches = context.count.branches.saturating_add(choice.branches.len());
     if choice.branches.len() > MAX_BRANCHES || context.count.branches > MAX_BRANCHES {
@@ -454,7 +471,8 @@ fn validate_choice(
             DiagnosticCode::BranchLimitExceeded,
             choice.span,
             "choice branch count exceeds the reviewed limit",
-        ));
+        )
+        .into());
     }
     for (index, branch) in choice.branches.iter().enumerate() {
         validate_span(branch.span)?;
@@ -466,7 +484,8 @@ fn validate_choice(
                     branch.span,
                     previous.span,
                     "choice branch label is duplicated",
-                ));
+                )
+                .into());
             }
             if previous.label > branch.label {
                 return Err(duplicate_issue(
@@ -474,7 +493,8 @@ fn validate_choice(
                     branch.span,
                     previous.span,
                     "choice branch labels are not in strict order",
-                ));
+                )
+                .into());
             }
         }
         validate_node(&branch.body, snapshot, depth.saturating_add(1), context)?;
@@ -485,19 +505,20 @@ fn validate_choice(
 }
 
 fn validate_node(
-    node: &ChoreographyNode,
+    node: &Node,
     snapshot: &OwnershipSnapshot,
     depth: usize,
     context: &mut NodeValidationContext<'_, '_>,
-) -> Result<(), Vec<ChoreographyDiagnostic>> {
-    let span = node.span();
+) -> Result<(), Error> {
+    let span = node.span().ok_or(Error::UnsupportedNode)?;
     validate_span(span)?;
     if depth > MAX_NESTING_DEPTH {
         return Err(issue(
             DiagnosticCode::NestingLimitExceeded,
             span,
             "protocol nesting exceeds the reviewed limit",
-        ));
+        )
+        .into());
     }
     context.count.steps = context.count.steps.saturating_add(1);
     if context.count.steps > MAX_STEPS {
@@ -505,17 +526,18 @@ fn validate_node(
             DiagnosticCode::StepLimitExceeded,
             span,
             "protocol step count exceeds the reviewed limit",
-        ));
+        )
+        .into());
     }
     debug_assert!(span_is_valid(span));
     debug_assert!(depth <= MAX_NESTING_DEPTH);
     match node {
-        ChoreographyNode::End { .. } => Ok(()),
-        ChoreographyNode::Communication { from, to, next, .. } => {
+        Node::End { .. } => Ok(()),
+        Node::Communication { from, to, next, .. } => {
             validate_distinct_participants(context.roles, *from, *to, span)?;
             validate_node(next, snapshot, depth.saturating_add(1), context)
         }
-        ChoreographyNode::Transfer {
+        Node::Transfer {
             from,
             to,
             payload_tag,
@@ -535,25 +557,31 @@ fn validate_node(
             })?;
             validate_node(next, &next_snapshot, depth.saturating_add(1), context)
         }
-        ChoreographyNode::Choice {
-            decider, branches, ..
-        } => validate_choice(
-            ChoiceValidation {
-                decider: *decider,
-                branches,
-                span,
-            },
-            snapshot,
-            depth,
-            context,
-        ),
+        other => {
+            let Node::Choice {
+                decider, branches, ..
+            } = other
+            else {
+                return Err(Error::UnsupportedNode);
+            };
+            validate_choice(
+                ChoiceValidation {
+                    decider: *decider,
+                    branches,
+                    span,
+                },
+                snapshot,
+                depth,
+                context,
+            )
+        }
     }
 }
 
-fn lower_node(node: &ChoreographyNode) -> GlobalChoreo {
-    match node {
-        ChoreographyNode::End { .. } => GlobalChoreo::End,
-        ChoreographyNode::Communication {
+fn lower_node(node: &Node) -> Result<GlobalChoreo, Error> {
+    Ok(match node {
+        Node::End { .. } => GlobalChoreo::End,
+        Node::Communication {
             from,
             to,
             label,
@@ -565,9 +593,9 @@ fn lower_node(node: &ChoreographyNode) -> GlobalChoreo {
             to: to.0,
             label: label.0,
             payload_tag: PayloadTag { raw: payload_tag.0 },
-            next: Box::new(lower_node(next)),
+            next: Box::new(lower_node(next)?),
         },
-        ChoreographyNode::Transfer {
+        Node::Transfer {
             from,
             to,
             label,
@@ -581,26 +609,32 @@ fn lower_node(node: &ChoreographyNode) -> GlobalChoreo {
             label: label.0,
             payload_tag: PayloadTag { raw: payload_tag.0 },
             value: verified_logic::choreography_ownership::ValueId { raw: value.0 },
-            next: Box::new(lower_node(next)),
+            next: Box::new(lower_node(next)?),
         },
-        ChoreographyNode::Choice {
-            decider, branches, ..
-        } => GlobalChoreo::Choice {
-            decider: decider.0,
-            branches: branches
-                .iter()
-                .map(|branch| GlobalBranch {
-                    label: branch.label.0,
-                    body: lower_node(&branch.body),
-                })
-                .collect(),
-        },
-    }
+        other => {
+            let Node::Choice {
+                decider, branches, ..
+            } = other
+            else {
+                return Err(Error::UnsupportedNode);
+            };
+            GlobalChoreo::Choice {
+                decider: decider.0,
+                branches: branches
+                    .iter()
+                    .map(|branch| {
+                        Ok(GlobalBranch {
+                            label: branch.label.0,
+                            body: lower_node(&branch.body)?,
+                        })
+                    })
+                    .collect::<Result<Vec<_>, Error>>()?,
+            }
+        }
+    })
 }
 
-pub fn parse_evaluated_json(
-    input: &[u8],
-) -> Result<RoleChoreographySource, Vec<ChoreographyDiagnostic>> {
+pub fn parse_evaluated_json(input: &[u8]) -> Result<RoleSource, Vec<Diagnostic>> {
     serde_json::from_slice(input).map_err(|_| {
         issue(
             DiagnosticCode::MalformedEvaluatedData,
@@ -610,28 +644,36 @@ pub fn parse_evaluated_json(
     })
 }
 
-pub fn admit_source(
-    mut source: RoleChoreographySource,
-) -> Result<AdmittedChoreography, Vec<ChoreographyDiagnostic>> {
-    let root = source.protocol.span();
+fn validate_declarations(source: &RoleSource, root: SourceSpan) -> Result<(), Error> {
     if source.schema != ROLE_CHOREOGRAPHY_SCHEMA {
         return Err(issue(
             DiagnosticCode::UnsupportedSchema,
             root,
             "role choreography schema is unsupported",
-        ));
+        )
+        .into());
     }
-    if source.limits != ChoreographyLimits::reviewed() {
+    if source.limits != Limits::reviewed() {
         return Err(issue(
             DiagnosticCode::LimitsMismatch,
             root,
             "source limits differ from the reviewed fixed limits",
-        ));
+        )
+        .into());
     }
     validate_imports(&source.imports, root)?;
     validate_roles(&source.roles, root)?;
     validate_values(&source.values, &source.roles, root)?;
-    validate_non_claims(&source)?;
+    validate_non_claims(source, root)?;
+    debug_assert!(source.roles.len() <= source.limits.max_roles);
+    debug_assert!(source.values.len() <= source.limits.max_values);
+    debug_assert!(source.imports.len() <= source.limits.max_imports);
+    Ok(())
+}
+
+pub fn admit_source(mut source: RoleSource) -> Result<Admitted, Error> {
+    let root = source.protocol.span().ok_or(Error::UnsupportedNode)?;
+    validate_declarations(&source, root)?;
 
     let snapshot = initial_ownership(&source.values);
     trellis_state(&snapshot, root)?;
@@ -652,30 +694,32 @@ pub fn admit_source(
     debug_assert!(source.values.is_sorted_by_key(|value| value.id));
     debug_assert!(source.non_claims.is_sorted());
     let roles = source.roles.iter().map(|role| role.id).collect();
-    let global = lower_node(&source.protocol);
+    let global = lower_node(&source.protocol)?;
     if !verified_logic::choreography_global::well_formed_global(&global) {
         return Err(issue(
             DiagnosticCode::TrellisGlobalRejected,
             root,
             "Trellis rejected global choreography well-formedness",
-        ));
+        )
+        .into());
     }
     if !projectable(&global) {
-        return Err(projection_issue(&source.protocol));
+        return Err(Error::Diagnostics(projection_issue(&source.protocol)?));
     }
 
-    let admitted = AdmittedChoreography {
+    let admitted = Admitted {
         source,
         global,
         roles,
     };
-    let no_diagnostics: Vec<ChoreographyDiagnostic> = Vec::new();
+    let no_diagnostics: Vec<Diagnostic> = Vec::new();
     if !diagnostics_are_safe(&no_diagnostics) {
         return Err(issue(
             DiagnosticCode::UnsafeDiagnostic,
             root,
             "diagnostic safety invariant failed",
-        ));
+        )
+        .into());
     }
     Ok(admitted)
 }

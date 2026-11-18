@@ -1,128 +1,30 @@
-// Receipt validation keeps explicit exhaustive policy checks and canonical compatibility paths.
-#![allow(
-    unknown_lints,
-    assertion_density,
-    compound_condition,
-    fragile_exhaustive_enum_match,
-    function_length,
-    missing_const_fn,
-    non_trait_imports,
-    path_segment_repetition,
-    reason = "receipt validation keeps explicit exhaustive policy checks and canonical compatibility paths"
-)]
-
-// r[impl choregraph.interchange.kamacite.receipts]
-use crate::aggregate::ArtifactSet;
-use crate::codec::{
-    CanonicalArtifact, CodecBoundaryError, FSM_RECEIPT_ROOT_LABEL, FSM_RECEIPT_SCHEMA_VERSION,
-    LINK_RECEIPT_ROOT_LABEL, LINK_RECEIPT_SCHEMA_VERSION, decode, encode,
+use crate::aggregate::assembly::ArtifactSet;
+use crate::codec::state::{
+    FSM_RECEIPT_ROOT_LABEL, FSM_RECEIPT_SCHEMA_VERSION, LINK_RECEIPT_ROOT_LABEL,
+    LINK_RECEIPT_SCHEMA_VERSION,
 };
+use crate::codec::{CanonicalArtifact, CodecBoundaryError, decode, encode};
 use crate::identity::{
     ArtifactDomain, ArtifactIdentity, IdentityError, KamaciteIdentity, KamaciteIdentityDomain,
     compute_identity, compute_kamacite_identity,
 };
-use crate::lifecycle::{FsmTransitionRow, LifecycleArtifact, LifecycleError, transition_identity};
-use serde::{Deserialize, Serialize};
+use crate::lifecycle::conversion::{LifecycleArtifact, LifecycleError, transition_identity};
+use crate::lifecycle::record::FsmTransitionRow;
+use crate::receipt::record::FsmGuardDecision;
+use crate::receipt::record::FsmReceiptArtifact;
+use crate::receipt::record::FsmReceiptBody;
+use crate::receipt::record::FsmTraceStep;
+use crate::receipt::record::LinkReceiptArtifact;
+use crate::receipt::record::LinkReceiptBody;
+use crate::receipt::record::LinkReceiptRole;
+use crate::receipt::record::ReceiptBundle;
+use crate::receipt::record::TraceObservation;
 use std::fmt::{Display, Formatter};
 
 const SUPPORTED_SCHEMA_VERSION: u32 = 1;
 const EXHAUSTIVENESS_RECEIPT_KIND: &str = "exhaustiveness";
 const TRACE_RECEIPT_KIND: &str = "trace";
 const REQUIRED_RECEIPT_NON_CLAIM_COUNT: usize = 5;
-
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum LinkReceiptRole {
-    Admission,
-    Lifecycle,
-    Source,
-    ProofReference,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(rename = "choregraph-link-receipt-v1", deny_unknown_fields)]
-pub struct LinkReceiptBody {
-    pub schema_version: u32,
-    pub role: LinkReceiptRole,
-    pub subject: ArtifactIdentity,
-    pub dependencies: Vec<ArtifactIdentity>,
-    pub checked_laws: Vec<String>,
-    pub non_claims: Vec<String>,
-    pub semantic_claims: Vec<String>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct LinkReceiptArtifact {
-    pub body: LinkReceiptBody,
-    pub canonical: CanonicalArtifact,
-    pub identity: ArtifactIdentity,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct FsmGuardDecision {
-    pub guard_id: String,
-    pub allowed: bool,
-    pub evidence_refs: Vec<String>,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct FsmTraceStep {
-    pub from_state: String,
-    pub event: String,
-    pub to_state: String,
-    pub transition_identity: Option<KamaciteIdentity>,
-    pub guard_decisions: Vec<FsmGuardDecision>,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(rename = "kamacite-fsm-receipt-v3", deny_unknown_fields)]
-pub struct FsmReceiptBody {
-    pub schema_version: u32,
-    pub receipt_kind: String,
-    pub spec_identity: KamaciteIdentity,
-    pub state_universe_identity: KamaciteIdentity,
-    pub event_universe_identity: KamaciteIdentity,
-    pub transition_coverage_identity: KamaciteIdentity,
-    pub denial_coverage_identity: KamaciteIdentity,
-    pub adapter_identity: KamaciteIdentity,
-    pub dependency_identities: Vec<KamaciteIdentity>,
-    pub octet_receipt_identities: Vec<KamaciteIdentity>,
-    pub valence_export_identity: Option<KamaciteIdentity>,
-    pub checked_laws: Vec<String>,
-    pub diagnostics: Vec<String>,
-    pub non_claims: Vec<String>,
-    pub semantic_claims: Vec<String>,
-    pub trace_start_state: Option<String>,
-    pub trace_events: Vec<String>,
-    pub trace_steps: Vec<FsmTraceStep>,
-    pub trace_final_state: Option<String>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct FsmReceiptArtifact {
-    pub body: FsmReceiptBody,
-    pub canonical: CanonicalArtifact,
-    pub identity: KamaciteIdentity,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct TraceObservation {
-    pub from_state: String,
-    pub event: String,
-    pub to_state: String,
-    pub guard_evidence_refs: Vec<String>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ReceiptBundle {
-    pub admission: LinkReceiptArtifact,
-    pub lifecycle: LinkReceiptArtifact,
-    pub source: LinkReceiptArtifact,
-    pub proof_reference: LinkReceiptArtifact,
-    pub exhaustiveness: FsmReceiptArtifact,
-    pub trace: FsmReceiptArtifact,
-}
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ReceiptError {
     Codec(CodecBoundaryError),

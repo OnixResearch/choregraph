@@ -17,21 +17,21 @@ verus! {
 // suspension fact recorded by an accepted suspend event.
 proof fn suspended_trace_keeps_stale_suspensions(
     dependencies: Seq<Vec<usize>>,
-    event: verified_trace::IndexedReplayEvent,
+    event: verified_trace::specification::IndexedReplayEvent,
 )
     requires
         dependencies.len() == 1,
         dependencies[0]@.len() == 0,
         event.node_index == 0,
-        event.action == verified::ACTION_SUSPEND,
+        event.action == verified::codes::action::ACTION_SUSPEND,
         event.event_fact.is_some(),
         event.allowed_intents@.len() == 0,
         event.requested_intents@.len() == 0,
-    ensures verified_trace::replay_final_suspensions_from_spec(
+    ensures verified_trace::specification::replay_final_suspensions_from_spec(
         dependencies,
-        seq![verified::STATE_READY],
+        seq![verified::codes::status::STATE_READY],
         seq![None],
-        verified::PROFILE_DURABLE_SUSPENSION_V1,
+        verified::codes::profile::PROFILE_DURABLE_SUSPENSION_V1,
         seq![event],
         0,
     ) == seq![None]

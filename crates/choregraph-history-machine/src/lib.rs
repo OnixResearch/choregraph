@@ -12,11 +12,18 @@ extern crate alloc;
 use alloc::vec::Vec;
 
 use choregraph_core::{
-    Action, AdmittedMachine, BoundedTrace, ConcreteBoundedTrace, ConcreteEvent,
-    ConcreteReplayInput, Event, MachineState, ReplayBindings, ReplayDecision, ReplayInput,
-    ReplayLimits,
+    concrete::event::ConcreteEvent, concrete::replay::ConcreteBoundedTrace,
+    concrete::replay::ConcreteReplayInput, model::automaton::AdmittedMachine,
+    model::automaton::MachineState, model::dispatch::Event, model::history::BoundedTrace,
+    model::history::ReplayBindings, model::history::ReplayDecision, model::history::ReplayInput,
+    model::history::ReplayLimits, model::semantics::Action,
 };
-use choregraph_history::{Digest, EventClass, EventId, HistoryGraph, Projection, ProjectionKind};
+use choregraph_history::{
+    dag::Graph,
+    identity::{Digest, EventId},
+    model::EventClass,
+    traversal::{Projection, ProjectionKind},
+};
 
 // r[impl choregraph.history.machine_replay]
 // r[impl choregraph.history.machine_replay.valid]
@@ -48,8 +55,8 @@ pub struct BoundEventV2 {
 }
 
 /// Explicit input for aggregate production replay.
-pub struct ReplayHistoryInputV1<'a> {
-    pub graph: &'a HistoryGraph,
+pub struct ReplayInputV1<'a> {
+    pub graph: &'a Graph,
     pub lineage: &'a Projection,
     pub machine: &'a AdmittedMachine,
     pub initial_state: &'a MachineState,
@@ -63,8 +70,8 @@ pub struct ReplayHistoryInputV1<'a> {
 }
 
 /// Explicit input for concrete production replay.
-pub struct ReplayHistoryInputV2<'a> {
-    pub graph: &'a HistoryGraph,
+pub struct ReplayInputV2<'a> {
+    pub graph: &'a Graph,
     pub lineage: &'a Projection,
     pub machine: &'a AdmittedMachine,
     pub initial_state: &'a MachineState,
@@ -79,7 +86,7 @@ pub struct ReplayHistoryInputV2<'a> {
 
 /// Fail-closed adapter denials before production replay.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum MachineHistoryError {
+pub enum Error {
     NonLinearProjection,
     EventCountMismatch,
     HistoryEventMissing { event: EventId },
@@ -91,10 +98,8 @@ pub enum MachineHistoryError {
     PayloadIdentityMismatch { event: EventId },
 }
 
-/// Replays aggregate events through [`choregraph_core::replay`].
-pub fn replay_history(
-    input: ReplayHistoryInputV1<'_>,
-) -> Result<ReplayDecision, MachineHistoryError> {
+/// Replays aggregate events through [`choregraph_core::transition::replay`].
+pub fn replay(input: ReplayInputV1<'_>) -> Result<ReplayDecision, Error> {
     validate_common(CommonValidation {
         graph: input.graph,
         lineage: input.lineage,
@@ -108,12 +113,12 @@ pub fn replay_history(
     debug_assert_eq!(input.lineage.events().len(), input.events.len());
     let mut events = Vec::with_capacity(input.events.len());
     for binding in input.events {
-        validate_history_event(
+        validate_event(
             input.graph,
             binding.history_event,
             EventClass::MachineV1,
             input.expected_schema_identity,
-            machine_event_payload_identity(&binding.event),
+            event_payload_identity(&binding.event),
         )?;
         events.push(binding.event.clone());
     }
@@ -125,13 +130,11 @@ pub fn replay_history(
         trace,
         input.limits,
     );
-    Ok(choregraph_core::replay(replay_input))
+    Ok(choregraph_core::transition::replay(replay_input))
 }
 
-/// Replays concrete events through [`choregraph_core::replay_concrete`].
-pub fn replay_history_concrete(
-    input: ReplayHistoryInputV2<'_>,
-) -> Result<ReplayDecision, MachineHistoryError> {
+/// Replays concrete events through [`choregraph_core::transition::replay_concrete`].
+pub fn replay_concrete(input: ReplayInputV2<'_>) -> Result<ReplayDecision, Error> {
     validate_common(CommonValidation {
         graph: input.graph,
         lineage: input.lineage,
@@ -145,7 +148,7 @@ pub fn replay_history_concrete(
     debug_assert_eq!(input.lineage.events().len(), input.events.len());
     let mut events = Vec::with_capacity(input.events.len());
     for binding in input.events {
-        validate_history_event(
+        validate_event(
             input.graph,
             binding.history_event,
             EventClass::MachineV2,
@@ -162,12 +165,12 @@ pub fn replay_history_concrete(
         trace,
         input.limits,
     );
-    Ok(choregraph_core::replay_concrete(replay_input))
+    Ok(choregraph_core::transition::replay_concrete(replay_input))
 }
 
 /// Computes the canonical payload identity for one aggregate machine event.
 #[must_use]
-pub fn machine_event_payload_identity(event: &Event) -> Digest {
+pub fn event_payload_identity(event: &Event) -> Digest {
     let mut hasher = start_hasher(EVENT_V1_DOMAIN, &event.node_id, event.action);
     update_length(&mut hasher, event.effects.len());
     for effect in &event.effects {
@@ -200,7 +203,7 @@ pub fn concrete_event_payload_identity(event: &ConcreteEvent) -> Digest {
 }
 
 struct CommonValidation<'a, I> {
-    graph: &'a HistoryGraph,
+    graph: &'a Graph,
     lineage: &'a Projection,
     expected_machine_identity: Digest,
     supplied_machine_identity: Digest,
@@ -211,15 +214,15 @@ struct CommonValidation<'a, I> {
 
 fn validate_common<I: Iterator<Item = EventId>>(
     input: CommonValidation<'_, I>,
-) -> Result<(), MachineHistoryError> {
+) -> Result<(), Error> {
     if input.lineage.kind() != ProjectionKind::LinearLineage {
-        return Err(MachineHistoryError::NonLinearProjection);
+        return Err(Error::NonLinearProjection);
     }
     if input.expected_machine_identity != input.supplied_machine_identity {
-        return Err(MachineHistoryError::StaleMachineIdentity);
+        return Err(Error::StaleMachineIdentity);
     }
     if input.expected_bindings != input.trace_bindings {
-        return Err(MachineHistoryError::StaleBinding);
+        return Err(Error::StaleBinding);
     }
     debug_assert_eq!(
         input.expected_machine_identity,
@@ -228,37 +231,37 @@ fn validate_common<I: Iterator<Item = EventId>>(
     debug_assert_eq!(input.expected_bindings, input.trace_bindings);
     let supplied: Vec<EventId> = input.event_ids.collect();
     if input.lineage.events() != supplied {
-        return Err(MachineHistoryError::EventCountMismatch);
+        return Err(Error::EventCountMismatch);
     }
     for event in input.lineage.events() {
         if !input.graph.contains(*event) {
-            return Err(MachineHistoryError::HistoryEventMissing { event: *event });
+            return Err(Error::HistoryEventMissing { event: *event });
         }
     }
     Ok(())
 }
 
-fn validate_history_event(
-    graph: &HistoryGraph,
+fn validate_event(
+    graph: &Graph,
     identity: EventId,
     expected_class: EventClass,
     expected_schema: Digest,
     expected_payload: Digest,
-) -> Result<(), MachineHistoryError> {
+) -> Result<(), Error> {
     let event = graph
         .event(identity)
-        .ok_or(MachineHistoryError::HistoryEventMissing { event: identity })?;
+        .ok_or(Error::HistoryEventMissing { event: identity })?;
     if event.content().class == EventClass::Merge {
-        return Err(MachineHistoryError::UnresolvedMerge { event: identity });
+        return Err(Error::UnresolvedMerge { event: identity });
     }
     if event.content().class != expected_class {
-        return Err(MachineHistoryError::UnsupportedEventClass { event: identity });
+        return Err(Error::UnsupportedEventClass { event: identity });
     }
     if event.content().schema_identity != expected_schema {
-        return Err(MachineHistoryError::StaleSchemaIdentity { event: identity });
+        return Err(Error::StaleSchemaIdentity { event: identity });
     }
     if event.content().payload_identity != expected_payload {
-        return Err(MachineHistoryError::PayloadIdentityMismatch { event: identity });
+        return Err(Error::PayloadIdentityMismatch { event: identity });
     }
     Ok(())
 }
@@ -285,7 +288,7 @@ const fn action_tag(action: Action) -> u8 {
 
 fn update_binding_input(
     hasher: &mut blake3::Hasher,
-    input: &choregraph_core::ConcreteBindingInput,
+    input: &choregraph_core::concrete::reference::ConcreteBindingInput,
 ) {
     update_optional_text(hasher, input.slot_id.as_deref());
     update_optional_text(hasher, input.source_ref.as_deref());
@@ -299,7 +302,7 @@ fn update_binding_input(
 )]
 fn update_suspension(
     hasher: &mut blake3::Hasher,
-    suspension: Option<&choregraph_core::SuspensionFactSpec>,
+    suspension: Option<&choregraph_core::model::pause::SuspensionFactSpec>,
 ) {
     match suspension {
         Some(fact) => {
@@ -333,15 +336,15 @@ fn update_optional_text(hasher: &mut blake3::Hasher, value: Option<&str>) {
     missing_const_fn,
     reason = "BLAKE3 hasher mutation is not a const operation"
 )]
-fn update_length(hasher: &mut blake3::Hasher, length: usize) {
-    match u64::try_from(length) {
+fn update_length(hasher: &mut blake3::Hasher, element_count: usize) {
+    match u64::try_from(element_count) {
         Ok(framed) => {
             hasher.update(&[LENGTH_U64_TAG]);
             hasher.update(&framed.to_le_bytes());
         }
         Err(_) => {
             hasher.update(&[LENGTH_NATIVE_TAG]);
-            hasher.update(&length.to_le_bytes());
+            hasher.update(&element_count.to_le_bytes());
         }
     }
 }

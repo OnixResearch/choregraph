@@ -16,12 +16,19 @@
 // r[verify choregraph.machine.suspension_replay]
 // r[verify choregraph.machine.suspension_boundary]
 use choregraph_core::{
-    Action, AdmissionDiagnosticCode, AdmissionLimits, AdmittedMachine, BoundedTrace,
-    DURABLE_SUSPENSION_V1, Decision, DenialReason, EdgeSpec, EffectDeclarationSpec, Event,
-    InvariantIssue, LINEAR_LIFECYCLE_V1, LifecycleProfile, LocalState, MachineSpec, MachineState,
-    NodeSpec, ReplayBindings, ReplayDecision, ReplayFailureReason, ReplayInput, ReplayLimits,
-    ResumeDecision, SuspensionDeclarationSpec, TraceBinding, TransitionSelector, invariant,
-    ready_nodes, replay, resume_decision, step,
+    analytics::ready_nodes, analytics::resume_decision, invariant::invariant,
+    model::analysis::ResumeDecision, model::automaton::AdmittedMachine,
+    model::automaton::MachineSpec, model::automaton::MachineState,
+    model::capacity::AdmissionLimits, model::dispatch::EffectDeclarationSpec,
+    model::dispatch::Event, model::graph::EdgeSpec, model::graph::NodeSpec,
+    model::history::BoundedTrace, model::history::ReplayBindings, model::history::ReplayDecision,
+    model::history::ReplayFailureReason, model::history::ReplayInput, model::history::ReplayLimits,
+    model::history::TraceBinding, model::outcome::AdmissionDiagnosticCode,
+    model::outcome::Decision, model::outcome::DenialReason, model::outcome::InvariantIssue,
+    model::pause::SuspensionDeclarationSpec, model::semantics::Action,
+    model::semantics::DURABLE_SUSPENSION_V1, model::semantics::LINEAR_LIFECYCLE_V1,
+    model::semantics::LifecycleProfile, model::semantics::LocalState,
+    model::semantics::TransitionSelector, transition::replay, transition::step,
 };
 
 const NODE_GATE: &str = "gate";
@@ -105,8 +112,12 @@ fn resume_event(class: &str, reference: &str) -> Event {
 
 fn bindings() -> ReplayBindings {
     ReplayBindings::new(
-        TraceBinding::from_bytes([MACHINE_BINDING_BYTE; choregraph_core::TRACE_BINDING_BYTES]),
-        TraceBinding::from_bytes([STATE_BINDING_BYTE; choregraph_core::TRACE_BINDING_BYTES]),
+        TraceBinding::from_bytes(
+            [MACHINE_BINDING_BYTE; choregraph_core::model::history::TRACE_BINDING_BYTES],
+        ),
+        TraceBinding::from_bytes(
+            [STATE_BINDING_BYTE; choregraph_core::model::history::TRACE_BINDING_BYTES],
+        ),
     )
 }
 
@@ -134,7 +145,7 @@ fn must_some<T>(value: Option<T>) -> T {
     }
 }
 
-fn gate_id(machine: &AdmittedMachine) -> choregraph_core::NodeId {
+fn gate_id(machine: &AdmittedMachine) -> choregraph_core::id::bounded::NodeId {
     for node_id in machine.node_ids() {
         if node_id.as_str() == NODE_GATE {
             return node_id.clone();
@@ -387,7 +398,7 @@ fn suspension_denial_classes_fail_closed() {
     );
 
     let mut unexpected_fact = Event::new(NODE_GATE, Action::Start);
-    unexpected_fact.suspension = Some(choregraph_core::SuspensionFactSpec {
+    unexpected_fact.suspension = Some(choregraph_core::model::pause::SuspensionFactSpec {
         class: String::from(SUSPENSION_CLASS),
         reference: String::from(REFERENCE),
     });
@@ -554,8 +565,10 @@ fn declared_suspension_resume_requires_completed_dependencies() {
     });
     let machine = admit(spec);
     let state = machine.declared_suspension_state();
-    let gate =
-        choregraph_core::NodeId::parse(NODE_GATE, AdmissionLimits::default().max_identifier_bytes);
+    let gate = choregraph_core::id::bounded::NodeId::parse(
+        NODE_GATE,
+        AdmissionLimits::default().max_identifier_bytes,
+    );
     let gate = match gate {
         Ok(gate) => gate,
         Err(error) => panic!("gate node id: {error:?}"),
@@ -602,7 +615,7 @@ fn state_invariant_flags_suspension_record_conflicts() {
 
     let missing_record =
         MachineState::with_suspensions(state.entries().clone(), std::collections::BTreeMap::new());
-    let issues = choregraph_core::validate_invariant(&machine, &missing_record);
+    let issues = choregraph_core::invariant::validate_invariant(&machine, &missing_record);
     assert!(issues.contains(&InvariantIssue::SuspensionRecordMissing(gate.clone())));
 
     let ready = gate_ready_state(&machine);
@@ -612,14 +625,14 @@ fn state_invariant_flags_suspension_record_conflicts() {
             .into_iter()
             .collect(),
     );
-    let issues = choregraph_core::validate_invariant(&machine, &unexpected_record);
+    let issues = choregraph_core::invariant::validate_invariant(&machine, &unexpected_record);
     assert!(issues.contains(&InvariantIssue::SuspensionRecordUnexpected(gate.clone())));
 
     let linear = admit(MachineSpec::new(vec![node(NODE_GATE)], Vec::new()));
     let mut linear_entries = linear.initial_state().entries().clone();
     linear_entries.insert(gate.clone(), LocalState::Suspended);
     let linear_suspended = MachineState::new(linear_entries);
-    let issues = choregraph_core::validate_invariant(&linear, &linear_suspended);
+    let issues = choregraph_core::invariant::validate_invariant(&linear, &linear_suspended);
     assert!(issues.contains(&InvariantIssue::SuspensionWithoutProfile(gate.clone())));
     assert!(issues.contains(&InvariantIssue::SuspensionRecordMissing(gate.clone())));
 }

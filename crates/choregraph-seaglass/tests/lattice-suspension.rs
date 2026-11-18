@@ -16,10 +16,14 @@
 // r[verify choregraph.machine.suspension_replay]
 // r[verify choregraph.machine.resume_signal]
 use choregraph_core::{
-    Action, AdmissionLimits, AdmittedMachine, BoundedTrace, DURABLE_SUSPENSION_V1, Decision,
-    DenialReason, EdgeSpec, Event, LocalState, MachineSpec, NodeSpec, ReplayBindings,
-    ReplayDecision, ReplayInput, ReplayLimits, ResumeDecision, TraceBinding, replay,
-    resume_decision, step,
+    analytics::resume_decision, model::analysis::ResumeDecision, model::automaton::AdmittedMachine,
+    model::automaton::MachineSpec, model::capacity::AdmissionLimits, model::dispatch::Event,
+    model::graph::EdgeSpec, model::graph::NodeSpec, model::history::BoundedTrace,
+    model::history::ReplayBindings, model::history::ReplayDecision, model::history::ReplayInput,
+    model::history::ReplayLimits, model::history::TraceBinding, model::outcome::Decision,
+    model::outcome::DenialReason, model::semantics::Action,
+    model::semantics::DURABLE_SUSPENSION_V1, model::semantics::LocalState, transition::replay,
+    transition::step,
 };
 
 const LATTICE_WAIT_NODE: &str = "lattice-node/2";
@@ -47,7 +51,7 @@ fn lattice_wait_machine() -> AdmittedMachine {
     }
 }
 
-fn node_id(machine: &AdmittedMachine, expected: &str) -> choregraph_core::NodeId {
+fn node_id(machine: &AdmittedMachine, expected: &str) -> choregraph_core::id::bounded::NodeId {
     for node_id in machine.node_ids() {
         if node_id.as_str() == expected {
             return node_id.clone();
@@ -56,7 +60,9 @@ fn node_id(machine: &AdmittedMachine, expected: &str) -> choregraph_core::NodeId
     panic!("admitted node is missing: {expected}")
 }
 
-fn drive_to_gate_ready(machine: &AdmittedMachine) -> choregraph_core::MachineState {
+fn drive_to_gate_ready(
+    machine: &AdmittedMachine,
+) -> choregraph_core::model::automaton::MachineState {
     let mut state = machine.initial_state();
     for event in [
         Event::new(LATTICE_SOURCE_NODE, Action::MarkReady),
@@ -148,8 +154,12 @@ fn lattice_wait_trace_replays_suspended_and_resumes_deterministically() {
         ),
     ];
     let bindings = ReplayBindings::new(
-        TraceBinding::from_bytes([BINDING_BYTE; choregraph_core::TRACE_BINDING_BYTES]),
-        TraceBinding::from_bytes([BINDING_BYTE; choregraph_core::TRACE_BINDING_BYTES]),
+        TraceBinding::from_bytes(
+            [BINDING_BYTE; choregraph_core::model::history::TRACE_BINDING_BYTES],
+        ),
+        TraceBinding::from_bytes(
+            [BINDING_BYTE; choregraph_core::model::history::TRACE_BINDING_BYTES],
+        ),
     );
     let replay_limits = ReplayLimits {
         max_events: TRACE_EVENT_LIMIT,

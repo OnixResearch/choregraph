@@ -25,7 +25,7 @@
     # r[verify choregraph.nickel.capabilities]
     { requirement = "choregraph.nickel.capabilities", evidence = "crates/choregraph-cli/src/capability.rs and capability tests" },
     # r[verify choregraph.nickel.validation]
-    { requirement = "choregraph.nickel.validation", evidence = "crates/choregraph-nickel/src/tests.rs and restricted-nickel-contracts Nix check" },
+    { requirement = "choregraph.nickel.validation", evidence = "crates/choregraph-nickel/src/tests/mod.rs and restricted-nickel-contracts Nix check" },
     # r[impl choregraph.release.bundle]
     { requirement = "choregraph.release.bundle", evidence = "crates/choregraph-release/src/lib.rs" },
     # r[impl choregraph.release.manifest]

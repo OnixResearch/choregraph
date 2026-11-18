@@ -1,140 +1,41 @@
-// Canonical v2 machine, concrete-intent, and linkage receipt adapters.
-#![allow(
-    unknown_lints,
-    assertion_density,
-    fragile_exhaustive_enum_match,
-    function_length,
-    missing_const_fn,
-    non_trait_imports,
-    numeric_units,
-    path_segment_repetition,
-    reason = "the canonical v2 adapter keeps explicit closed-schema conversion and linkage checks"
-)]
-
-// r[impl choregraph.effect_v2.kamacite]
-// r[impl choregraph.effect_v2.references]
-// r[impl choregraph.effect_v2.occurrence_identity]
-use crate::aggregate::{
-    AggregateError, DescriptorEdge, DescriptorLimits, DescriptorNode, action_from_id, action_id,
-    admission_limits, descriptor_limits, state_from_id, state_id,
+use crate::aggregate::assembly::AggregateError;
+use crate::aggregate::assembly::{
+    action_from_id, action_id, admission_limits, descriptor_limits, state_from_id, state_id,
 };
-use crate::codec::{
+use crate::aggregate::record::{DescriptorEdge, DescriptorNode};
+use crate::codec::effect::{
     CONCRETE_INTENT_RECEIPT_ROOT_LABEL, CONCRETE_INTENT_RECEIPT_SCHEMA_VERSION,
     CONCRETE_INTENT_ROOT_LABEL, CONCRETE_INTENT_SCHEMA_VERSION, CONCRETE_MACHINE_ROOT_LABEL,
-    CONCRETE_MACHINE_SCHEMA_VERSION, CanonicalArtifact, CodecBoundaryError, decode, encode,
+    CONCRETE_MACHINE_SCHEMA_VERSION,
 };
+use crate::codec::{CanonicalArtifact, CodecBoundaryError, decode, encode};
+use crate::concrete::record::ConcreteIntentArtifact;
+use crate::concrete::record::ConcreteIntentDescriptorV2;
+use crate::concrete::record::ConcreteIntentReceiptArtifact;
+use crate::concrete::record::ConcreteIntentReceiptBody;
+use crate::concrete::record::ConcreteMachineArtifact;
+use crate::concrete::record::ConcreteMachineDescriptorV2;
+use crate::concrete::record::DescriptorConcreteEffectV2;
+use crate::concrete::record::DescriptorReferenceBindingV2;
+use crate::concrete::record::DescriptorSelectedReferenceV2;
 use crate::identity::{ArtifactDomain, ArtifactIdentity, IdentityError, compute_identity};
 use choregraph_core::{
-    AbilityId, AdmittedMachine, CanonicalReferenceProfile, ConcreteEffectDeclarationSpec,
-    ConcreteEffectIntent, ConcreteReference, ConcreteReferenceSpec, DeclarationKey, EdgeSpec,
-    LINEAR_LIFECYCLE_V1, MACHINE_SCHEMA_V2, MachineSpecV2, NodeId, NodeSpec, OperationId,
-    PayloadRef, ReferenceBinding, ReferenceBindingSpec, ResourceId, SlotId, SourceRef,
-    TransitionSelector,
+    concrete::effect::ConcreteEffectDeclarationSpec, concrete::effect::ConcreteEffectIntent,
+    concrete::machine::MachineSpecV2, concrete::reference::CanonicalReferenceProfile,
+    concrete::reference::ConcreteReference, concrete::reference::ConcreteReferenceSpec,
+    concrete::reference::ReferenceBinding, concrete::reference::ReferenceBindingSpec,
+    id::bounded::AbilityId, id::bounded::DeclarationKey, id::bounded::NodeId,
+    id::bounded::OperationId, id::bounded::ResourceId, id::bounded::SlotId, id::bounded::SourceRef,
+    id::reference::PayloadRef, model::automaton::AdmittedMachine, model::graph::EdgeSpec,
+    model::graph::NodeSpec, model::semantics::LINEAR_LIFECYCLE_V1,
+    model::semantics::MACHINE_SCHEMA_V2, model::semantics::TransitionSelector,
 };
-use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
 const SUPPORTED_SCHEMA_VERSION: u32 = 1;
 const MACHINE_NON_CLAIM_COUNT: usize = 4;
 const INTENT_NON_CLAIM_COUNT: usize = 4;
 const RECEIPT_NON_CLAIM_COUNT: usize = 4;
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct DescriptorReferenceBindingV2 {
-    pub mode: String,
-    pub profile: Option<String>,
-    pub identity: Option<String>,
-    pub slot_id: Option<String>,
-    pub source_ref: Option<String>,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct DescriptorConcreteEffectV2 {
-    pub declaration_key: String,
-    pub node_id: String,
-    pub from_state: String,
-    pub action: String,
-    pub operation: String,
-    pub resource: String,
-    pub ability: String,
-    pub request_binding: DescriptorReferenceBindingV2,
-    pub payload_binding: DescriptorReferenceBindingV2,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(rename = "choregraph-machine-v2", deny_unknown_fields)]
-pub struct ConcreteMachineDescriptorV2 {
-    pub schema_version: u32,
-    pub machine_schema: String,
-    pub lifecycle_profile_id: String,
-    pub limits: DescriptorLimits,
-    pub nodes: Vec<DescriptorNode>,
-    pub edges: Vec<DescriptorEdge>,
-    pub effects: Vec<DescriptorConcreteEffectV2>,
-    pub checked_laws: Vec<String>,
-    pub non_claims: Vec<String>,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct DescriptorSelectedReferenceV2 {
-    pub slot_id: Option<String>,
-    pub source_ref: Option<String>,
-    pub profile: String,
-    pub identity: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(rename = "choregraph-concrete-intent-v2", deny_unknown_fields)]
-pub struct ConcreteIntentDescriptorV2 {
-    pub schema_version: u32,
-    pub declaration_key: String,
-    pub node_id: String,
-    pub from_state: String,
-    pub action: String,
-    pub operation: String,
-    pub resource: String,
-    pub ability: String,
-    pub request: DescriptorSelectedReferenceV2,
-    pub payload: DescriptorSelectedReferenceV2,
-    pub non_claims: Vec<String>,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(rename = "choregraph-concrete-intent-receipt-v1", deny_unknown_fields)]
-pub struct ConcreteIntentReceiptBody {
-    pub schema_version: u32,
-    pub machine_identity: ArtifactIdentity,
-    pub intent_identity: ArtifactIdentity,
-    pub declaration_key: String,
-    pub checked_laws: Vec<String>,
-    pub non_claims: Vec<String>,
-    pub semantic_claims: Vec<String>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ConcreteMachineArtifact {
-    pub machine: AdmittedMachine,
-    pub descriptor: ConcreteMachineDescriptorV2,
-    pub canonical: CanonicalArtifact,
-    pub identity: ArtifactIdentity,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ConcreteIntentArtifact {
-    pub intent: ConcreteEffectIntent,
-    pub descriptor: ConcreteIntentDescriptorV2,
-    pub canonical: CanonicalArtifact,
-    pub identity: ArtifactIdentity,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ConcreteIntentReceiptArtifact {
-    pub body: ConcreteIntentReceiptBody,
-    pub canonical: CanonicalArtifact,
-    pub identity: ArtifactIdentity,
-}
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ConcreteArtifactError {
     Aggregate(AggregateError),
@@ -281,14 +182,8 @@ fn machine_descriptor(
     for node_id in machine.node_ids() {
         let operations = machine
             .operations(node_id)
-            .ok_or(ConcreteArtifactError::DescriptorMismatch)?
-            .iter()
-            .map(|operation| String::from(operation.as_str()))
-            .collect();
-        nodes.push(DescriptorNode {
-            node_id: String::from(node_id.as_str()),
-            operations,
-        });
+            .ok_or(ConcreteArtifactError::DescriptorMismatch)?;
+        nodes.push(DescriptorNode::from((node_id, operations)));
     }
     let edges = machine
         .edges()
@@ -479,10 +374,10 @@ fn intent_descriptor(intent: &ConcreteEffectIntent) -> ConcreteIntentDescriptorV
 
 fn parse_selected_reference(
     descriptor: &DescriptorSelectedReferenceV2,
-    limits: choregraph_core::AdmissionLimits,
+    limits: choregraph_core::model::capacity::AdmissionLimits,
 ) -> Result<(Option<SlotId>, Option<SourceRef>, ConcreteReference), ConcreteArtifactError> {
     let profile = match descriptor.profile.as_str() {
-        choregraph_core::CANONICAL_REFERENCE_PROFILE_V1 => {
+        choregraph_core::concrete::reference::CANONICAL_REFERENCE_PROFILE_V1 => {
             CanonicalReferenceProfile::PackedPreservesV1
         }
         _ => return Err(ConcreteArtifactError::IntentMismatch),

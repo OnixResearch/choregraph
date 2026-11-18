@@ -54,7 +54,7 @@ const fn starts_with_at(source: &[u8], index_bytes: usize, needle: &[u8]) -> boo
         if source[source_index_bytes] != needle[offset_bytes] {
             return false;
         }
-        offset_bytes += 1;
+        offset_bytes = offset_bytes.saturating_add(1);
     }
     true
 }
@@ -242,13 +242,13 @@ mod tests {
             super::validate_restricted(import_source_bytes, SOURCE_LIMIT_BYTES)
                 .err()
                 .map(|failure| failure.issues[0].code()),
-            Some(crate::FrontendIssueCode::ForbiddenNickelAuthority)
+            Some(crate::diagnostic::FrontendIssueCode::ForbiddenNickelAuthority)
         );
         assert_eq!(
             super::validate_restricted(interpolation_source_bytes, SOURCE_LIMIT_BYTES)
                 .err()
                 .map(|failure| failure.issues[0].code()),
-            Some(crate::FrontendIssueCode::ForbiddenNickelAuthority)
+            Some(crate::diagnostic::FrontendIssueCode::ForbiddenNickelAuthority)
         );
     }
 
@@ -258,13 +258,13 @@ mod tests {
             super::validate_restricted(b"{ value = \"unterminated }", SOURCE_LIMIT_BYTES)
                 .err()
                 .map(|failure| failure.issues[0].code()),
-            Some(crate::FrontendIssueCode::MalformedNickelSource)
+            Some(crate::diagnostic::FrontendIssueCode::MalformedNickelSource)
         );
         assert_eq!(
             super::validate_restricted(b"{}", 1)
                 .err()
                 .map(|failure| failure.issues[0].code()),
-            Some(crate::FrontendIssueCode::NickelSourceTooLarge)
+            Some(crate::diagnostic::FrontendIssueCode::NickelSourceTooLarge)
         );
     }
 }

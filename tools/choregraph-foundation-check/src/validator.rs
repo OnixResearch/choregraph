@@ -131,7 +131,7 @@ const REQUIRED_INTERNAL_EDGES: &[(&str, &str)] = &[
 pub(crate) struct IssueFacts<'a> {
     pub(crate) code: &'static str,
     pub(crate) subject: &'a str,
-    pub(crate) detail: String,
+    pub(crate) detail: std::borrow::Cow<'static, str>,
 }
 
 pub(crate) fn issue(facts: IssueFacts<'_>) -> crate::types::ValidationIssue {
@@ -217,7 +217,7 @@ fn validate_required_packages(
             issues.push(issue(IssueFacts {
                 code: "foundation.missing-package",
                 subject: required,
-                detail: String::from("required workspace package is absent"),
+                detail: "required workspace package is absent".into(),
             }));
         }
     }
@@ -232,21 +232,21 @@ fn validate_package_metadata(
         issues.push(issue(IssueFacts {
             code: "foundation.license",
             subject: &package.name,
-            detail: String::from("package license is not AGPL-3.0-or-later"),
+            detail: "package license is not AGPL-3.0-or-later".into(),
         }));
     }
     if package.rust_version != REQUIRED_RUST_VERSION {
         issues.push(issue(IssueFacts {
             code: "foundation.rust-version",
             subject: &package.name,
-            detail: String::from("package Rust version differs from the pinned workspace version"),
+            detail: "package Rust version differs from the pinned workspace version".into(),
         }));
     }
     if !package.publish_disabled {
         issues.push(issue(IssueFacts {
             code: "foundation.premature-publish",
             subject: &package.name,
-            detail: String::from("foundation packages must remain unpublished"),
+            detail: "foundation packages must remain unpublished".into(),
         }));
     }
     debug_assert!(issues.len() <= PACKAGE_METADATA_ISSUE_LIMIT);
@@ -288,7 +288,7 @@ fn validate_dependency(
         issues.push(issue(IssueFacts {
             code: "foundation.forbidden-core-dependency",
             subject: &dependency.name,
-            detail: String::from("core dependency imports excluded authority"),
+            detail: "core dependency imports excluded authority".into(),
         }));
     }
     if HISTORY_PACKAGES.contains(&package.name.as_str())
@@ -297,7 +297,7 @@ fn validate_dependency(
         issues.push(issue(IssueFacts {
             code: "foundation.forbidden-history-dependency",
             subject: &dependency.name,
-            detail: String::from("history dependency imports product or host authority"),
+            detail: "history dependency imports product or host authority".into(),
         }));
     }
     if PRODUCT_PACKAGES.contains(&package.name.as_str())
@@ -311,7 +311,7 @@ fn validate_dependency(
         issues.push(issue(IssueFacts {
             code: "foundation.path-dependency",
             subject: &dependency.name,
-            detail: String::from("product package uses an unapproved path dependency"),
+            detail: "product package uses an unapproved path dependency".into(),
         }));
     }
     if dependency.source == crate::types::DependencySource::Workspace
@@ -320,7 +320,7 @@ fn validate_dependency(
         issues.push(issue(IssueFacts {
             code: "foundation.dependency-direction",
             subject: &package.name,
-            detail: format!("dependency on {} is not allowed", dependency.name),
+            detail: format!("dependency on {} is not allowed", dependency.name).into(),
         }));
     }
     if has_invalid_public_dependency_requirement(package, dependency) {
@@ -330,7 +330,8 @@ fn validate_dependency(
             detail: format!(
                 "public dependency {} uses unreviewed requirement {}",
                 dependency.name, dependency.requirement
-            ),
+            )
+            .into(),
         }));
     }
     debug_assert!(issues.len() <= PACKAGE_METADATA_ISSUE_LIMIT);
@@ -359,7 +360,7 @@ fn validate_selected_weave_dependency(
         Some(issue(IssueFacts {
             code: "foundation.universal-weave-selection",
             subject: &package.name,
-            detail: String::from("the exact reviewed universal-weave 0.4.1 dependency is absent"),
+            detail: "the exact reviewed universal-weave 0.4.1 dependency is absent".into(),
         }))
     }
 }
@@ -369,7 +370,9 @@ fn validate_package(package: &crate::types::PackageModel) -> Vec<crate::types::V
         return vec![issue(IssueFacts {
             code: "foundation.unexpected-package",
             subject: &package.name,
-            detail: String::from("workspace package is not in the reviewed foundation layout"),
+            detail: std::borrow::Cow::Borrowed(
+                "workspace package is not in the reviewed foundation layout",
+            ),
         })];
     }
     let Some(allowed) = allowed_internal_dependencies(&package.name) else {
@@ -410,7 +413,7 @@ fn validate_required_edges(
             issues.push(issue(IssueFacts {
                 code: "foundation.missing-required-edge",
                 subject: package_name,
-                detail: format!("required dependency on {dependency_name} is absent"),
+                detail: format!("required dependency on {dependency_name} is absent").into(),
             }));
         }
     }
@@ -446,7 +449,7 @@ pub fn validate_workspace(
         issues.push(issue(IssueFacts {
             code: "foundation.duplicate-package",
             subject: duplicate,
-            detail: String::from("workspace package name occurs more than once"),
+            detail: "workspace package name occurs more than once".into(),
         }));
     }
     issues.extend(validate_packages(model, &packages));

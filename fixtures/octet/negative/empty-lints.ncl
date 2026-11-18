@@ -3,8 +3,8 @@ let Contracts = import "../../../contracts/octet/deny-all.ncl" in
   config | Contracts.DenyAllConfig = {
     schema = "choregraph.octet-deny-all.v1",
     mode = "deny-all",
-    octet_revision = "374bd16b26cee2af34211a29bfa531c016811f51",
-    hook_blake3 = "41603febce44635585c6010557f6991008976b7e2f7e417c9c78f5299690522f",
+    octet_revision = "5b1e119c1dad202be7987eeff21e35770b5a4fff",
+    hook_blake3 = "193d21dbbf8fc6250344a7548e481a7589cb8cd72b7389cee13e773ad8e00d75",
     lints = [],
   },
 }

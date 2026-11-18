@@ -89,15 +89,15 @@ impl core::fmt::Display for EventId {
     }
 }
 
-pub(crate) fn update_length(hasher: &mut blake3::Hasher, length: usize) {
-    match u64::try_from(length) {
+pub(crate) fn update_length(hasher: &mut blake3::Hasher, item_count: usize) {
+    match u64::try_from(item_count) {
         Ok(framed) => {
             hasher.update(&[LENGTH_U64_TAG]);
             hasher.update(&framed.to_le_bytes());
         }
         Err(_) => {
             hasher.update(&[LENGTH_NATIVE_TAG]);
-            hasher.update(&length.to_le_bytes());
+            hasher.update(&item_count.to_le_bytes());
         }
     }
 }
@@ -116,6 +116,6 @@ pub(crate) fn update_digest(hasher: &mut blake3::Hasher, digest: Digest) {
     hasher.update(&digest.bytes());
 }
 
-pub(crate) fn count_from_length(length: usize) -> Option<u32> {
-    u32::try_from(length).ok()
+pub(crate) fn count_from_length(item_count: usize) -> Option<u32> {
+    u32::try_from(item_count).ok()
 }
