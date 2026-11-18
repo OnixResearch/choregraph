@@ -2,6 +2,7 @@
 //!
 //! Source evaluation and capability-relative file access remain shell responsibilities.
 
+pub mod construction;
 pub mod diagnostic;
 pub mod identity;
 pub mod imports;

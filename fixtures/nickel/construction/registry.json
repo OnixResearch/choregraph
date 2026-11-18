@@ -1,0 +1,23 @@
+{
+  "schema": "choregraph.target-registry.v1",
+  "target": "lattice-test",
+  "profile": "fixture-registry",
+  "implementation": "fixture-registry",
+  "types": [
+    { "name": "Unit", "copyable": true, "droppable": true },
+    { "name": "Text", "copyable": true, "droppable": true },
+    { "name": "Linear", "copyable": false, "droppable": false }
+  ],
+  "operations": [
+    { "operation": "fork", "implementation": "fixture/fork-v1", "inputs": [], "outputs": [{ "name": "left", "value_type": "Text" }, { "name": "right", "value_type": "Text" }], "invocation": [], "configuration": [], "effects": [] },
+    { "operation": "pass", "implementation": "fixture/pass-v1", "inputs": [{ "name": "in", "value_type": "Text" }], "outputs": [{ "name": "out", "value_type": "Text" }], "invocation": [], "configuration": [{ "name": "label", "value_type": "string", "references": false, "operators": [] }], "effects": [] },
+    { "operation": "join", "implementation": "fixture/join-v1", "inputs": [{ "name": "left", "value_type": "Text" }, { "name": "right", "value_type": "Text" }], "outputs": [], "invocation": [], "configuration": [], "effects": [] },
+    { "operation": "tick", "implementation": "fixture/tick-v1", "inputs": [], "outputs": [], "invocation": [], "configuration": [], "effects": [] },
+    { "operation": "linear-source", "implementation": "fixture/linear-source-v1", "inputs": [], "outputs": [{ "name": "out", "value_type": "Linear" }], "invocation": [], "configuration": [], "effects": [] },
+    { "operation": "linear-sink", "implementation": "fixture/linear-sink-v1", "inputs": [{ "name": "in", "value_type": "Linear" }], "outputs": [], "invocation": [], "configuration": [], "effects": [] },
+    { "operation": "effect-tick", "implementation": "fixture/effect-tick-v1", "inputs": [], "outputs": [], "invocation": [{ "name": "dispatch-request", "value_type": "Text" }, { "name": "resolved-payload", "value_type": "Text" }], "configuration": [
+      { "name": "label", "value_type": "string", "references": false, "operators": [] },
+      { "name": "request", "value_type": "string", "references": true, "operators": ["concat"] }
+    ], "effects": [{ "from_state": "ready", "action": "start", "resource": "machine", "ability": "run" }] }
+  ]
+}

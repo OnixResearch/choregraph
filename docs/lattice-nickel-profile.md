@@ -32,6 +32,12 @@ The lowerer converts node `N` to `lattice-node/N`. It converts operation `K` to 
 
 Labels, coordinates, display metadata, commands, credentials, environment values, URLs, bodies, host paths, triggers, and runtime policy do not enter canonical topology identity in this profile.
 
+## Separate construction v3 profile
+
+[`graph-construction`](graph-construction.md) adds `choregraph.graph-construction.v1` and a separate `choregraph.lattice-workflow-projection.v3`. The v3 payload retains ordered typed ports, structured configuration/effect bindings, data edges and separate control edges for Unit or no-data sequencing; control dependencies lower into existing machine edges, without changing core readiness. V1's topology-only omission of runtime fields and v2's concrete-effect semantics remain as stated above. V3 is not a reinterpretation or blanket acceptance of arbitrary Lattice workflow source.
+
+The host-selected registry binds exact operation implementation/signatures, named types with copy/drop flags, Unit, configuration operators/references and effect tuples. Lattice is the concrete consumer and must select real registry truth, import the admitted graph, revalidate actual configuration expressions and retain product/authority semantics. Author `registry` labels and Choregraph binding receipts cannot select credentials, invoke effects or prove runtime equivalence.
+
 ## Fixtures
 
 The maintained diamond fixture is [`../fixtures/nickel/positive/lattice-diamond.ncl`](../fixtures/nickel/positive/lattice-diamond.ncl). It models one root, two parallel branches, and one join.

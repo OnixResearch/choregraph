@@ -13,5 +13,6 @@ workspace = true
 [dependencies]
 blake3.workspace = true
 choregraph-core.workspace = true
+choregraph-kamacite.workspace = true
 serde.workspace = true
 serde_json.workspace = true

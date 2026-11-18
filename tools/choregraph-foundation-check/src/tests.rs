@@ -112,7 +112,10 @@ fn allowed_packages() -> Vec<crate::types::PackageModel> {
         ),
         package(
             "choregraph-nickel",
-            vec![workspace_dependency("choregraph-core")],
+            vec![
+                workspace_dependency("choregraph-core"),
+                workspace_dependency("choregraph-kamacite"),
+            ],
         ),
         package("choregraph-release", vec![]),
         package(

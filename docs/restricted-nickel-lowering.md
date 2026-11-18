@@ -10,6 +10,8 @@ Choregraph begins its maintained frontend claim at evaluated data that satisfies
 - `choregraph.lattice-workflow-projection.v1` for selected Lattice port graphs;
 - `choregraph.lattice-workflow-projection.v2` for Lattice graphs with explicit concrete-effect declarations.
 
+The separate [`graph-construction`](graph-construction.md) profile `choregraph.graph-construction.v1` uses exact captured Nickel module bytes and native elaboration into Lattice projection v3 with control edges. It does **not** reinterpret these three existing formats or add a pre-evaluation loader to this restricted CLI.
+
 The contract checks exact fields, required schemas, fixed lifecycle events, array bounds, scalar types, import declarations, and selected graph shapes.
 
 [`../contracts/nickel/role-choreography-contracts.ncl`](../contracts/nickel/role-choreography-contracts.ncl) defines the separate `choregraph.role-choreography.v1` profile. It checks native and external roles, values, ownership, communication, owned transfer, choice, termination, fixed limits, and required non-claims. This profile does not lower to machine IR.
@@ -23,6 +25,8 @@ A v2 slot source must name the declared node input, output, or configuration nam
 The CLI reads source through an operator-opened capability root. A conservative source gate rejects Nickel `import` syntax and string interpolation before evaluator execution. Declared graph imports remain data and are loaded after evaluation.
 
 The shell applies [`../contracts/nickel/evaluated-graph-contract.ncl`](../contracts/nickel/evaluated-graph-contract.ncl) through the pinned Nickel executable. Passing Nickel export is not sufficient for admission.
+
+Construction `finish` applies its own closed contract to exported JSON. Its supported evaluator is the distinct `nickel-eval.captured-modules.v1` profile with an actually observed module-resolution closure; declared graph imports here are still post-evaluation data, not a source module map. Native construction admission and full compilation-binding validation are mandatory after evaluation.
 
 ## Import closure
 

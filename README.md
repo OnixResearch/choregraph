@@ -13,6 +13,7 @@ Choregraph is not a standalone workflow service. There is no worker daemon, job 
 - **Deterministic recovery and inspection.** Replay a bounded event sequence against an admitted machine and initial state. Replay reports the first rejected event and never returns historical effect intents for dispatch. See the [replay tests](crates/choregraph-core/tests/trace-replay.rs).
 - **Branchable application history.** Build immutable event DAGs, select an explicit lineage, and prepare generation-checked branch updates. The machine-history adapter can replay supported machine events from that lineage. The host supplies payload storage and application merge decisions.
 - **Role protocol compilation.** Validate declared roles, ownership, transfers, and choices, then project a global protocol into one local protocol per role using pinned Trellis functions. This is a separate library workflow, not a machine runner or a `compile-nickel` mode.
+- **Composable graph construction.** The separately versioned `choregraph.graph-construction.v1` Nickel library builds finite typed templates through exact captured Nickel modules and native admission. Its Lattice v3 projection carries data and control dependencies. It does not extend the restricted `compile-nickel` CLI or grant Lattice runtime authority. See [graph construction](docs/graph-construction.md).
 
 These are implemented mechanisms with fixtures and tests. Product scheduling, distributed storage, transport, authorization, and effect execution remain consumer responsibilities.
 
@@ -145,7 +146,7 @@ Evaluated role protocol  -> choregraph-choreography -> Trellis -> local protocol
 | Crate | Implemented responsibility |
 | --- | --- |
 | [`choregraph-core`](crates/choregraph-core) | DAG admission, lifecycle transitions, effect declarations, graph analysis, replay, and epoch fencing. |
-| [`choregraph-nickel`](crates/choregraph-nickel) | Pure validation and lowering of evaluated graph data; it does not launch Nickel itself. |
+| [`choregraph-nickel`](crates/choregraph-nickel) | Pure validation and lowering of evaluated graph data, plus native elaboration and admission of `choregraph.graph-construction.v1` candidates; it does not launch Nickel itself. |
 | [`choregraph-cli`](crates/choregraph-cli) | Restricted evaluation, local artifact writing, corpus generation, and release-evidence commands. The executable is named `choregraph`. |
 | [`choregraph-kamacite`](crates/choregraph-kamacite) | Packed Preserves codecs, versioned machine/lifecycle artifacts, BLAKE3 identities, and linkage receipts. |
 | [`choregraph-choreography`](crates/choregraph-choreography) | Bounded role/ownership admission and Trellis-backed endpoint projection through `compile_evaluated`. |
@@ -200,7 +201,7 @@ The pinned Octet gate treats all its lints as errors. The full [foundation valid
 ## Further reading
 
 - [Architecture](docs/architecture.md) and [machine semantics](docs/machine-semantics.md)
-- [Restricted Nickel lowering](docs/restricted-nickel-lowering.md) and [Kamacite artifacts](docs/kamacite-profile.md)
+- [Restricted Nickel lowering](docs/restricted-nickel-lowering.md), [graph construction](docs/graph-construction.md) and [Kamacite artifacts](docs/kamacite-profile.md)
 - [Role choreography](docs/role-choreography.md)
 - [Branchable history](docs/branchable-event-history.md) and [epoch fencing](docs/epoch-fenced-single-writer.md)
 - [Lattice authority boundary](docs/lattice-authority-boundary.md)

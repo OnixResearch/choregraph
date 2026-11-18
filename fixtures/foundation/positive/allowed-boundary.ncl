@@ -51,7 +51,7 @@ let reviewed_universal_weave = {
     ],
     package "execution-graph-core" [workspace "choregraph-core"],
     package "choregraph-kamacite" [workspace "choregraph-core"],
-    package "choregraph-nickel" [workspace "choregraph-core"],
+    package "choregraph-nickel" [workspace "choregraph-core", workspace "choregraph-kamacite"],
     package "choregraph-release" [],
     package "choregraph-seaglass" [
       workspace "choregraph-core",

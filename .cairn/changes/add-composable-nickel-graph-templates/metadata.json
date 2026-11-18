@@ -1,0 +1,7 @@
+{
+  "depends_on": [
+    "add-restricted-nickel-lowering",
+    "bind-concrete-effect-intents",
+    "prove-readiness-completeness"
+  ]
+}

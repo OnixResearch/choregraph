@@ -12,6 +12,7 @@ choregraph-core
 
 choregraph-kamacite
   <- choregraph-choreography
+  <- choregraph-nickel (canonical construction artifact encoding only)
 
 choregraph-history
   <- choregraph-history-machine -> choregraph-core
@@ -72,6 +73,11 @@ It does not read files, run processes, use clocks, access networks, authorize ef
 `choregraph-cli write-kamacite-corpus` is the imperative shell that writes maintained fixtures. The adapter returns only in-memory values.
 
 `choregraph-nickel` accepts only evaluated data. Source discovery, imports, contracts, and Nickel evaluation remain in a shell.
+
+The construction compiler calls the existing pure Kamacite encoder for the
+canonical admitted-machine artifact included in its binding. This explicit
+one-way dependency avoids a second wire encoder; it adds no core, I/O or runtime
+authority and does not permit a reverse Kamacite-to-Nickel edge.
 
 `choregraph-seaglass` is a conversion-only compatibility boundary. It delegates admission, graph queries, analytics, lifecycle, readiness, resume, aggregate steps, and cycle probes to `choregraph-core`.
 

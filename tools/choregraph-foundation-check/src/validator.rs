@@ -96,6 +96,7 @@ const CORE_ONLY: &[&str] = &[CORE_PACKAGE];
 const HISTORY_MACHINE_DEPENDENCIES: &[&str] = &[CORE_PACKAGE, "choregraph-history"];
 const WEAVE_DEPENDENCIES: &[&str] = &["choregraph-history"];
 const SEAGLASS_DEPENDENCIES: &[&str] = &[CORE_PACKAGE, "choregraph-nickel"];
+const NICKEL_DEPENDENCIES: &[&str] = &[CORE_PACKAGE, "choregraph-kamacite"];
 const WASM_DEPENDENCIES: &[&str] = &[CORE_PACKAGE, "choregraph-kamacite"];
 const WASM_CONFORMANCE_DEPENDENCIES: &[&str] =
     &[CORE_PACKAGE, "choregraph-kamacite", "choregraph-wasm"];
@@ -115,6 +116,7 @@ const REQUIRED_INTERNAL_EDGES: &[(&str, &str)] = &[
     (EXECUTION_GRAPH_PACKAGE, CORE_PACKAGE),
     ("choregraph-kamacite", CORE_PACKAGE),
     ("choregraph-nickel", CORE_PACKAGE),
+    ("choregraph-nickel", "choregraph-kamacite"),
     ("choregraph-seaglass", CORE_PACKAGE),
     ("choregraph-wasm", CORE_PACKAGE),
     ("choregraph-wasm", "choregraph-kamacite"),
@@ -155,7 +157,8 @@ fn allowed_internal_dependencies(package: &str) -> Option<&'static [&'static str
         "choregraph-choreography" => Some(CHOREOGRAPHY_DEPENDENCIES),
         "choregraph-history-machine" => Some(HISTORY_MACHINE_DEPENDENCIES),
         "choregraph-weave" => Some(WEAVE_DEPENDENCIES),
-        EXECUTION_GRAPH_PACKAGE | "choregraph-kamacite" | "choregraph-nickel" => Some(CORE_ONLY),
+        EXECUTION_GRAPH_PACKAGE | "choregraph-kamacite" => Some(CORE_ONLY),
+        "choregraph-nickel" => Some(NICKEL_DEPENDENCIES),
         "choregraph-seaglass" => Some(SEAGLASS_DEPENDENCIES),
         "choregraph-wasm" => Some(WASM_DEPENDENCIES),
         "choregraph-wasm-conformance" => Some(WASM_CONFORMANCE_DEPENDENCIES),

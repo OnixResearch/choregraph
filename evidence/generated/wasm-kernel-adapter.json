@@ -36,16 +36,16 @@
     "proof_references": [
       {
         "claim_boundary": "production-called single-step transition and readiness frontier obligations only",
-        "exported_blake3": "05d38a275ee08c3bca637b3360dcd3602980ad2e9b9bda3f11a873b9f62b4861",
+        "exported_blake3": "1760200812b3b46094271c59c2b321c46cb035005ca6bb2a075b35de5055d663",
         "exported_path": "evidence/generated/single-step-proof.json",
-        "manifest_blake3": "1cfd380497d3bdec6ed2b2a91a51de4014d18cf80e8a9575097df299ca618782",
+        "manifest_blake3": "96403e8e0dda8ec5e85f0f5b59995260516e70bb0943e729009cb4090c2ce9f5",
         "manifest_path": "evidence/single-step-proof.ncl"
       },
       {
         "claim_boundary": "bounded replay refinement and first-denial obligations only",
-        "exported_blake3": "30fb3e150ce314aaf5c264aa59d7ec8a27c9f2d0c207a6fc297bf92d4a28ba52",
+        "exported_blake3": "2a68c2445059f636cf5b58fd9fbd61b2c3582c67c33b36b4a3550df5d41d6603",
         "exported_path": "evidence/generated/trace-replay-proof.json",
-        "manifest_blake3": "1a9dfbae2d6dcb3f470184359ebe2414f07e7b9b84f57e34f221c0f90fddc118",
+        "manifest_blake3": "12ae4475cda6e3da48db21de46d3ed5bae54081a33cc5408ca9bdffce2311e3a",
         "manifest_path": "evidence/trace-replay-proof.ncl"
       }
     ],
@@ -58,7 +58,7 @@
         "role": "workspace membership and dependency policy"
       },
       {
-        "blake3": "966759bae09d2ed0f764dd5b100149537de3b6eecbf697aaa322e59cd088b059",
+        "blake3": "b8e8e46f7ae75130e201cfd0770b47b654dcb19c230bbe1267e36818d6312565",
         "context": "choregraph wasm source file v1:Cargo.lock",
         "path": "Cargo.lock",
         "role": "resolved Rust dependency identity"
@@ -70,7 +70,7 @@
         "role": "Rust channel and WASM target identity"
       },
       {
-        "blake3": "ba8c41fa75908bce5d08add1c0827061603973771c5a36006f9ed97a7528ecc4",
+        "blake3": "dfc855c980d3e9fda931c51e14b0f3d8e37157d58d04ca151b1f0159ddae0516",
         "context": "choregraph wasm source file v1:flake.nix",
         "path": "flake.nix",
         "role": "reproducible component, conformance, and evidence build graph"
@@ -196,7 +196,7 @@
         "role": "repository source loader and readiness delegation guard"
       },
       {
-        "blake3": "330f03bdc5c4a495e28fb5ec19cdcf9598c2320de8c5e02dc0df84ad99a84c4b",
+        "blake3": "89d398c1279b71bc803e7ea7d608beffaeba1e4f6f727cac4f8ef6836d9efdb4",
         "context": "choregraph wasm source file v1:tools/choregraph-foundation-check/src/tests.rs",
         "path": "tools/choregraph-foundation-check/src/tests.rs",
         "role": "positive and negative boundary and readiness source-link fixtures"
@@ -208,7 +208,7 @@
         "role": "bounded finding model"
       },
       {
-        "blake3": "9c651f88782f5692743090b4573995ff07f6981596b08a512e7c8caae36e1c90",
+        "blake3": "6d40c039456083b10cb168e67573a0c315c0089a9d8b2dc4ad68deaf9e653a7b",
         "context": "choregraph wasm source file v1:tools/choregraph-foundation-check/src/validator.rs",
         "path": "tools/choregraph-foundation-check/src/validator.rs",
         "role": "static boundary and delegation checks"

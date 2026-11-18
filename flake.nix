@@ -44,6 +44,7 @@
             craneLib.filterCargoSources path type
             || pkgs.lib.hasSuffix ".wit" (toString path)
             || pkgs.lib.hasInfix "/contracts/nickel/" (toString path)
+            || pkgs.lib.hasInfix "/library/nickel/" (toString path)
             || pkgs.lib.hasInfix "/evidence/generated/" (toString path)
             || pkgs.lib.hasInfix "/fixtures/kamacite/" (toString path)
             || pkgs.lib.hasInfix "/fixtures/nickel/" (toString path)
@@ -121,6 +122,38 @@
               mkdir -p "$out"
               cp "$TMPDIR/two-role-transfer.json" "$out/two-role-transfer.json"
             '';
+        constructionExports = pkgs.runCommand "choregraph-graph-construction-exports"
+          {
+            nativeBuildInputs = [ pkgs.nickel ];
+            src = self;
+          }
+          ''
+            set -eu
+            mkdir -p "$TMPDIR/stage/choregraph" "$out/negative"
+            cp "$src/library/nickel/graph-construction-v1.ncl" "$TMPDIR/stage/choregraph/graph-construction-v1.ncl"
+            cp "$src/contracts/nickel/graph-construction-contracts-v1.ncl" "$TMPDIR/stage/choregraph/graph-construction-contracts-v1.ncl"
+            nickel typecheck "$TMPDIR/stage/choregraph/graph-construction-contracts-v1.ncl"
+            nickel typecheck "$TMPDIR/stage/choregraph/graph-construction-v1.ncl"
+            for fixture in "$src"/fixtures/nickel/construction/positive/*.ncl; do
+              name="$(basename "$fixture" .ncl)"
+              cp "$fixture" "$TMPDIR/stage/$name.ncl"
+              nickel export --format json "$TMPDIR/stage/$name.ncl" > "$out/$name.json"
+            done
+            for fixture in "$src"/fixtures/nickel/construction/negative/native/*.ncl; do
+              name="$(basename "$fixture" .ncl)"
+              cp "$fixture" "$TMPDIR/stage/$name.ncl"
+              nickel export --format json "$TMPDIR/stage/$name.ncl" > "$out/negative/$name.json"
+            done
+            for fixture in "$src"/fixtures/nickel/construction/negative/contract/*.ncl; do
+              name="$(basename "$fixture" .ncl)"
+              cp "$fixture" "$TMPDIR/stage/$name.ncl"
+              if nickel export --format json "$TMPDIR/stage/$name.ncl" \
+                > "$TMPDIR/invalid.json" 2> "$TMPDIR/invalid.stderr"; then
+                echo "construction contract unexpectedly accepted: $name" >&2
+                exit 1
+              fi
+            done
+          '';
         wasmConformanceCargoArtifacts = craneLib.buildDepsOnly (
           commonCargoArgs
           // {
@@ -417,6 +450,15 @@
             // {
               inherit cargoArtifacts;
               cargoTestExtraArgs = "--workspace --all-targets";
+            }
+          );
+          graph-construction = craneLib.cargoTest (
+            commonCargoArgs
+            // {
+              inherit cargoArtifacts;
+              nativeBuildInputs = [ pkgs.nickel ];
+              CHOREGRAPH_CONSTRUCTION_EXPORTED_DIR = "${constructionExports}";
+              cargoTestExtraArgs = "-p choregraph-nickel --all-targets -- --include-ignored";
             }
           );
 

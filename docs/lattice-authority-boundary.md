@@ -41,6 +41,12 @@ A projected local role protocol is interchange data. It does not select a host, 
 
 An external role declaration binds only contract and schema identities. Lattice or another consumer must supply current authority and all runtime integrations.
 
+## Construction and registry boundary
+
+The [`graph-construction`](graph-construction.md) library produces finite versioned JSON, not runtime authority. Choregraph maintainers own the construction contract, scoped elaborator, v3 data/control projection, admitted machine and full compilation binding. nickel-eval maintainers own exact captured-module resolution observations. Lattice maintainers must select the actual versioned operation registry implementation rather than trust author-supplied `registry`/`target` strings, revalidate expanded configuration expressions and effect references, and perform consumer-side import/admission before using the graph. A receipt ties selected bytes and observations to the admitted artifact; it does not prove Lattice routing equivalence or external effects.
+
+The first adoption path requires the captured evaluator closure and bounded worker, exact shipped library/contracts modules, positive/negative native fixture evidence, consumer registry/copy/drop/Unit/control-edge and stale-binding controls, then Lattice product tests under its own authority. This source authoring alone records no executed checks, consumer adoption or release readiness.
+
 ## Intent handoff
 
 A Choregraph concrete intent is a request for consumer handling. It is not an authorization result or proof of an external effect.

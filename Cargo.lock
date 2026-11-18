@@ -328,6 +328,7 @@ version = "0.1.0"
 dependencies = [
  "blake3",
  "choregraph-core",
+ "choregraph-kamacite",
  "serde",
  "serde_json",
 ]
