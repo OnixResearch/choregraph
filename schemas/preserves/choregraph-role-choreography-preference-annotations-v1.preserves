@@ -1,0 +1,34 @@
+; Normalized preference annotation set v1.
+; Factors are declared names only: no weights, utility function, or solver input.
+; A world variable is a declared exogenous name with no distribution.
+
+PreferenceAnnotationSet = <PreferenceAnnotationSet {
+  factors: [PreferenceFactor ...],
+  worlds: [WorldVariable ...],
+  choices: [ChoiceAnnotation ...]
+}>
+
+PreferenceFactor = <PreferenceFactor {
+  id: integer,
+  role: integer,
+  name: string,
+  span: SourceSpan
+}>
+
+WorldVariable = <WorldVariable {
+  id: integer,
+  name: string,
+  span: SourceSpan
+}>
+
+ChoiceAnnotation = <ChoiceAnnotation {
+  path: [ChoicePathStep ...],
+  decider: integer,
+  factors: [integer ...],
+  world: integer / #f,
+  span: SourceSpan
+}>
+
+ChoicePathStep = <next> / <branch { label: integer }>
+
+SourceSpan = <SourceSpan { start: integer, end: integer }>

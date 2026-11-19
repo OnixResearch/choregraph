@@ -103,15 +103,24 @@
         roleChoreographyContractsCheck =
           pkgs.runCommand "choregraph-role-choreography-contracts"
             {
-              nativeBuildInputs = [ pkgs.nickel ];
+              nativeBuildInputs = [
+                pkgs.diffutils
+                pkgs.nickel
+              ];
               src = cargoSource;
             }
             ''
               set -eu
               cd "$src"
               nickel typecheck contracts/nickel/role-choreography-contracts.ncl
+              nickel typecheck contracts/nickel/role-choreography-preference-contracts.ncl
               nickel export --format json fixtures/role-choreography/positive/two-role-transfer.ncl \
                 > "$TMPDIR/two-role-transfer.json"
+              # The Rust preference tests consume this exact exported JSON.
+              nickel export --format json fixtures/role-choreography/positive/annotated-two-branch-choice.ncl \
+                > "$TMPDIR/annotated-two-branch-choice.json"
+              cmp fixtures/role-choreography/positive/annotated-two-branch-choice.json \
+                "$TMPDIR/annotated-two-branch-choice.json"
               for fixture in fixtures/role-choreography/negative/*.ncl; do
                 if nickel export --format json "$fixture" \
                   > "$TMPDIR/negative.json" 2> "$TMPDIR/negative.stderr"; then
@@ -121,6 +130,7 @@
               done
               mkdir -p "$out"
               cp "$TMPDIR/two-role-transfer.json" "$out/two-role-transfer.json"
+              cp "$TMPDIR/annotated-two-branch-choice.json" "$out/annotated-two-branch-choice.json"
             '';
         constructionExports = pkgs.runCommand "choregraph-graph-construction-exports"
           {

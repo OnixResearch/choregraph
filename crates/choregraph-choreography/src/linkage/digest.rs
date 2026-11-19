@@ -40,6 +40,13 @@ identity_domains! {
     Toolchain => "toolchain",
     NonClaims => "non-claims",
     ProjectionReceipt => "projection-receipt",
+    PreferenceStrictDto => "preference-strict-dto",
+    PreferenceAnnotations => "preference-annotations",
+    PreferenceLocalSet => "preference-local-set",
+    PreferenceSchemaSet => "preference-schema-set",
+    PreferenceLowerer => "preference-lowerer",
+    PreferenceNonClaims => "preference-non-claims",
+    PreferenceReceipt => "preference-receipt",
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]

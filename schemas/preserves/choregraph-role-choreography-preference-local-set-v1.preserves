@@ -1,0 +1,33 @@
+; Annotated complete local set v1.
+; One AnnotatedLocal per declared role in normalized role order. Each entry
+; names the exact v1 local artifact identity; the protocol bytes stay in the
+; v1 local artifacts and are not repeated here.
+
+AnnotatedLocalSetBody = <AnnotatedLocalSetBody {
+  complete_local_set: ChoreographyIdentity,
+  locals: [AnnotatedLocal ...]
+}>
+
+AnnotatedLocal = <AnnotatedLocal {
+  role: integer,
+  local_artifact: ChoreographyIdentity,
+  decisions: [DeciderPreference ...]
+}>
+
+DeciderPreference = <DeciderPreference {
+  global_path: [ChoicePathStep ...],
+  local_path: [ChoicePathStep ...],
+  labels: [integer ...],
+  factors: [PreferenceFactor ...],
+  world: WorldVariable / #f,
+  span: SourceSpan
+}>
+
+ChoreographyIdentity = <ChoreographyIdentity {
+  domain: symbol,
+  algorithm: "blake3",
+  hex: string
+}>
+
+; ChoicePathStep, PreferenceFactor, WorldVariable, and SourceSpan are defined
+; by choregraph-role-choreography-preference-annotations-v1.

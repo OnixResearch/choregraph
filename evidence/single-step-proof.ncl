@@ -232,7 +232,7 @@ let ProofManifest = {
       },
       {
         path = "flake.nix",
-        blake3 = "3c27cc6c2c273359dfea36d9344a0c6dd34520b6724827409bcfb2186545812a",
+        blake3 = "8a08fea14c04f35415042f9baa01c0d4094334e7445f1c513f72358c6ae5d5c9",
         role = "maintained proof and failure-fixture gate",
       },
       {

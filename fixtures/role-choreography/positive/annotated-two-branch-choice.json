@@ -1,0 +1,192 @@
+{
+  "annotations": {
+    "choices": [
+      {
+        "decider": 1,
+        "factors": [
+          1,
+          2
+        ],
+        "path": [],
+        "span": {
+          "end": 25,
+          "start": 24
+        },
+        "world": 1
+      }
+    ],
+    "factors": [
+      {
+        "id": 1,
+        "name": "cost",
+        "role": 1,
+        "span": {
+          "end": 19,
+          "start": 18
+        }
+      },
+      {
+        "id": 2,
+        "name": "latency",
+        "role": 1,
+        "span": {
+          "end": 21,
+          "start": 20
+        }
+      }
+    ],
+    "worlds": [
+      {
+        "id": 1,
+        "name": "market",
+        "span": {
+          "end": 23,
+          "start": 22
+        }
+      }
+    ]
+  },
+  "base": {
+    "imports": [],
+    "limits": {
+      "max_branches": 256,
+      "max_canonical_output_bytes": 1048576,
+      "max_diagnostic_text_bytes": 512,
+      "max_diagnostics": 128,
+      "max_identifier_bytes": 256,
+      "max_imports": 128,
+      "max_nesting_depth": 128,
+      "max_roles": 64,
+      "max_steps": 4096,
+      "max_values": 256
+    },
+    "non_claims": [
+      "no-runtime-execution",
+      "no-host-placement",
+      "no-transport-delivery",
+      "no-persistence",
+      "no-authorization",
+      "no-external-role-correctness",
+      "no-exactly-once-transfer",
+      "no-deadlock-freedom-under-faults",
+      "no-production-readiness",
+      "no-release-eligibility"
+    ],
+    "protocol": {
+      "branches": [
+        {
+          "body": {
+            "from": 1,
+            "kind": "communication",
+            "label": 30,
+            "next": {
+              "kind": "end",
+              "span": {
+                "end": 13,
+                "start": 12
+              }
+            },
+            "payload_tag": 20,
+            "span": {
+              "end": 13,
+              "start": 10
+            },
+            "to": 2
+          },
+          "label": 30,
+          "span": {
+            "end": 13,
+            "start": 9
+          }
+        },
+        {
+          "body": {
+            "from": 1,
+            "kind": "communication",
+            "label": 31,
+            "next": {
+              "kind": "end",
+              "span": {
+                "end": 17,
+                "start": 16
+              }
+            },
+            "payload_tag": 21,
+            "span": {
+              "end": 17,
+              "start": 15
+            },
+            "to": 2
+          },
+          "label": 31,
+          "span": {
+            "end": 17,
+            "start": 14
+          }
+        }
+      ],
+      "decider": 1,
+      "kind": "choice",
+      "span": {
+        "end": 17,
+        "start": 8
+      }
+    },
+    "roles": [
+      {
+        "id": 1,
+        "kind": {
+          "kind": "native"
+        },
+        "span": {
+          "end": 1,
+          "start": 0
+        }
+      },
+      {
+        "id": 2,
+        "kind": {
+          "kind": "native"
+        },
+        "span": {
+          "end": 3,
+          "start": 2
+        }
+      },
+      {
+        "id": 3,
+        "kind": {
+          "kind": "native"
+        },
+        "span": {
+          "end": 5,
+          "start": 4
+        }
+      }
+    ],
+    "schema": "choregraph.role-choreography.v1",
+    "values": [
+      {
+        "id": 10,
+        "initial_owner": 1,
+        "payload_tag": 20,
+        "span": {
+          "end": 7,
+          "start": 6
+        }
+      }
+    ]
+  },
+  "non_claims": [
+    "no-branch-selection",
+    "no-equilibrium-analysis",
+    "no-game-semantics",
+    "no-label-boolean-conversion",
+    "no-preference-authority",
+    "no-self-interested-projection-soundness",
+    "no-solver",
+    "no-utility-function",
+    "no-world-distribution"
+  ],
+  "schema": "choregraph.role-choreography.preference-annotations.v1"
+}
