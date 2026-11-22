@@ -4,7 +4,6 @@
     unknown_lints,
     assertion_density,
     explicit_defaults,
-    no_panic,
     non_trait_imports,
     numeric_units,
     reason = "the conversion-only v2 fixture keeps explicit handoff and wrong-schema cases"
@@ -56,6 +55,7 @@ const PERSISTENCE_IDENTITY: &str =
 const ATTEMPT_IDENTITY: &str =
     "blake3:9999999999999999999999999999999999999999999999999999999999999999";
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn must<T, E: core::fmt::Debug>(result: Result<T, E>) -> T {
     match result {
         Ok(value) => value,
@@ -86,6 +86,7 @@ fn request() -> ConcreteEffectRequest {
     }
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn concrete_intents() -> (
     choregraph_core::concrete::effect::ConcreteEffectIntent,
     ConcreteIntentHandoff,

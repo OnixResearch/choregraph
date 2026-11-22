@@ -11,9 +11,11 @@ For these views, the maintained Verus rail proves these properties:
 - graph admission includes each node once and places each edge forward;
 - dependency readiness holds exactly for pending nodes with completed declared dependencies;
 - the production frontier contains every eligible node once in admitted topological order;
-- an otherwise valid effect-free `MarkReady` event is accepted exactly for an eligible target;
-- equal explicit inputs produce equal indexed decisions;
-- accepted steps preserve the indexed state invariant;
+- for an invariant snapshot and pending target, effect-free `MarkReady` is accepted exactly when its dependencies are complete;
+- two results satisfying the executable indexed step's postcondition on equal inputs have equal observable fields;
+- the transition guards imply preservation of the indexed invariant and terminal states, with no post-state premise;
+- cancellation never completes a node, and only `Complete` from `Running` can produce `Completed`;
+- each non-terminal node under linear v1 or durable v2 can accept an effect-free cancellation (literal linear states cannot be suspended);
 - accepted intent indexes belong to the admitted transition route;
 - denied steps contain no replacement state or intent indexes;
 - exact and slot binding modes fail closed;
@@ -31,18 +33,15 @@ The v2 resolver calls the verified binding predicate for each request and payloa
 
 The shell converts an accepted indexed decision into public types. It then runs `invariant`, `terminal_states_preserved`, and `effects_allowed` again.
 
+The provisional guard check does not allocate a replacement state. The indexed kernel derives post-state safety from the guards: a complete dependency is terminal and cannot change, and an action that requires newly complete dependencies checks them before execution. The checked adapter reuses the prior state map and updates the one target. It consumes the indexed decision type, whose constructor is sealed inside the verified kernel; the public `Decision` type is not a proof certificate.
+
+Public denial precedence includes the adapter's limits, request shape, and declaration resolution. The verified precedence of duplicate before undeclared effects applies only to indexed requests. An unknown kernel code or failed conversion or post-check yields `InternalInconsistency`.
+
 `ready_nodes` converts admitted state into indexed values. It calls the verified `ready_frontier` filter and maps the result into public node identifiers.
 
 The filter scans the admitted topological order once. Its executable postcondition equals the mathematical frontier specification.
 
-The source-link gate rejects these changes:
-
-- a missing production call to the verified kernel;
-- a separate lifecycle table in the transition shell;
-- a missing production call to the verified graph gate;
-- a missing production call to the verified frontier;
-- copied readiness logic in the public analytics path;
-- an unrecorded `external_body`, `assume_specification`, `assume`, or axiom in the proof core.
+The source audit checks actual proof items and module linkage, not comments: it rejects undisclosed verifier attributes and trust escapes, checks the declared theorem items, and pins the exact count reported by the selected verifier. Production smoke checks and parity tests are separate observations; they do not prove the identifier adapters.
 
 ## Proof sources
 
@@ -89,6 +88,8 @@ Five frontier fixtures cover omitted, extra, duplicate, reversed, and eligible-r
 
 The foundation guard has separate copied-readiness and unrestricted-assumption fixtures.
 
+The mutation rail changes executable and specification lifecycle targets together, and separately changes the executable and specification readiness guard together. Each mutant must fail the expected semantic or preservation obligation, not merely fail to compile.
+
 The concrete reference fixture changes one payload token. Verus rejects the changed postcondition.
 
 ## Evidence
@@ -115,6 +116,8 @@ must subsequently pass with those exact inputs.
 The project proof core contains no trusted declaration or unrestricted assumption.
 
 The evidence trusts the selected Verus binary, Z3, rustc, vstd contracts, allocation semantics, and target platform.
+
+Normal Cargo builds also trust the scoped `RUSTC_BOOTSTRAP=verified_logic` setting in `.cargo/config.toml` for the pinned Trellis dependency. This does not enable bootstrap for Choregraph crates or change the Verus proof toolchain.
 
 Identifier parsing and `BTreeMap`-to-index conversion are executable Rust. Verus does not prove these adapters.
 

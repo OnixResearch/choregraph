@@ -3,7 +3,9 @@ use core::fmt;
 
 pub const BLAKE3_REFERENCE_PREFIX: &str = "blake3:";
 pub const BLAKE3_DIGEST_HEX_BYTES: usize = 64;
-pub const BLAKE3_REFERENCE_BYTES: usize = BLAKE3_REFERENCE_PREFIX.len() + BLAKE3_DIGEST_HEX_BYTES;
+pub const BLAKE3_REFERENCE_BYTES: usize = BLAKE3_REFERENCE_PREFIX
+    .len()
+    .saturating_add(BLAKE3_DIGEST_HEX_BYTES);
 
 /// A canonical BLAKE3 payload reference.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]

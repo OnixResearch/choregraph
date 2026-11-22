@@ -5,7 +5,6 @@
     explicit_defaults,
     function_length,
     non_trait_imports,
-    no_panic,
     numeric_units,
     too_many_parameters,
     unbounded_collection_growth,
@@ -56,6 +55,7 @@ fn node(id: &str) -> NodeSpec {
     NodeSpec::new(id, Vec::new())
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn admit(spec: MachineSpec) -> AdmittedMachine {
     match AdmittedMachine::admit(spec, AdmissionLimits::default()) {
         Ok(machine) => machine,
@@ -136,6 +136,7 @@ fn stale_state_bindings() -> ReplayBindings {
     )
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn count(value: usize) -> ConsumedCount {
     match u64::try_from(value) {
         Ok(value) => ConsumedCount::new(value),
@@ -143,6 +144,7 @@ fn count(value: usize) -> ConsumedCount {
     }
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn index(value: usize) -> EventIndex {
     match u64::try_from(value) {
         Ok(value) => EventIndex::new(value),

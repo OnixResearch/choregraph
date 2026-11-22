@@ -164,7 +164,7 @@ r[choregraph.machine.suspension_transition.denied]
 
 ### Requirement: Suspended nodes wait for an exact signal
 
-r[choregraph.machine.resume_signal] Choregraph MUST exclude suspended nodes from readiness and MUST return an explicit wait decision until one matching admitted resume signal changes the local state.
+r[choregraph.machine.resume_signal] Choregraph MUST exclude suspended nodes from readiness and return an explicit wait decision while suspended. Only a matching resume signal can make a suspended node ready.
 
 #### Scenario: Dependencies complete while node remains suspended
 
@@ -181,6 +181,18 @@ r[choregraph.machine.resume_signal.mismatch]
 - WHEN transition, readiness, or resume evaluation runs
 - THEN the signal MUST NOT change state or make any suspended node executable
 - AND no fallback reference or signal source MAY be selected.
+
+### Requirement: Cancellable waits require the explicit durable v2 profile
+
+r[choregraph.machine.suspension_cancel] Choregraph MUST allow an effect-free `Cancel` from a suspended node only in durable v2, without a binding fact or dependency check.
+
+#### Scenario: A previously restored wait is abandoned
+
+r[choregraph.machine.suspension_cancel.restored]
+- GIVEN a machine explicitly selects `choregraph.lifecycle.durable-suspension.v2` and a node is suspended
+- WHEN `step` or `step_concrete` receives `Cancel` without a fact or effect request
+- THEN it MUST clear the suspension record and set the node to `Cancelled`, even if dependencies are incomplete
+- AND it MUST emit no effects. Durable v1 MUST retain its prior denial and identity.
 
 ### Requirement: Suspension replay is deterministic and bounded
 

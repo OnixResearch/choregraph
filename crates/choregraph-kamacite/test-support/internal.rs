@@ -4,7 +4,6 @@
     assertion_density,
     non_trait_imports,
     numeric_units,
-    raw_arithmetic_overflow,
     reason = "the canonical compatibility corpus retains explicit byte-level boundary cases"
 )]
 
@@ -35,9 +34,13 @@ use choregraph_core::{
     model::automaton::AdmittedMachine, model::automaton::MachineSpec,
     model::capacity::AdmissionLimits, model::dispatch::EffectDeclarationSpec,
     model::graph::EdgeSpec, model::graph::NodeSpec, model::pause::SuspensionDeclarationSpec,
-    model::semantics::Action, model::semantics::LocalState, model::semantics::TransitionSelector,
+    model::semantics::Action, model::semantics::DURABLE_SUSPENSION_V1,
+    model::semantics::LocalState, model::semantics::TransitionSelector,
 };
 use serde::Serialize;
+
+#[path = "durable-v2.rs"]
+mod durable_v2;
 
 const PAYLOAD: &str = "blake3:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const SUSPENSION_REFERENCE: &str =
@@ -206,7 +209,7 @@ fn canonical_artifacts_round_trip_with_stable_normalized_identities() {
 
 #[test]
 fn durable_artifacts_round_trip_with_exact_suspension_facts() {
-    let machine = durable_machine();
+    let machine = durable_machine(DURABLE_SUSPENSION_V1);
     let lifecycle = must(crate::lifecycle::conversion::build_durable_lifecycle_artifact(None));
     let (_profile, _profile_artifact, profile_identity) = must(build_profile_artifact());
     let descriptor = must(crate::aggregate::assembly::durable_machine_descriptor(
@@ -277,11 +280,14 @@ fn durable_artifacts_round_trip_with_exact_suspension_facts() {
             .iter()
             .any(|state| state == "suspended")
     );
+    assert!(decoded.descriptor.denials.iter().any(|row| {
+        row.from_state == "suspended" && row.event == "cancel" && row.reason == "invalid-transition"
+    }));
 }
 
 #[test]
 fn durable_descriptor_tampering_and_profile_inference_fail_closed() {
-    let machine = durable_machine();
+    let machine = durable_machine(DURABLE_SUSPENSION_V1);
     let lifecycle = must(crate::lifecycle::conversion::build_durable_lifecycle_artifact(None));
     let (_profile, _profile_artifact, profile_identity) = must(build_profile_artifact());
     let descriptor = must(crate::aggregate::assembly::durable_machine_descriptor(
@@ -327,7 +333,7 @@ fn durable_descriptor_tampering_and_profile_inference_fail_closed() {
     assert!(matches!(widened, Err(AggregateError::UnsupportedProfile)));
 }
 
-fn durable_machine() -> AdmittedMachine {
+fn durable_machine(profile_id: &str) -> AdmittedMachine {
     let mut spec = MachineSpec::new(
         vec![
             NodeSpec::new("source", Vec::new()),
@@ -335,7 +341,7 @@ fn durable_machine() -> AdmittedMachine {
         ],
         vec![EdgeSpec::new("source", "gate")],
     );
-    spec.lifecycle_profile = String::from(choregraph_core::model::semantics::DURABLE_SUSPENSION_V1);
+    spec.lifecycle_profile = String::from(profile_id);
     spec.suspensions.push(SuspensionDeclarationSpec {
         node_id: String::from("gate"),
         class: String::from(SUSPENSION_CLASS),

@@ -1500,7 +1500,7 @@ dependencies = [
 [[package]]
 name = "verified-logic"
 version = "0.2.0"
-source = "git+ssh://git@github.com/OnixResearch/trellis.git?rev=d65974b14978e1a44b0f5067beb9ef6d83317dc8#d65974b14978e1a44b0f5067beb9ef6d83317dc8"
+source = "git+https://github.com/OnixResearch/trellis.git?rev=d65974b14978e1a44b0f5067beb9ef6d83317dc8#d65974b14978e1a44b0f5067beb9ef6d83317dc8"
 dependencies = [
  "anyhow",
  "blake3",

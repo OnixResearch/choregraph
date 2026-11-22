@@ -4,7 +4,6 @@
     explicit_defaults,
     clippy::expect_used,
     function_length,
-    no_panic,
     no_unwrap,
     non_trait_imports,
     numeric_units,

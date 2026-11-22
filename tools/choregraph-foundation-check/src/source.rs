@@ -85,14 +85,6 @@ const READINESS_FORBIDDEN_COPY_TOKENS: &[&str] = &[
     "LocalState::Pending",
     "dependencies_complete(machine, state, node_id)",
 ];
-const PROOF_SOURCE_FILE_SUFFIX: &str = "verified.rs";
-const PROOF_SOURCE_DIRECTORY: &str = "verified";
-const PROOF_TRUST_FORBIDDEN_TOKENS: &[&str] = &[
-    "#[verifier::external_body]",
-    "assume_specification",
-    "assume(",
-    "axiom ",
-];
 
 const EXPECTED_WIT_EXPORT: &str = "export call: func(request: list<u8>) -> list<u8>;";
 
@@ -382,38 +374,6 @@ fn validate_readiness_delegation(
     issues
 }
 
-// r[verify choregraph.proof.single_step.readiness_completeness_negative]
-fn validate_proof_trust_surface(
-    model: &crate::types::WorkspaceModel,
-) -> Vec<crate::types::ValidationIssue> {
-    debug_assert!(!PROOF_SOURCE_FILE_SUFFIX.is_empty());
-    debug_assert!(!PROOF_TRUST_FORBIDDEN_TOKENS.is_empty());
-    let proof_sources = model.core_sources.iter().filter(|source| {
-        source.path.ends_with(PROOF_SOURCE_FILE_SUFFIX)
-            || source
-                .path
-                .split('/')
-                .any(|component| component == PROOF_SOURCE_DIRECTORY)
-    });
-    let maximum_issue_count = proof_sources
-        .clone()
-        .count()
-        .saturating_mul(PROOF_TRUST_FORBIDDEN_TOKENS.len());
-    let mut issues = Vec::with_capacity(maximum_issue_count);
-    for source in proof_sources {
-        for token in PROOF_TRUST_FORBIDDEN_TOKENS {
-            if source.text.contains(token) {
-                issues.push(crate::validator::issue(crate::validator::IssueFacts {
-                    code: "foundation.proof-trust-escape",
-                    subject: &source.path,
-                    detail: format!("proof source contains forbidden trust token: {token}").into(),
-                }));
-            }
-        }
-    }
-    issues
-}
-
 pub(crate) fn validate_sources(
     model: &crate::types::WorkspaceModel,
 ) -> Vec<crate::types::ValidationIssue> {
@@ -422,7 +382,6 @@ pub(crate) fn validate_sources(
     let mut issues = validate_markers(markers(model));
     issues.extend(validate_tokens(model));
     issues.extend(validate_readiness_delegation(model));
-    issues.extend(validate_proof_trust_surface(model));
     if model
         .packages
         .iter()

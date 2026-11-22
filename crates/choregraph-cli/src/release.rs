@@ -157,11 +157,11 @@ pub(crate) const RELEASE_ARTIFACTS: [ReleaseArtifactSpec; ARTIFACT_COUNT] = [
     },
     ReleaseArtifactSpec {
         role: Role::ExecutionGraphParity,
-        relative_path: ".cairn/archive/1970-01-01-add-seaglass-lattice-conformance/evidence/parity-validation-2026-07-27.md",
+        relative_path: ".cairn/archive/2026-08-11-add-seaglass-lattice-conformance/evidence/parity-validation-2026-07-27.md",
     },
     ReleaseArtifactSpec {
         role: Role::LatticeDownstream,
-        relative_path: ".cairn/archive/1970-01-01-add-seaglass-lattice-conformance/evidence/lattice-downstream-validation-2026-07-27.md",
+        relative_path: ".cairn/archive/2026-08-11-add-seaglass-lattice-conformance/evidence/lattice-downstream-validation-2026-07-27.md",
     },
     ReleaseArtifactSpec {
         role: Role::LatticeConcreteHandoff,

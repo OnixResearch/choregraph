@@ -4,10 +4,8 @@
     assertion_density,
     explicit_defaults,
     function_length,
-    no_panic,
     non_trait_imports,
     numeric_units,
-    raw_arithmetic_overflow,
     reason = "the bounded positive and negative integration corpus uses compact fixture builders, explicit boundary arithmetic, and panic-on-test-failure helpers"
 )]
 
@@ -15,10 +13,10 @@ use choregraph_core::{
     concrete::effect::ConcreteEffectDeclarationSpec, concrete::machine::MachineSpecV2,
     concrete::reference::CANONICAL_REFERENCE_PROFILE_V1, concrete::reference::ReferenceBindingSpec,
     model::automaton::AdmittedMachine, model::automaton::MachineSpec,
-    model::capacity::AdmissionLimits, model::graph::NodeSpec,
+    model::capacity::AdmissionLimits, model::graph::EdgeSpec, model::graph::NodeSpec,
     model::pause::SuspensionDeclarationSpec, model::semantics::Action,
-    model::semantics::DURABLE_SUSPENSION_V1, model::semantics::LocalState,
-    model::semantics::TransitionSelector,
+    model::semantics::DURABLE_SUSPENSION_V1, model::semantics::DURABLE_SUSPENSION_V2,
+    model::semantics::LocalState, model::semantics::TransitionSelector,
 };
 use choregraph_kamacite::{
     aggregate::assembly::{
@@ -28,7 +26,7 @@ use choregraph_kamacite::{
     aggregate::policy::build_profile_artifact,
     concrete::conversion::build_concrete_machine_artifact,
     identity::{ArtifactDomain, ArtifactIdentity, compute_identity},
-    lifecycle::conversion::build_durable_lifecycle_artifact,
+    lifecycle::conversion::build_durable_lifecycle_artifact_for_profile,
 };
 use preserves::PackedWriter;
 use serde::Serialize;
@@ -36,20 +34,21 @@ use serde::Serialize;
 use choregraph_wasm::{
     MAX_OUTER_REQUEST_BYTES, MAX_TRACE_EVENTS, decode_result, dispatch, encode_call,
     schema::{
-        decision::{IntentValue, Outcome},
+        decision::{DenialCode, IntentValue, Outcome},
         diagnostic::AdapterErrorCode,
-        history::{ReplayBindingPairValue, ReplayBindingsValue},
+        history::{ReplayBindingPairValue, ReplayBindingsValue, ReplayFailureReasonValue},
         input::{KernelCall, MachineArtifactKind, MachineArtifacts, OperationRequest},
         invocation::{
             ActionTag, ConcreteBindingValue, ConcreteEffectRequestValue, ConcreteEventValue,
-            ConcreteReferenceValue, EventValue,
+            ConcreteReferenceValue, EffectRequestValue, EventValue, SuspensionFactValue,
         },
         profile::ABI_VERSION,
-        snapshot::{StateEntryValue, StateTag, StateValue},
+        snapshot::{StateEntryValue, StateTag, StateValue, SuspensionValue},
     },
 };
 
 const NODE: &str = "effect-node";
+const PREREQUISITE: &str = "prerequisite";
 const OPERATION: &str = "http/request";
 const RESOURCE: &str = "service/example";
 const ABILITY: &str = "http/request";
@@ -72,6 +71,7 @@ const GENERATOR: &[u8] = b"wasm-generator-v1";
 const ADAPTER: &[u8] = b"wasm-adapter-v1";
 const TOOLCHAIN: &[u8] = b"wasm-toolchain-v1";
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn must<T, E: core::fmt::Debug>(result: Result<T, E>) -> T {
     match result {
         Ok(value) => value,
@@ -105,16 +105,25 @@ fn linear_artifacts() -> MachineArtifacts {
     }
 }
 
-fn durable_artifacts() -> MachineArtifacts {
-    let mut spec = MachineSpec::new(vec![NodeSpec::new(NODE, Vec::new())], Vec::new());
-    spec.lifecycle_profile = String::from(DURABLE_SUSPENSION_V1);
+fn durable_artifacts(kind: MachineArtifactKind, profile_id: &str) -> MachineArtifacts {
+    let mut spec = MachineSpec::new(
+        vec![
+            NodeSpec::new(NODE, Vec::new()),
+            NodeSpec::new(PREREQUISITE, Vec::new()),
+        ],
+        vec![EdgeSpec::new(PREREQUISITE, NODE)],
+    );
+    spec.lifecycle_profile = String::from(profile_id);
     spec.suspensions.push(SuspensionDeclarationSpec {
         node_id: String::from(NODE),
         class: String::from(SUSPENSION_CLASS),
         reference: String::from(SUSPENSION_REFERENCE),
     });
     let machine = must(AdmittedMachine::admit(spec, AdmissionLimits::default()));
-    let lifecycle = must(build_durable_lifecycle_artifact(None));
+    let lifecycle = must(build_durable_lifecycle_artifact_for_profile(
+        machine.lifecycle_profile(),
+        None,
+    ));
     let (_profile, _profile_artifact, profile_identity) = must(build_profile_artifact());
     let descriptor = must(durable_machine_descriptor(
         &machine,
@@ -127,7 +136,7 @@ fn durable_artifacts() -> MachineArtifacts {
         &artifact.packed_bytes,
     ));
     MachineArtifacts {
-        kind: MachineArtifactKind::DurableV1,
+        kind,
         machine: artifact.packed_bytes,
         machine_identity,
         lifecycle: Some(lifecycle.canonical.packed_bytes),
@@ -189,6 +198,22 @@ fn state(state: StateTag) -> StateValue {
         }],
         suspensions: Vec::new(),
     }
+}
+
+fn durable_state(state_tag: StateTag) -> StateValue {
+    let mut value = state(state_tag);
+    value.entries.push(StateEntryValue {
+        node_id: String::from(PREREQUISITE),
+        state: StateTag::Pending,
+    });
+    if state_tag == StateTag::Suspended {
+        value.suspensions.push(SuspensionValue {
+            node_id: String::from(NODE),
+            class: String::from(SUSPENSION_CLASS),
+            reference: String::from(SUSPENSION_REFERENCE),
+        });
+    }
+    value
 }
 
 fn event(action: ActionTag) -> EventValue {
@@ -273,7 +298,7 @@ fn all_production_operations_return_canonical_deterministic_results() {
 
     assert!(matches!(
         outcome(OperationRequest::AdmitMachine {
-            artifacts: durable_artifacts(),
+            artifacts: durable_artifacts(MachineArtifactKind::DurableV1, DURABLE_SUSPENSION_V1),
         }),
         Outcome::Admitted { .. }
     ));
@@ -339,6 +364,98 @@ fn all_production_operations_return_canonical_deterministic_results() {
         }),
         Outcome::ReplayComplete { consumed, .. } if consumed == 1
     ));
+}
+
+#[test]
+fn suspended_cancel_steps_and_replays_only_under_the_opt_in_profile() {
+    let legacy = durable_artifacts(MachineArtifactKind::DurableV1, DURABLE_SUSPENSION_V1);
+    let opted_in = durable_artifacts(MachineArtifactKind::DurableV2, DURABLE_SUSPENSION_V2);
+    assert_ne!(opted_in.machine_identity, legacy.machine_identity);
+    assert_ne!(opted_in.lifecycle_identity, legacy.lifecycle_identity);
+    assert!(matches!(
+        outcome(OperationRequest::AdmitMachine {
+            artifacts: opted_in.clone(),
+        }),
+        Outcome::Admitted { machine_identity, .. } if machine_identity == opted_in.machine_identity
+    ));
+
+    let suspended = durable_state(StateTag::Suspended);
+    let cancelled = durable_state(StateTag::Cancelled);
+    let cancel = event(ActionTag::Cancel);
+    let run_step = |artifacts: &MachineArtifacts, event: EventValue| {
+        outcome(OperationRequest::Step {
+            artifacts: artifacts.clone(),
+            state: suspended.clone(),
+            event,
+        })
+    };
+    assert!(matches!(
+        run_step(&opted_in, cancel.clone()),
+        Outcome::Accepted { next, intents, .. } if next == cancelled && intents.is_empty()
+    ));
+    assert!(matches!(
+        run_step(&legacy, cancel.clone()),
+        Outcome::Denied { reason, .. } if reason.code == DenialCode::InvalidTransition
+    ));
+
+    let mut cancel_with_effect = cancel.clone();
+    cancel_with_effect.effects.push(EffectRequestValue {
+        operation: String::from(OPERATION),
+        resource: String::from(RESOURCE),
+        ability: String::from(ABILITY),
+        request: String::from(REQUEST_REFERENCE),
+        payload: String::from(PAYLOAD_REFERENCE),
+    });
+    assert!(matches!(
+        run_step(&opted_in, cancel_with_effect),
+        Outcome::Denied { reason, .. } if reason.code == DenialCode::SuspensionEffectsForbidden
+    ));
+
+    let mut cancel_with_fact = cancel.clone();
+    cancel_with_fact.suspension = Some(SuspensionFactValue {
+        class: String::from(SUSPENSION_CLASS),
+        reference: String::from(SUSPENSION_REFERENCE),
+    });
+    assert!(matches!(
+        run_step(&opted_in, cancel_with_fact),
+        Outcome::Denied { reason, .. } if reason.code == DenialCode::SuspensionFactUnexpected
+    ));
+
+    let run_replay = |artifacts| {
+        outcome(OperationRequest::Replay {
+            artifacts,
+            initial_state: suspended.clone(),
+            bindings: bindings(TRACE_BYTE, TRACE_BYTE),
+            max_events: MAX_TRACE_EVENTS,
+            events: vec![cancel.clone()],
+        })
+    };
+    assert!(matches!(
+        run_replay(opted_in),
+        Outcome::ReplayComplete { final_state, consumed: 1, .. } if final_state == cancelled
+    ));
+    assert!(matches!(
+        run_replay(legacy),
+        Outcome::ReplayFailed { failure, .. }
+            if failure.event_index == Some(0) && failure.consumed == 0
+                && failure.last_valid_state == suspended
+                && matches!(&failure.reason, ReplayFailureReasonValue::TransitionDenied { reason }
+                    if reason.code == DenialCode::InvalidTransition)
+    ));
+}
+
+#[test]
+fn durable_wasm_kind_must_match_canonical_profile() {
+    let mut legacy = durable_artifacts(MachineArtifactKind::DurableV1, DURABLE_SUSPENSION_V1);
+    let mut opted_in = durable_artifacts(MachineArtifactKind::DurableV2, DURABLE_SUSPENSION_V2);
+    legacy.kind = MachineArtifactKind::DurableV2;
+    opted_in.kind = MachineArtifactKind::DurableV1;
+    for artifacts in [legacy, opted_in] {
+        assert!(matches!(
+            outcome(OperationRequest::AdmitMachine { artifacts }),
+            Outcome::AdapterError { error } if error.code == AdapterErrorCode::InvalidArtifact
+        ));
+    }
 }
 
 #[test]

@@ -7,7 +7,6 @@
 #![allow(
     unknown_lints,
     explicit_defaults,
-    no_panic,
     non_trait_imports,
     numeric_units,
     reason = "the pinned integration fixture keeps domain notation and exact boundary failures readable"
@@ -36,6 +35,7 @@ const STALE_REFERENCE: &str =
 const BINDING_BYTE: u8 = 0x51;
 const TRACE_EVENT_LIMIT: u64 = 16;
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn lattice_wait_machine() -> AdmittedMachine {
     let mut spec = MachineSpec::new(
         vec![
@@ -51,6 +51,7 @@ fn lattice_wait_machine() -> AdmittedMachine {
     }
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn node_id(machine: &AdmittedMachine, expected: &str) -> choregraph_core::id::bounded::NodeId {
     for node_id in machine.node_ids() {
         if node_id.as_str() == expected {
@@ -60,6 +61,7 @@ fn node_id(machine: &AdmittedMachine, expected: &str) -> choregraph_core::id::bo
     panic!("admitted node is missing: {expected}")
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn drive_to_gate_ready(
     machine: &AdmittedMachine,
 ) -> choregraph_core::model::automaton::MachineState {

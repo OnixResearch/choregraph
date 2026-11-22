@@ -5,7 +5,6 @@
     clippy::expect_used,
     function_length,
     missing_const_fn,
-    no_panic,
     no_unwrap,
     non_trait_imports,
     numeric_units,
@@ -87,6 +86,7 @@ fn stale_bindings() -> ReplayBindings {
     )
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn machine_v1() -> AdmittedMachine {
     let spec = MachineSpec::new(vec![NodeSpec::new(NODE, Vec::new())], Vec::new());
     match AdmittedMachine::admit(spec, AdmissionLimits::default()) {
@@ -95,6 +95,7 @@ fn machine_v1() -> AdmittedMachine {
     }
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn machine_v2() -> AdmittedMachine {
     let spec = MachineSpecV2::new(vec![NodeSpec::new(NODE, Vec::new())], Vec::new());
     match AdmittedMachine::admit_v2(spec, AdmissionLimits::default()) {
@@ -111,6 +112,7 @@ fn events_v1() -> Vec<Event> {
     ]
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn history_v1(events: &[Event], schema: Digest) -> (Graph, Vec<BoundEventV1>) {
     let mut graph = match Graph::new(limits()) {
         Ok(value) => value,

@@ -40,6 +40,36 @@ const EVALUATOR_POLL_INTERVAL_MS: u64 = 10;
 const EVALUATOR_TEARDOWN_TIMEOUT_MS: u64 = 2_000;
 const SUCCESS_EXIT_CODE: i32 = 0;
 
+// These are compiler inputs supplied together by the Linux flake package/dev shell,
+// never runtime environment overrides. The manifest lists individual ELF files.
+const PINNED_NICKEL: Option<&str> = option_env!("CHOREGRAPH_NICKEL_EVALUATOR");
+const PINNED_BASH: Option<&str> = option_env!("CHOREGRAPH_NICKEL_BASH");
+const PINNED_BWRAP: Option<&str> = option_env!("CHOREGRAPH_NICKEL_BWRAP");
+const PINNED_RUNTIME: Option<&str> = option_env!("CHOREGRAPH_NICKEL_RUNTIME");
+const SANDBOX_SCRIPT: &str = r#"
+set -eu
+bwrap=$1
+nickel=$2
+readarray -t runtime < "$3"
+(( ${#runtime[@]} > 0 ))
+mounts=(--ro-bind "$nickel" "$nickel")
+for file in "${runtime[@]}"; do
+    [[ $file == /nix/store/* && -f $file ]]
+    mounts+=(--ro-bind "$file" "$file")
+done
+# Bash here-strings restore exactly the final LF stripped by contract_argument.
+# Bubblewrap copies those descriptors into its own read-only mounts, not host paths.
+exec "$bwrap" --unshare-user --disable-userns --unshare-ipc --unshare-pid \
+    --unshare-net --unshare-uts --hostname choregraph --die-with-parent --cap-drop ALL --clearenv \
+    "${mounts[@]}" --dir /work --chdir /work \
+    --perms 0444 --ro-bind-data 3 /contracts/evaluated-graph-contract.ncl \
+    --perms 0444 --ro-bind-data 4 /contracts/restricted-graph-contracts.ncl --remount-ro / \
+    -- "$nickel" export --format json --color never --error-format text \
+    --apply-contract /contracts/evaluated-graph-contract.ncl 3<<< "$4" 4<<< "$5"
+"#;
+
+type FrontendFailure = choregraph_nickel::diagnostic::FrontendFailure;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct OperatorRootSpec {
     pub id: String,
@@ -68,17 +98,11 @@ pub struct CompilationReport {
     pub artifact_bytes: usize,
 }
 
-struct OpenRoot {
-    ambient_path: PathBuf,
-    dir: Dir,
-}
-
 struct OpenRoots {
-    source: OpenRoot,
-    contract: OpenRoot,
-    scratch: OpenRoot,
-    output: OpenRoot,
-    root_registry: BTreeMap<String, OpenRoot>,
+    source: Dir,
+    contract: Dir,
+    output: Dir,
+    root_registry: BTreeMap<String, Dir>,
 }
 
 struct LoadedImport {
@@ -92,34 +116,25 @@ fn fail(
     choregraph_nickel::diagnostic::FrontendFailure::one(code)
 }
 
-fn open_root(path: &Path) -> Result<OpenRoot, choregraph_nickel::diagnostic::FrontendFailure> {
+pub(crate) fn open_capability_dir(path: &Path) -> Result<Dir, FrontendFailure> {
     if !path.is_absolute() {
         return Err(fail(
             choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityRootUnavailable,
         ));
     }
-    let dir = Dir::open_ambient_dir(path, ambient_authority()).map_err(|_| {
+    Dir::open_ambient_dir(path, ambient_authority()).map_err(|_| {
         fail(choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityRootUnavailable)
-    })?;
-    Ok(OpenRoot {
-        ambient_path: path.to_path_buf(),
-        dir,
     })
-}
-
-pub(crate) fn open_capability_dir(
-    path: &Path,
-) -> Result<Dir, choregraph_nickel::diagnostic::FrontendFailure> {
-    Ok(open_root(path)?.dir)
 }
 
 fn open_roots(
     request: &CompileNickelRequest,
 ) -> Result<OpenRoots, choregraph_nickel::diagnostic::FrontendFailure> {
-    let source = open_root(&request.source_root)?;
-    let contract = open_root(&request.contract_root)?;
-    let scratch = open_root(&request.scratch_root)?;
-    let output = open_root(&request.output_root)?;
+    let source = open_capability_dir(&request.source_root)?;
+    let contract = open_capability_dir(&request.contract_root)?;
+    // Keep checking the legacy operator argument, but never expose it to the evaluator.
+    drop(open_capability_dir(&request.scratch_root)?);
+    let output = open_capability_dir(&request.output_root)?;
     if request.import_roots.len() > choregraph_nickel::profile::DEFAULT_MAX_IMPORTS {
         return Err(fail(
             choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityRootUnavailable,
@@ -133,7 +148,7 @@ fn open_roots(
     let root_entries = request
         .import_roots
         .iter()
-        .map(|root| Ok((root.id.clone(), open_root(&root.ambient_path)?)))
+        .map(|root| Ok((root.id.clone(), open_capability_dir(&root.ambient_path)?)))
         .collect::<Result<Vec<_>, choregraph_nickel::diagnostic::FrontendFailure>>()?;
     let root_registry = root_entries.into_iter().collect::<BTreeMap<_, _>>();
     if root_registry.len() != request.import_roots.len() {
@@ -144,7 +159,6 @@ fn open_roots(
     Ok(OpenRoots {
         source,
         contract,
-        scratch,
         output,
         root_registry,
     })
@@ -224,25 +238,21 @@ pub(crate) fn read_relative(
     Ok(bytes)
 }
 
-fn verify_contract(
-    root: &OpenRoot,
-) -> Result<PathBuf, choregraph_nickel::diagnostic::FrontendFailure> {
+fn verify_contract(root: &Dir) -> Result<(), FrontendFailure> {
     let entry = read_relative(
-        &root.dir,
+        root,
         Path::new(CONTRACT_ENTRY_PATH),
         CONTRACT_ENTRY_BYTES.len(),
     )?;
     let library = read_relative(
-        &root.dir,
+        root,
         Path::new(CONTRACT_LIBRARY_PATH),
         CONTRACT_LIBRARY_BYTES.len(),
     )?;
     if entry != CONTRACT_ENTRY_BYTES || library != CONTRACT_LIBRARY_BYTES {
-        return Err(fail(
-            choregraph_nickel::diagnostic::FrontendIssueCode::EvaluatorExecutionRejected,
-        ));
+        return Err(evaluator_rejected());
     }
-    Ok(root.ambient_path.join(CONTRACT_ENTRY_PATH))
+    Ok(())
 }
 
 fn evaluator_limits(
@@ -263,40 +273,79 @@ fn run_evaluator(
     roots: &OpenRoots,
     source: &[u8],
 ) -> Result<Vec<u8>, choregraph_nickel::diagnostic::FrontendFailure> {
-    let contract_path = verify_contract(&roots.contract)?;
-    let policy = OutcomePolicy::new(vec![SUCCESS_EXIT_CODE], true, true).map_err(|_| {
-        fail(choregraph_nickel::diagnostic::FrontendIssueCode::EvaluatorExecutionRejected)
-    })?;
+    verify_contract(&roots.contract)?;
+    run_sandboxed(&request.evaluator, request.limits, source)
+}
+
+fn evaluator_rejected() -> FrontendFailure {
+    fail(choregraph_nickel::diagnostic::FrontendIssueCode::EvaluatorExecutionRejected)
+}
+
+fn contract_argument(bytes: &[u8]) -> Result<&str, FrontendFailure> {
+    let text = std::str::from_utf8(bytes).map_err(|_| evaluator_rejected())?;
+    if text.as_bytes().contains(&0) {
+        return Err(evaluator_rejected());
+    }
+    text.strip_suffix('\n').ok_or_else(evaluator_rejected)
+}
+
+fn sandbox_command(evaluator: &Path, source: &[u8]) -> Result<CommandSpec, FrontendFailure> {
+    let (true, Some(nickel), Some(bash), Some(bwrap), Some(runtime)) = (
+        cfg!(target_os = "linux"),
+        PINNED_NICKEL,
+        PINNED_BASH,
+        PINNED_BWRAP,
+        PINNED_RUNTIME,
+    ) else {
+        return Err(evaluator_rejected());
+    };
+    if evaluator != Path::new("--pinned")
+        && (!evaluator.is_absolute()
+            || std::fs::canonicalize(evaluator).ok().as_deref() != Some(Path::new(nickel)))
+    {
+        return Err(evaluator_rejected());
+    }
+    Ok(CommandSpec {
+        program: PathBuf::from(bash),
+        args: [
+            "--noprofile",
+            "--norc",
+            "-c",
+            SANDBOX_SCRIPT,
+            "choregraph-nickel-sandbox",
+            bwrap,
+            nickel,
+            runtime,
+            contract_argument(CONTRACT_ENTRY_BYTES)?,
+            contract_argument(CONTRACT_LIBRARY_BYTES)?,
+        ]
+        .into_iter()
+        .map(OsString::from)
+        .collect(),
+        current_dir: PathBuf::from("/"),
+        environment_mode: EnvironmentMode::Clear,
+        environment: Vec::new(),
+        input: Input::Bytes(source.to_vec()),
+    })
+}
+
+fn run_sandboxed(
+    evaluator: &Path,
+    limits: choregraph_nickel::profile::FrontendLimits,
+    source: &[u8],
+) -> Result<Vec<u8>, FrontendFailure> {
+    let command = sandbox_command(evaluator, source)?;
+    let policy = OutcomePolicy::new(vec![SUCCESS_EXIT_CODE], true, true)
+        .map_err(|_| evaluator_rejected())?;
     let execution = bounded_exec::run(RunRequest {
-        command: CommandSpec {
-            program: request.evaluator.clone(),
-            args: vec![
-                OsString::from("export"),
-                OsString::from("--format"),
-                OsString::from("json"),
-                OsString::from("--color"),
-                OsString::from("never"),
-                OsString::from("--error-format"),
-                OsString::from("text"),
-                OsString::from("--apply-contract"),
-                contract_path.into_os_string(),
-            ],
-            current_dir: roots.scratch.ambient_path.clone(),
-            environment_mode: EnvironmentMode::Clear,
-            environment: Vec::new(),
-            input: Input::Bytes(source.to_vec()),
-        },
-        limits: evaluator_limits(request.limits),
+        command,
+        limits: evaluator_limits(limits),
         termination_scope: TerminationScope::ProcessGroup,
         outcome_policy: policy,
     })
-    .map_err(|_| {
-        fail(choregraph_nickel::diagnostic::FrontendIssueCode::EvaluatorExecutionRejected)
-    })?;
+    .map_err(|_| evaluator_rejected())?;
     if execution.disposition != Disposition::Succeeded {
-        return Err(fail(
-            choregraph_nickel::diagnostic::FrontendIssueCode::EvaluatorExecutionRejected,
-        ));
+        return Err(evaluator_rejected());
     }
     if execution.stdout.bytes.is_empty() || execution.stdout.truncated || execution.stderr.truncated
     {
@@ -325,11 +374,7 @@ fn load_imports(
             fail(choregraph_nickel::diagnostic::FrontendIssueCode::CapabilityInputTooLarge)
         })?;
         let selected_max = declared_max.min(limits.max_import_bytes);
-        let bytes = read_relative(
-            &root.dir,
-            Path::new(&declaration.relative_path),
-            selected_max,
-        )?;
+        let bytes = read_relative(root, Path::new(&declaration.relative_path), selected_max)?;
         loaded.push(LoadedImport {
             logical_id: declaration.logical_id.clone(),
             bytes,
@@ -426,7 +471,7 @@ where
 {
     let roots = open_roots(request)?;
     let source = read_relative(
-        &roots.source.dir,
+        &roots.source,
         &request.source_path,
         request.limits.max_evaluated_bytes,
     )?;
@@ -457,7 +502,7 @@ where
         fail(choregraph_nickel::diagnostic::FrontendIssueCode::ArtifactConstructionRejected)
     })?;
     publish_atomic(
-        &roots.output.dir,
+        &roots.output,
         &request.output_path,
         &artifacts.machine_artifact.packed_bytes,
     )?;
@@ -492,6 +537,9 @@ mod tests {
     const IMPORT_PATH: &str = "data/defaults.ncl";
     const MINIMAL_SOURCE: &[u8] = include_bytes!("../../../fixtures/nickel/positive/minimal.ncl");
     const MINIMAL_JSON: &[u8] = include_bytes!("../../../fixtures/nickel/evaluated/minimal.json");
+    #[cfg(target_os = "linux")]
+    const IMPORT_SOURCE: &[u8] =
+        include_bytes!("../../../fixtures/nickel/positive/declared-import.ncl");
     const IMPORT_JSON: &[u8] =
         include_bytes!("../../../fixtures/nickel/evaluated/declared-import.json");
 
@@ -597,6 +645,130 @@ mod tests {
         ));
         assert_eq!(compilation_result.import_count, 1);
         assert_eq!(compilation_result.import_bytes, 0);
+    }
+
+    #[test]
+    fn rejects_non_profile_sources_before_the_evaluator() {
+        let fixture = fixture();
+        must(fs::write(
+            fixture.source_root.join(SOURCE_PATH),
+            br#"{ value = m%"plain text"% }"#,
+        ));
+        let failure = must_err(compile_with_evaluator(&request(&fixture), |_, _, _| {
+            panic!("source rejected by the profile reached evaluator setup")
+        }));
+        assert_eq!(
+            failure.issues[0].code(),
+            choregraph_nickel::diagnostic::FrontendIssueCode::ForbiddenNickelAuthority
+        );
+        assert!(!fixture.output_root.join(OUTPUT_PATH).exists());
+    }
+
+    #[test]
+    fn rejects_unpinned_executable_without_publishing() {
+        let fixture = fixture();
+        assert_eq!(
+            must_err(super::compile_nickel(&request(&fixture))),
+            super::evaluator_rejected()
+        );
+        assert!(!fixture.output_root.join(OUTPUT_PATH).exists());
+    }
+
+    #[test]
+    fn pinned_request_fails_closed_without_build_configuration() {
+        if cfg!(target_os = "linux")
+            && [
+                super::PINNED_NICKEL,
+                super::PINNED_BASH,
+                super::PINNED_BWRAP,
+                super::PINNED_RUNTIME,
+            ]
+            .iter()
+            .all(Option::is_some)
+        {
+            return;
+        }
+        let fixture = fixture();
+        let mut request = request(&fixture);
+        request.evaluator = Path::new("--pinned").to_path_buf();
+        assert_eq!(
+            must_err(super::compile_nickel(&request)),
+            super::evaluator_rejected()
+        );
+        assert!(!fixture.output_root.join(OUTPUT_PATH).exists());
+    }
+
+    #[test]
+    fn detects_changed_contract_bytes() {
+        let fixture = fixture();
+        let root = must(super::open_capability_dir(&fixture.contract_root));
+        must(super::verify_contract(&root));
+        for name in [super::CONTRACT_ENTRY_PATH, super::CONTRACT_LIBRARY_PATH] {
+            let path = fixture.contract_root.join(name);
+            let original = must(fs::read(&path));
+            let mut changed = original.clone();
+            changed[0] ^= 1;
+            must(fs::write(&path, &changed));
+            assert_eq!(
+                must_err(super::verify_contract(&root)),
+                super::evaluator_rejected()
+            );
+            must(fs::write(&path, &original));
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    #[ignore = "requires the pinned Nix runtime and a Linux host that allows user namespaces"]
+    fn linux_host_sandbox_acceptance() {
+        for (source, json, import_count) in [
+            (MINIMAL_SOURCE, MINIMAL_JSON, 0),
+            (IMPORT_SOURCE, IMPORT_JSON, 1),
+        ] {
+            let fixture = fixture();
+            must(fs::write(fixture.source_root.join(SOURCE_PATH), source));
+            let mut request = request(&fixture);
+            request.evaluator = Path::new("--pinned").to_path_buf();
+            let expected = must(compile_with_evaluator(
+                &request,
+                |_, _, _| Ok(json.to_vec()),
+            ));
+            let expected_bytes = must(fs::read(fixture.output_root.join(OUTPUT_PATH)));
+            must(fs::remove_file(fixture.output_root.join(OUTPUT_PATH)));
+            let actual = must(super::compile_nickel(&request));
+            assert_eq!(actual, expected);
+            assert_eq!(actual.import_count, import_count);
+            assert_eq!(
+                must(fs::read(fixture.output_root.join(OUTPUT_PATH))),
+                expected_bytes
+            );
+        }
+
+        let fixture = fixture();
+        let root = must(super::open_capability_dir(&fixture.contract_root));
+        must(super::verify_contract(&root));
+        must(fs::remove_file(
+            fixture.contract_root.join(super::CONTRACT_ENTRY_PATH),
+        ));
+        must(fs::remove_file(
+            fixture.contract_root.join(super::CONTRACT_LIBRARY_PATH),
+        ));
+        let evaluator = Path::new("--pinned");
+        let limits = request(&fixture).limits;
+        must(super::run_sandboxed(evaluator, limits, MINIMAL_SOURCE));
+
+        // A harmless scratch fixture is readable by the test but not the evaluator.
+        let scratch_source = fixture.scratch_root.join("sandbox-probe.ncl");
+        must(fs::write(&scratch_source, MINIMAL_SOURCE));
+        let path = must(
+            scratch_source
+                .to_str()
+                .ok_or("non-UTF-8 scratch fixture path"),
+        );
+        let quoted_path = must(serde_json::to_string(path));
+        let source_read = format!("import {quoted_path}");
+        let denied = super::run_sandboxed(evaluator, limits, source_read.as_bytes());
+        assert_eq!(must_err(denied), super::evaluator_rejected());
     }
 
     #[test]

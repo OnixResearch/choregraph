@@ -371,32 +371,6 @@ fn rejects_a_copied_readiness_implementation() {
     assert!(contains_code(&model, "foundation.readiness-copy"));
 }
 
-// r[verify choregraph.proof.single_step.readiness_completeness_negative]
-#[test]
-fn rejects_an_unrestricted_proof_assumption() {
-    let mut model = allowed_model();
-    for source in &mut model.core_sources {
-        if source.path.ends_with("choregraph-core/src/verified.rs") {
-            source.text = String::from(include_str!(
-                "../../../fixtures/readiness-source-link/negative/unrestricted-assumption.rs"
-            ));
-        }
-    }
-    assert!(contains_code(&model, "foundation.proof-trust-escape"));
-}
-
-#[test]
-fn rejects_an_unrestricted_assumption_in_a_nested_proof_module() {
-    let mut model = allowed_model();
-    model.core_sources.push(crate::types::SourceUnit {
-        path: String::from("crates/choregraph-core/src/verified/trace/theorem.rs"),
-        text: String::from(include_str!(
-            "../../../fixtures/readiness-source-link/negative/unrestricted-assumption.rs"
-        )),
-    });
-    assert!(contains_code(&model, "foundation.proof-trust-escape"));
-}
-
 #[test]
 fn rejects_reverse_dependency_direction() {
     let mut model = allowed_model();

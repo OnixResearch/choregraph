@@ -84,6 +84,7 @@ pub mod input {
         LinearV1,
         DurableV1,
         ConcreteV2,
+        DurableV2,
     }
 
     #[derive(Clone, Debug, serde::Deserialize, Eq, PartialEq, serde::Serialize)]
@@ -367,6 +368,7 @@ pub mod decision {
         SuspensionEffectsForbidden,
         InvariantWouldBreak,
         EffectsNotAllowed,
+        InternalInconsistency,
     }
 }
 

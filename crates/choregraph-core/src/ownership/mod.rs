@@ -17,12 +17,12 @@ use crate::model::{
     semantics::LocalState,
 };
 
-/// Stable contract identity for the same-entity, equal-epoch, non-terminal gate.
-pub const EPOCH_FENCE_CONTRACT_IDENTITY: &str =
+/// Version label for the same-entity, equal-epoch, non-terminal gate; not a source digest.
+pub const EPOCH_FENCE_CONTRACT_VERSION_LABEL: &str =
     "blake3:791e39edd60b0ae0520bc57b08cc13e1b6d36fe0679faf798d8f939995afe63c";
 
-/// Stable implementation identity for the proof-linked production decision.
-pub const EPOCH_FENCE_IMPLEMENTATION_IDENTITY: &str =
+/// Version label for the selected verified decision shape; not a source digest.
+pub const EPOCH_FENCE_IMPLEMENTATION_VERSION_LABEL: &str =
     "blake3:208455a5a682f658e7a0c4fa0cdd3224a2cc0e44d11ca5615450224c972717c7";
 
 /// Claim boundaries attached to every epoch-fence decision.
@@ -174,8 +174,9 @@ fn decision_code(
 /// Decides whether supplied ownership facts fence one mutation.
 ///
 /// This function reads no clock, storage, process, network, or ambient state.
-/// The caller remains responsible for the truth and freshness of
-/// `current_epoch`.
+/// The caller remains responsible for the truth and freshness of `current_epoch`.
+/// Commit any admitted mutation with a storage-side compare-and-swap of both
+/// that epoch and the state revision. A pure admit result cannot fence a racing writer.
 #[must_use]
 pub fn decide_epoch_fence(
     machine: &AdmittedMachine,
@@ -188,8 +189,8 @@ pub fn decide_epoch_fence(
         current_epoch: fence.current_epoch(),
         offered_epoch: fence.offered_epoch(),
         disposition: disposition_from_code(decision_code(machine, state, event, fence)),
-        implementation_identity: EPOCH_FENCE_IMPLEMENTATION_IDENTITY,
-        contract_identity: EPOCH_FENCE_CONTRACT_IDENTITY,
+        implementation_identity: EPOCH_FENCE_IMPLEMENTATION_VERSION_LABEL,
+        contract_identity: EPOCH_FENCE_CONTRACT_VERSION_LABEL,
         required_non_claims: EPOCH_FENCE_NON_CLAIMS,
     }
 }
@@ -198,6 +199,8 @@ pub fn decide_epoch_fence(
 ///
 /// Rejection emits no replacement state or effect intent. Admission delegates
 /// to [`crate::transition::step`], so this wrapper contains no second transition table.
+/// Persist the result only if the same epoch and observed state revision still
+/// match atomically at commit. Do not dispatch intents from a failed CAS.
 #[must_use]
 pub fn step_epoch_fenced(
     machine: &AdmittedMachine,

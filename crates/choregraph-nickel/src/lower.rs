@@ -153,8 +153,12 @@ fn validate_source_profile(
         }
         return Ok(());
     }
-    if profile.lifecycle_profile == choregraph_core::model::semantics::DURABLE_SUSPENSION_V1
-        && profile.allow_suspension
+    if profile.allow_suspension
+        && matches!(
+            profile.lifecycle_profile,
+            choregraph_core::model::semantics::DURABLE_SUSPENSION_V1
+                | choregraph_core::model::semantics::DURABLE_SUSPENSION_V2
+        )
     {
         if !valid_events(profile.events, DURABLE_EVENTS) {
             return Err(fail(

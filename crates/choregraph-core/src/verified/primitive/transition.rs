@@ -14,61 +14,44 @@
     reason = "Verus proof syntax and production-linked proof witnesses require these local source shapes"
 )]
 
+use crate::verified::codes::action::*;
+use crate::verified::codes::profile::*;
+use crate::verified::codes::status::*;
 use vstd::prelude::*;
 
 verus! {
 
-pub open spec fn linear_lifecycle_target_spec(from: u8, action: u8) -> Option<u8> {
-    if from == crate::verified::codes::status::STATE_PENDING && action == crate::verified::codes::action::ACTION_MARK_READY {
-        Some(crate::verified::codes::status::STATE_READY)
-    } else if from == crate::verified::codes::status::STATE_READY && action == crate::verified::codes::action::ACTION_START {
-        Some(crate::verified::codes::status::STATE_RUNNING)
-    } else if from == crate::verified::codes::status::STATE_RUNNING && action == crate::verified::codes::action::ACTION_COMPLETE {
-        Some(crate::verified::codes::status::STATE_COMPLETED)
-    } else if from == crate::verified::codes::status::STATE_RUNNING && action == crate::verified::codes::action::ACTION_FAIL {
-        Some(crate::verified::codes::status::STATE_FAILED)
-    } else if (from == crate::verified::codes::status::STATE_PENDING || from == crate::verified::codes::status::STATE_READY || from == crate::verified::codes::status::STATE_RUNNING)
-        && action == crate::verified::codes::action::ACTION_CANCEL
-    {
-        Some(crate::verified::codes::status::STATE_CANCELLED)
-    } else {
-        None
+// This relation enumerates the permitted triples independently of executable dispatch.
+pub open spec fn lifecycle_transition_spec(profile: u8, from: u8, action: u8, to: u8) -> bool {
+    match (from, action, to) {
+        (STATE_PENDING, ACTION_MARK_READY, STATE_READY)
+        | (STATE_READY, ACTION_START, STATE_RUNNING)
+        | (STATE_RUNNING, ACTION_COMPLETE, STATE_COMPLETED)
+        | (STATE_RUNNING, ACTION_FAIL, STATE_FAILED)
+        | (STATE_PENDING, ACTION_CANCEL, STATE_CANCELLED)
+        | (STATE_READY, ACTION_CANCEL, STATE_CANCELLED)
+        | (STATE_RUNNING, ACTION_CANCEL, STATE_CANCELLED) => profile_valid_spec(profile),
+        (STATE_READY, ACTION_SUSPEND, STATE_SUSPENDED)
+        | (STATE_RUNNING, ACTION_SUSPEND, STATE_SUSPENDED)
+        | (STATE_SUSPENDED, ACTION_RESUME_SIGNAL, STATE_READY) => durable_profile_spec(profile),
+        (STATE_SUSPENDED, ACTION_CANCEL, STATE_CANCELLED) => profile == PROFILE_DURABLE_SUSPENSION_V2,
+        _ => false,
     }
 }
 
 pub open spec fn lifecycle_target_spec(profile: u8, from: u8, action: u8) -> Option<u8> {
-    if profile == crate::verified::codes::profile::PROFILE_LINEAR_V1 {
-        linear_lifecycle_target_spec(from, action)
-    } else if profile == crate::verified::codes::profile::PROFILE_DURABLE_SUSPENSION_V1 {
-        if linear_lifecycle_target_spec(from, action).is_some() {
-            linear_lifecycle_target_spec(from, action)
-        } else if (from == crate::verified::codes::status::STATE_READY || from == crate::verified::codes::status::STATE_RUNNING) && action == crate::verified::codes::action::ACTION_SUSPEND {
-            Some(crate::verified::codes::status::STATE_SUSPENDED)
-        } else if from == crate::verified::codes::status::STATE_SUSPENDED && action == crate::verified::codes::action::ACTION_RESUME_SIGNAL {
-            Some(crate::verified::codes::status::STATE_READY)
-        } else {
-            None
-        }
-    } else {
-        None
-    }
-}
-
-pub const fn linear_lifecycle_target(from: u8, action: u8) -> (result: Option<u8>)
-    ensures result == linear_lifecycle_target_spec(from, action)
-{
-    if from == crate::verified::codes::status::STATE_PENDING && action == crate::verified::codes::action::ACTION_MARK_READY {
-        Some(crate::verified::codes::status::STATE_READY)
-    } else if from == crate::verified::codes::status::STATE_READY && action == crate::verified::codes::action::ACTION_START {
-        Some(crate::verified::codes::status::STATE_RUNNING)
-    } else if from == crate::verified::codes::status::STATE_RUNNING && action == crate::verified::codes::action::ACTION_COMPLETE {
-        Some(crate::verified::codes::status::STATE_COMPLETED)
-    } else if from == crate::verified::codes::status::STATE_RUNNING && action == crate::verified::codes::action::ACTION_FAIL {
-        Some(crate::verified::codes::status::STATE_FAILED)
-    } else if (from == crate::verified::codes::status::STATE_PENDING || from == crate::verified::codes::status::STATE_READY || from == crate::verified::codes::status::STATE_RUNNING)
-        && action == crate::verified::codes::action::ACTION_CANCEL
-    {
-        Some(crate::verified::codes::status::STATE_CANCELLED)
+    if lifecycle_transition_spec(profile, from, action, STATE_READY) {
+        Some(STATE_READY)
+    } else if lifecycle_transition_spec(profile, from, action, STATE_RUNNING) {
+        Some(STATE_RUNNING)
+    } else if lifecycle_transition_spec(profile, from, action, STATE_COMPLETED) {
+        Some(STATE_COMPLETED)
+    } else if lifecycle_transition_spec(profile, from, action, STATE_FAILED) {
+        Some(STATE_FAILED)
+    } else if lifecycle_transition_spec(profile, from, action, STATE_CANCELLED) {
+        Some(STATE_CANCELLED)
+    } else if lifecycle_transition_spec(profile, from, action, STATE_SUSPENDED) {
+        Some(STATE_SUSPENDED)
     } else {
         None
     }
@@ -77,21 +60,21 @@ pub const fn linear_lifecycle_target(from: u8, action: u8) -> (result: Option<u8
 pub const fn lifecycle_target(profile: u8, from: u8, action: u8) -> (result: Option<u8>)
     ensures result == lifecycle_target_spec(profile, from, action)
 {
-    if profile == crate::verified::codes::profile::PROFILE_LINEAR_V1 {
-        linear_lifecycle_target(from, action)
-    } else if profile == crate::verified::codes::profile::PROFILE_DURABLE_SUSPENSION_V1 {
-        let linear = linear_lifecycle_target(from, action);
-        if linear.is_some() {
-            linear
-        } else if (from == crate::verified::codes::status::STATE_READY || from == crate::verified::codes::status::STATE_RUNNING) && action == crate::verified::codes::action::ACTION_SUSPEND {
-            Some(crate::verified::codes::status::STATE_SUSPENDED)
-        } else if from == crate::verified::codes::status::STATE_SUSPENDED && action == crate::verified::codes::action::ACTION_RESUME_SIGNAL {
-            Some(crate::verified::codes::status::STATE_READY)
-        } else {
-            None
-        }
-    } else {
-        None
+    if !is_supported(profile) {
+        return None;
+    }
+    match (from, action) {
+        (STATE_PENDING, ACTION_MARK_READY) => Some(STATE_READY),
+        (STATE_READY, ACTION_START) => Some(STATE_RUNNING),
+        (STATE_RUNNING, ACTION_COMPLETE) => Some(STATE_COMPLETED),
+        (STATE_RUNNING, ACTION_FAIL) => Some(STATE_FAILED),
+        (STATE_PENDING, ACTION_CANCEL) => Some(STATE_CANCELLED),
+        (STATE_READY | STATE_RUNNING, ACTION_CANCEL) => Some(STATE_CANCELLED),
+        (STATE_READY, ACTION_SUSPEND) if has_suspension(profile) => Some(STATE_SUSPENDED),
+        (STATE_RUNNING, ACTION_SUSPEND) if has_suspension(profile) => Some(STATE_SUSPENDED),
+        (STATE_SUSPENDED, ACTION_RESUME_SIGNAL) if has_suspension(profile) => Some(STATE_READY),
+        (STATE_SUSPENDED, ACTION_CANCEL) if profile == PROFILE_DURABLE_SUSPENSION_V2 => Some(STATE_CANCELLED),
+        _ => None,
     }
 }
 

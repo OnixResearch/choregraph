@@ -14,15 +14,18 @@ use crate::lifecycle::record::FsmState;
 use crate::lifecycle::record::FsmTransitionRow;
 use crate::lifecycle::record::LifecycleDescriptor;
 use choregraph_core::{
-    model::semantics::Action, model::semantics::LifecycleProfile, model::semantics::LocalState,
-    model::semantics::LocalTransitionError, transition::lifecycle_target_for_profile,
+    model::semantics::Action, model::semantics::DURABLE_SUSPENSION_V1,
+    model::semantics::DURABLE_SUSPENSION_V2, model::semantics::LifecycleProfile,
+    model::semantics::LocalState, model::semantics::LocalTransitionError,
+    transition::lifecycle_target_for_profile,
 };
 use serde::Serialize;
 use std::collections::BTreeSet;
 use std::fmt::{Display, Formatter};
 
 pub const LIFECYCLE_FSM_ID: &str = "choregraph.lifecycle.linear.v1";
-pub const DURABLE_FSM_ID: &str = "choregraph.lifecycle.durable-suspension.v1";
+pub const DURABLE_FSM_ID: &str = DURABLE_SUSPENSION_V1;
+pub const DURABLE_FSM_V2_ID: &str = DURABLE_SUSPENSION_V2;
 const SUPPORTED_SCHEMA_VERSION: u32 = 1;
 const DETERMINISM_POLICY: &str = "deterministic";
 const TOTALITY_POLICY: &str = "closed-matrix-with-explicit-denials";
@@ -171,8 +174,12 @@ fn row_guards(state: LocalState, action: Action) -> Vec<String> {
     }
 }
 
-fn row_side_effect(action: Action) -> &'static str {
-    if matches!(action, Action::Suspend | Action::ResumeSignal) {
+fn row_side_effect(profile: LifecycleProfile, state: LocalState, action: Action) -> &'static str {
+    if matches!(action, Action::Suspend | Action::ResumeSignal)
+        || (profile == LifecycleProfile::DurableSuspensionV2
+            && state == LocalState::Suspended
+            && action == Action::Cancel)
+    {
         NO_SIDE_EFFECT
     } else {
         MACHINE_DECLARED_INTENTS_EFFECT
@@ -217,7 +224,7 @@ fn descriptor_for(
                     event: String::from(action_id(*action)),
                     to_state: String::from(state_id(target)),
                     guards: row_guards(*state, *action),
-                    side_effect: String::from(row_side_effect(*action)),
+                    side_effect: String::from(row_side_effect(profile, *state, *action)),
                 }),
                 Err(error) => denials.push(FsmDenialRow {
                     from_state: String::from(state_id(*state)),
@@ -289,12 +296,32 @@ fn descriptor(source_envelope_identity: Option<KamaciteIdentity>) -> LifecycleDe
     )
 }
 
-fn durable_descriptor(source_envelope_identity: Option<KamaciteIdentity>) -> LifecycleDescriptor {
+pub(crate) const fn durable_fsm_id(profile: LifecycleProfile) -> Option<&'static str> {
+    match profile {
+        LifecycleProfile::LinearV1 => None,
+        LifecycleProfile::DurableSuspensionV1 => Some(DURABLE_FSM_ID),
+        LifecycleProfile::DurableSuspensionV2 => Some(DURABLE_FSM_V2_ID),
+    }
+}
+
+pub(crate) fn durable_profile_from_fsm_id(id: &str) -> Option<LifecycleProfile> {
+    match id {
+        DURABLE_FSM_ID => Some(LifecycleProfile::DurableSuspensionV1),
+        DURABLE_FSM_V2_ID => Some(LifecycleProfile::DurableSuspensionV2),
+        _ => None,
+    }
+}
+
+fn durable_descriptor(
+    profile: LifecycleProfile,
+    fsm_id: &str,
+    source_envelope_identity: Option<KamaciteIdentity>,
+) -> LifecycleDescriptor {
     let mut descriptor = descriptor_for(
-        LifecycleProfile::DurableSuspensionV1,
+        profile,
         &DURABLE_STATES,
         &DURABLE_ACTIONS,
-        DURABLE_FSM_ID,
+        fsm_id,
         source_envelope_identity,
     );
     descriptor.checked_laws.push(String::from(
@@ -318,7 +345,7 @@ fn build_artifact(
     let coverage = coverage_evidence(&descriptor)?;
     if !coverage.missing_cells.is_empty() {
         return Err(LifecycleError::MatrixNotClosed {
-            covered: expected_cells - coverage.missing_cells.len(),
+            covered: expected_cells.saturating_sub(coverage.missing_cells.len()),
             expected: expected_cells,
         });
     }
@@ -331,16 +358,29 @@ fn build_artifact(
     })
 }
 
+/// Builds the original durable-suspension v1 lifecycle descriptor.
 pub fn build_durable_lifecycle_artifact(
     source_envelope_identity: Option<KamaciteIdentity>,
 ) -> Result<LifecycleArtifact, LifecycleError> {
+    build_durable_lifecycle_artifact_for_profile(
+        LifecycleProfile::DurableSuspensionV1,
+        source_envelope_identity,
+    )
+}
+
+/// Builds the closed lifecycle descriptor for an explicitly selected durable profile.
+pub fn build_durable_lifecycle_artifact_for_profile(
+    profile: LifecycleProfile,
+    source_envelope_identity: Option<KamaciteIdentity>,
+) -> Result<LifecycleArtifact, LifecycleError> {
+    let fsm_id = durable_fsm_id(profile).ok_or(LifecycleError::UnsupportedProfile)?;
     if let Some(identity) = &source_envelope_identity {
         identity
             .validate(KamaciteIdentityDomain::Source)
             .map_err(|error| LifecycleError::Identity(error.to_string()))?;
     }
     build_artifact(
-        durable_descriptor(source_envelope_identity),
+        durable_descriptor(profile, fsm_id, source_envelope_identity),
         DURABLE_MATRIX_CELL_COUNT,
     )
 }
@@ -350,10 +390,16 @@ pub fn validate_durable_lifecycle_artifact(
 ) -> Result<LifecycleArtifact, LifecycleError> {
     let (decoded, canonical): (LifecycleDescriptor, CanonicalArtifact) =
         crate::codec::decode(input, FSM_SPEC_SCHEMA_VERSION, FSM_SPEC_ROOT_LABEL)?;
-    if decoded.fsm_id != DURABLE_FSM_ID || decoded.schema_version != SUPPORTED_SCHEMA_VERSION {
+    if decoded.schema_version != SUPPORTED_SCHEMA_VERSION {
         return Err(LifecycleError::UnsupportedProfile);
     }
-    let expected = durable_descriptor(decoded.source_envelope_identity.clone());
+    let profile =
+        durable_profile_from_fsm_id(&decoded.fsm_id).ok_or(LifecycleError::UnsupportedProfile)?;
+    let expected = durable_descriptor(
+        profile,
+        &decoded.fsm_id,
+        decoded.source_envelope_identity.clone(),
+    );
     if decoded != expected {
         return Err(LifecycleError::ProfileMismatch);
     }
@@ -364,7 +410,7 @@ pub fn validate_durable_lifecycle_artifact(
     let coverage = coverage_evidence(&decoded)?;
     if !coverage.missing_cells.is_empty() {
         return Err(LifecycleError::MatrixNotClosed {
-            covered: DURABLE_MATRIX_CELL_COUNT - coverage.missing_cells.len(),
+            covered: DURABLE_MATRIX_CELL_COUNT.saturating_sub(coverage.missing_cells.len()),
             expected: DURABLE_MATRIX_CELL_COUNT,
         });
     }
@@ -394,7 +440,7 @@ pub fn build_lifecycle_artifact(
     let coverage = coverage_evidence(&descriptor)?;
     if !coverage.missing_cells.is_empty() {
         return Err(LifecycleError::MatrixNotClosed {
-            covered: MATRIX_CELL_COUNT - coverage.missing_cells.len(),
+            covered: MATRIX_CELL_COUNT.saturating_sub(coverage.missing_cells.len()),
             expected: MATRIX_CELL_COUNT,
         });
     }
@@ -424,7 +470,7 @@ pub fn validate_lifecycle_artifact(input: &[u8]) -> Result<LifecycleArtifact, Li
     let coverage = coverage_evidence(&decoded)?;
     if !coverage.missing_cells.is_empty() {
         return Err(LifecycleError::MatrixNotClosed {
-            covered: MATRIX_CELL_COUNT - coverage.missing_cells.len(),
+            covered: MATRIX_CELL_COUNT.saturating_sub(coverage.missing_cells.len()),
             expected: MATRIX_CELL_COUNT,
         });
     }

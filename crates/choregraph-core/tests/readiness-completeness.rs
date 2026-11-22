@@ -2,7 +2,6 @@
 #![allow(
     unknown_lints,
     assertion_density,
-    no_panic,
     non_trait_imports,
     unbounded_collection_growth,
     reason = "readiness fixtures exercise the public production graph and transition paths"
@@ -50,6 +49,7 @@ const fn limits() -> AdmissionLimits {
     }
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn diamond_machine() -> AdmittedMachine {
     let spec = MachineSpec::new(
         vec![
@@ -71,6 +71,7 @@ fn diamond_machine() -> AdmittedMachine {
     }
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn accept(machine: &AdmittedMachine, state: &MachineState, event: Event) -> MachineState {
     match step(machine, state, &event) {
         Decision::Accept { next, intents } => {

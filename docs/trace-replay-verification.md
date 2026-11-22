@@ -57,8 +57,9 @@ The maintained Verus rail proves these properties:
 4. Equal indexed inputs produce equal final state, consumed count, and failure index.
 5. Failure identifies the first denied event and its last valid prefix state.
 6. Indexed replay returns an empty dispatch-intent sequence.
+7. Every accepted `Start` observes its dependencies as `Completed` before that step. They either completed earlier in that trace or were already complete in the starting snapshot.
 
-The preservation theorem is stronger than success-only preservation. A denied trace also returns an invariant last valid state.
+Preservation follows by induction from the step guard lemma, not from a post-state check in the acceptance specification. A denied trace also returns an invariant last valid state.
 
 ## Expected failures
 

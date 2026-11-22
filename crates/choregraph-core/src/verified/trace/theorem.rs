@@ -350,4 +350,37 @@ pub proof fn replay_never_returns_dispatch_intents(
     ensures super::specification::replay_dispatch_intents_spec(dependencies, states, suspensions, profile, events, from).len() == 0
 {}
 
+/// A replay checks each Start against the snapshot *before* that event, also
+/// covering dependencies already completed in a supplied restart snapshot.
+pub proof fn accepted_trace_starts_after_dependencies(
+    dependencies: Seq<alloc::vec::Vec<usize>>,
+    states: Seq<u8>,
+    suspensions: Seq<Option<crate::verified::primitive::support::IndexedSuspensionFact>>,
+    profile: u8,
+    events: Seq<super::specification::IndexedReplayEvent>,
+    from: int,
+)
+    requires 0 <= from <= events.len()
+    ensures super::specification::replay_starts_after_dependencies_spec(dependencies, states, suspensions, profile, events, from),
+    decreases events.len() - from
+{
+    if from < events.len() {
+        let event = events[from];
+        if super::specification::replay_event_accepts_spec(dependencies, states, suspensions, profile, event) {
+            if event.action == crate::verified::codes::action::ACTION_START {
+                crate::verified::kernel::theorem::accepted_start_has_completed_dependencies(
+                    dependencies, states, suspensions, profile, event.node_index, event.event_fact,
+                    event.allowed_intents@, event.requested_intents@,
+                );
+            }
+            accepted_trace_starts_after_dependencies(
+                dependencies,
+                super::specification::replay_event_next_spec(dependencies, states, suspensions, profile, event),
+                super::specification::replay_event_next_suspensions_spec(dependencies, states, suspensions, profile, event),
+                profile, events, from + 1,
+            );
+        }
+    }
+}
+
 } // verus!

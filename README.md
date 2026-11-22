@@ -9,7 +9,7 @@ Choregraph is not a standalone workflow service. There is no worker daemon, job 
 ## What you can build with it
 
 - **Dependency-driven workflows.** Admit a DAG and ask which nodes are ready. A diamond graph can expose two independent branches after their shared predecessor completes, then hold the final node until both branches finish. See the [Lattice diamond test](crates/choregraph-seaglass/tests/lattice-diamond.rs).
-- **Workflows that wait for an external signal.** The opt-in durable-suspension profile records a suspension class and a BLAKE3 reference. A matching resume event moves the node back to ready. The host stores the wait and determines whether the signal is authentic or approved. See the [suspension tests](crates/choregraph-core/tests/durable-suspension.rs).
+- **Workflows that wait for an external signal.** The opt-in durable profiles record a suspension class and a BLAKE3 reference. A matching resume event moves the node back to ready; v2 also lets the host cancel a wait. The host stores the wait and decides whether the signal is authentic or approved. See the [suspension tests](crates/choregraph-core/tests/durable-suspension.rs).
 - **Deterministic recovery and inspection.** Replay a bounded event sequence against an admitted machine and initial state. Replay reports the first rejected event and never returns historical effect intents for dispatch. See the [replay tests](crates/choregraph-core/tests/trace-replay.rs).
 - **Branchable application history.** Build immutable event DAGs, select an explicit lineage, and prepare generation-checked branch updates. The machine-history adapter can replay supported machine events from that lineage. The host supplies payload storage and application merge decisions.
 - **Role protocol compilation.** Validate declared roles, ownership, transfers, and choices, then project a global protocol into one local protocol per role using pinned Trellis functions. This is a separate library workflow, not a machine runner or a `compile-nickel` mode.
@@ -21,7 +21,7 @@ These are implemented mechanisms with fixtures and tests. Product scheduling, di
 
 Build from source. The workspace packages are version `0.1.0` with `publish = false`; these instructions do not assume a crates.io release.
 
-You need Git and Nix with flakes enabled. The development shell supplies Rust 1.97.1, Nickel, and the verification tools. The manifest declares Rust 1.96.0 as its minimum, but the maintained build uses the pinned toolchain. Cargo fetches the pinned Trellis dependency over GitHub SSH, so direct Cargo builds need working GitHub SSH access or an appropriate local Git URL rewrite to HTTPS.
+You need Git and Nix with flakes enabled. Restricted evaluation also needs Linux with unprivileged user namespaces for the pinned Bubblewrap sandbox. The development shell supplies Rust 1.97.1, Nickel, and the verification tools. The manifest declares Rust 1.96.0 as its minimum, but the maintained build uses the pinned toolchain. Cargo fetches Trellis at its exact revision over HTTPS.
 
 ```sh
 git clone https://github.com/OnixResearch/choregraph.git
@@ -37,7 +37,7 @@ cargo run --locked -p choregraph-cli -- boundary
 work=$(mktemp -d)
 mkdir -p "$work/scratch" "$work/output"
 cargo run --locked -p choregraph-cli -- compile-nickel \
-  "$(command -v nickel)" \
+  --pinned \
   "$PWD/fixtures/nickel" positive/minimal.ncl \
   "$PWD/contracts/nickel" "$work/scratch" \
   "$work/output" minimal.preserves
@@ -57,7 +57,7 @@ choregraph compile-nickel <evaluator> <source-root> <source-path> \
   [<import-id>=<import-root> ...]
 ```
 
-Use an absolute evaluator path and absolute operator-selected roots. Source and output paths are relative to their respective roots. Declared graph imports are data: each names a configured root, relative path, media class, byte limit, and expected BLAKE3 digest. See the [declared-import fixture](fixtures/nickel/positive/declared-import.ncl) and [frontend documentation](docs/restricted-nickel-lowering.md).
+Use `--pinned` for the evaluator and absolute operator-selected roots. An explicit absolute evaluator path must resolve to the packaged Nickel executable. Source and output paths are relative to their roots. Declared graph imports are data: each names a configured root, relative path, media class, byte limit, and expected BLAKE3 digest. See the [declared-import fixture](fixtures/nickel/positive/declared-import.ncl) and [frontend documentation](docs/restricted-nickel-lowering.md).
 
 For a standalone CLI build:
 
@@ -111,7 +111,7 @@ Pending, Ready, or Running -> Cancelled
 
 Readiness and start require completed dependencies. Completed, failed, and cancelled nodes reject further changes. A denied event returns a reason, no replacement state, and no intents.
 
-The explicit `choregraph.lifecycle.durable-suspension.v1` profile also permits `Ready` or `Running` to become `Suspended`, then return to `Ready` on a matching `ResumeSignal`. Suspension and resumption cannot request effects. There is no automatic timeout, retry, or approval decision.
+The explicit `choregraph.lifecycle.durable-suspension.v1` profile permits `Ready` or `Running` to become `Suspended`, then return to `Ready` on a matching `ResumeSignal`. `choregraph.lifecycle.durable-suspension.v2` also lets an effect-free `Cancel` terminate a suspended node without a resume signal or completed dependencies. Suspension and resumption cannot request effects. There is no automatic timeout, retry, or approval decision.
 
 Other core entry points include:
 
@@ -131,7 +131,7 @@ The core is functional: inputs determine outputs, and the caller owns side effec
 
 ```text
 Restricted Nickel source
-    -> CLI: capability-relative reads and bounded evaluator process
+    -> CLI: capability-relative reads and sandboxed, bounded evaluator process
     -> choregraph-nickel: checked evaluated data and import closure
     -> choregraph-core: admitted machine and pure transitions
     -> choregraph-kamacite: canonical artifacts and identity receipts
@@ -164,10 +164,10 @@ The CLI additionally exposes `write-kamacite-corpus`, `write-release-bundle`, `v
 ## Limits and verification scope
 
 - **Bounded DAGs.** Admission rejects cycles, duplicate facts, missing endpoints, malformed identifiers, unsupported profiles, and invalid effect declarations. Default core limits include 4,096 nodes, 16,384 edges, and 64 intents per transition. Default replay is bounded to 65,536 events. Callers supply explicit limits; frontend and WASM profiles impose their own ceilings.
-- **Restricted source language.** The CLI rejects Nickel file-import syntax and string interpolation before evaluation. It applies a closed contract and Rust validates the result again. This is not an unrestricted Nickel program runner. Bounded Exec limits the child process but does not provide a filesystem or network sandbox.
+- **Restricted source language.** The CLI rejects Nickel file-import syntax and unsupported string forms before evaluation. It runs the pinned evaluator in a filesystem and network namespace with only its declared runtime and contract inputs. There is no unsandboxed fallback. A closed contract and Rust validate the result independently.
 - **Host-owned authority.** Effect intents are requests, not evidence of execution or success. The kernel does not check UCAN tokens, resolve keys, read clocks, persist runs, allocate workers, or discover the current ownership epoch. An epoch match only checks supplied facts.
 - **Explicit history selection.** Multi-parent history needs explicit lineage choices. The machine-history adapter rejects merges and unsupported event classes; it does not invent application merge semantics. History stores payload identities, not payload bytes. Branch plans require host persistence.
-- **Scoped proofs.** Verus rails cover named properties of the production-called indexed kernel, including transition invariants, readiness completeness, finite-trace behavior, and epoch fencing. They do not prove the whole application, identifier-map adapters, arbitrary Nickel semantics, caller-derived identities, external-role correctness, or distributed execution.
+- **Scoped proofs.** Verus proves indexed preservation from the transition guards, independent lifecycle laws, readiness completeness, finite-trace behavior, and the caller-fact epoch fence. The Rust adapter still checks converted results. The rails do not prove the whole application, identifier-map adapters, arbitrary Nickel semantics, caller-derived identities, external-role correctness, or distributed execution.
 - **Identity is not correctness.** Canonical bytes and receipts bind exact artifacts and evidence. They do not establish authorization, exactly-once effects, persistence durability, delivery, or release eligibility. Checked-in evidence describes its recorded source and toolchain; changes need fresh validation.
 
 The [single-step proof boundary](docs/single-step-verification.md), [trace proof boundary](docs/trace-replay-verification.md), and [WASM contract](docs/wasm-kernel-adapter.md) describe the precise claims and trusted surfaces. Reference designs and superseded plans are provenance, not additional shipped features.

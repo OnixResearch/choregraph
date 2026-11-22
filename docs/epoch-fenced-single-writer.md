@@ -27,6 +27,8 @@ The decision reads no storage, clock, process, network, lease service, or mutabl
 
 The authority-neutral `step` API remains available for compatibility and proof composition. A consumer that claims epoch fencing must use `step_epoch_fenced` and must supply the current epoch from its own admitted authority source.
 
+The consumer must atomically compare-and-swap the observed epoch **and** state revision when committing the new state. If either changed, discard the decision and its intents; recompute from a fresh snapshot. Equality in the pure gate alone cannot fence a concurrent writer.
+
 ## Rejection classes
 
 The gate rejects these cases in order:

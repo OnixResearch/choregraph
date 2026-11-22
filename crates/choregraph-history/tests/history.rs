@@ -4,11 +4,9 @@
     clippy::expect_used,
     explicit_defaults,
     function_length,
-    no_panic,
     no_unwrap,
     non_trait_imports,
     numeric_units,
-    raw_arithmetic_overflow,
     reason = "bounded positive and negative history fixtures require direct setup and failure assertions"
 )]
 

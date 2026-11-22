@@ -5,10 +5,8 @@
     explicit_defaults,
     function_length,
     non_trait_imports,
-    no_panic,
     no_recursion,
     numeric_units,
-    raw_arithmetic_overflow,
     unbounded_collection_growth,
     reason = "the compatibility corpus preserves reviewed public API shapes while strict cleanup proceeds"
 )]
@@ -79,6 +77,7 @@ fn diamond_spec() -> MachineSpec {
     MachineSpec::new(diamond_nodes(), diamond_edges())
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn admit(spec: MachineSpec) -> AdmittedMachine {
     match AdmittedMachine::admit(spec, AdmissionLimits::default()) {
         Ok(machine) => machine,
@@ -86,6 +85,7 @@ fn admit(spec: MachineSpec) -> AdmittedMachine {
     }
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn node_id(machine: &AdmittedMachine, expected: &str) -> NodeId {
     for node_id in machine.node_ids() {
         if node_id.as_str() == expected {
@@ -95,6 +95,7 @@ fn node_id(machine: &AdmittedMachine, expected: &str) -> NodeId {
     panic!("admitted node is missing: {expected}")
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn accept(
     decision: Decision,
 ) -> (
@@ -107,6 +108,7 @@ fn accept(
     }
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn admission_diagnostics(
     result: Result<AdmittedMachine, Vec<choregraph_core::model::outcome::AdmissionDiagnostic>>,
 ) -> Vec<choregraph_core::model::outcome::AdmissionDiagnostic> {
@@ -805,11 +807,18 @@ fn property_every_accepted_local_transition_preserves_the_invariant() {
         let state = MachineState::new(BTreeMap::from([(node_id.clone(), local_state)]));
         assert!(invariant(&machine, &state));
         for action in actions {
-            if let Decision::Accept { next, intents } =
-                step(&machine, &state, &Event::new(NODE_SOURCE, action))
-            {
-                assert!(invariant(&machine, &next));
-                assert!(intents.is_empty());
+            let event = Event::new(NODE_SOURCE, action);
+            let first = step(&machine, &state, &event);
+            assert_eq!(first, step(&machine, &state, &event));
+            match first {
+                Decision::Accept { next, intents } => {
+                    assert!(invariant(&machine, &next));
+                    assert!(intents.is_empty());
+                }
+                Decision::Deny { reason } => assert!(!matches!(
+                    reason,
+                    DenialReason::InternalInconsistency | DenialReason::InvariantWouldBreak
+                )),
             }
         }
     }

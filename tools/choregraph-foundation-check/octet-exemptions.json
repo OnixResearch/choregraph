@@ -1,0 +1,763 @@
+{
+  "crates/choregraph-choreography/src/admission.rs": {
+    "file allow missing_const_fn": 1,
+    "file allow no_recursion": 1,
+    "file allow non_trait_imports": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-choreography/src/endpoint.rs": {
+    "file allow missing_const_fn": 1,
+    "file allow no_recursion": 1,
+    "file allow non_trait_imports": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-choreography/src/issue.rs": {
+    "file allow non_trait_imports": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-choreography/src/linkage.rs": {
+    "file allow borrowed_argument_types": 1,
+    "file allow non_trait_imports": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-cli/src/capability.rs": {
+    "file allow assertion_density": 1,
+    "file allow function_length": 1,
+    "file allow non_trait_imports": 1,
+    "file allow path_segment_repetition": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-cli/src/corpus.rs": {
+    "file allow assertion_density": 1,
+    "file allow excessive_file_length": 1,
+    "file allow explicit_defaults": 1,
+    "file allow function_length": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow path_segment_repetition": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-cli/src/lib.rs": {
+    "file allow excessive_file_length": 1,
+    "file allow module_file_count": 1,
+    "file allow unknown_lints": 1,
+    "item allow assertion_density": 1,
+    "item allow missing_const_fn": 1,
+    "item allow unknown_lints": 2
+  },
+  "crates/choregraph-cli/src/main.rs": {
+    "file allow non_trait_imports": 1,
+    "file allow unknown_lints": 1,
+    "item allow ambient_env": 1,
+    "item allow assertion_density": 1
+  },
+  "crates/choregraph-cli/src/release.rs": {
+    "file allow assertion_density": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow path_segment_repetition": 1,
+    "file allow unknown_lints": 1,
+    "item allow no_panic": 2,
+    "item allow unknown_lints": 2
+  },
+  "crates/choregraph-core/src/admission.rs": {
+    "file allow allocation_in_loop": 1,
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow borrowed_argument_types": 1,
+    "file allow fragile_exhaustive_enum_match": 1,
+    "file allow missing_const_fn": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow sentinel_fallback": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-core/src/analytics/mod.rs": {
+    "file allow assertion_density": 1,
+    "file allow fragile_exhaustive_enum_match": 1,
+    "file allow missing_const_fn": 1,
+    "file allow non_trait_imports": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-core/src/boundary.rs": {
+    "file allow non_trait_imports": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-core/src/concrete.rs": {
+    "file allow allocation_in_loop": 1,
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow borrowed_argument_types": 1,
+    "file allow fragile_exhaustive_enum_match": 1,
+    "file allow function_length": 1,
+    "file allow missing_const_fn": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow path_segment_repetition": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-core/src/id.rs": {
+    "file allow non_trait_imports": 1,
+    "file allow path_segment_repetition": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/invariant.rs": {
+    "file allow allocation_in_loop": 1,
+    "file allow assertion_density": 1,
+    "file allow compound_condition": 1,
+    "file allow fragile_exhaustive_enum_match": 1,
+    "file allow missing_const_fn": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow path_segment_repetition": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-core/src/model.rs": {
+    "file allow fragile_exhaustive_enum_match": 1,
+    "file allow non_trait_imports": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-core/src/ownership/mod.rs": {
+    "file allow missing_const_fn": 1,
+    "file allow non_trait_imports": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-core/src/transition.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow fragile_exhaustive_enum_match": 1,
+    "file allow function_length": 1,
+    "file allow missing_const_fn": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow sentinel_fallback": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-core/src/verified.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow nested_conditionals": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow too_many_parameters": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/verified/codes/action.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow nested_conditionals": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow too_many_parameters": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/verified/codes/denial/suspension.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow nested_conditionals": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow too_many_parameters": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/verified/codes/denial/transition.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow nested_conditionals": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow too_many_parameters": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/verified/codes/profile.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow nested_conditionals": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow too_many_parameters": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/verified/codes/status.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow nested_conditionals": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow too_many_parameters": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/verified/kernel/decision.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow nested_conditionals": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow too_many_parameters": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1,
+    "verus-item allow function_length": 2
+  },
+  "crates/choregraph-core/src/verified/kernel/snapshot.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow nested_conditionals": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow too_many_parameters": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/verified/kernel/target.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow nested_conditionals": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow too_many_parameters": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/verified/kernel/theorem.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow nested_conditionals": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow too_many_parameters": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/verified/primitive/matching.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow nested_conditionals": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow too_many_parameters": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/verified/primitive/membership.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow nested_conditionals": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow too_many_parameters": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/verified/primitive/ownership.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow nested_conditionals": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow too_many_parameters": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/verified/primitive/support.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow nested_conditionals": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow too_many_parameters": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/verified/primitive/transition.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow nested_conditionals": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow too_many_parameters": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/verified/primitive/validity.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow nested_conditionals": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow too_many_parameters": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/verified/readiness.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow non_trait_imports": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/verified/topology.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow bool_naming": 1,
+    "file allow compound_condition": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/verified/topology/admission.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow bool_naming": 1,
+    "file allow compound_condition": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/verified/topology/bounds.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow bool_naming": 1,
+    "file allow compound_condition": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/verified/topology/cardinality.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow bool_naming": 1,
+    "file allow compound_condition": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/verified/topology/precedence.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow bool_naming": 1,
+    "file allow compound_condition": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/verified/trace/specification.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow too_many_parameters": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/src/verified/trace/theorem.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow non_trait_imports": 1,
+    "file allow raw_arithmetic_overflow": 1,
+    "file allow too_many_parameters": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "file allow usize_in_public_api": 1
+  },
+  "crates/choregraph-core/tests/concrete-effect-intents.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow explicit_defaults": 1,
+    "file allow function_length": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow unknown_lints": 1,
+    "item allow no_panic": 3
+  },
+  "crates/choregraph-core/tests/durable-suspension.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow explicit_defaults": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow unknown_lints": 1,
+    "item allow no_panic": 7
+  },
+  "crates/choregraph-core/tests/epoch-fence.rs": {
+    "file allow explicit_defaults": 1,
+    "file allow non_trait_imports": 1,
+    "file allow unknown_lints": 1,
+    "item allow no_panic": 2
+  },
+  "crates/choregraph-core/tests/machine-semantics.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow explicit_defaults": 1,
+    "file allow function_length": 1,
+    "file allow no_recursion": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "item allow no_panic": 4
+  },
+  "crates/choregraph-core/tests/readiness-completeness.rs": {
+    "file allow assertion_density": 1,
+    "file allow non_trait_imports": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "item allow no_panic": 2
+  },
+  "crates/choregraph-core/tests/trace-replay.rs": {
+    "file allow assertion_density": 1,
+    "file allow explicit_defaults": 1,
+    "file allow function_length": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow too_many_parameters": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "item allow no_panic": 3
+  },
+  "crates/choregraph-history-machine/src/lib.rs": {
+    "file allow non_trait_imports": 1,
+    "file allow unknown_lints": 1,
+    "item allow missing_const_fn": 3
+  },
+  "crates/choregraph-history-machine/tests/replay.rs": {
+    "file allow assertion_density": 1,
+    "file allow explicit_defaults": 1,
+    "file allow function_length": 1,
+    "file allow missing_const_fn": 1,
+    "file allow no_unwrap": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1,
+    "item allow no_panic": 3
+  },
+  "crates/choregraph-history/tests/consumer-boundaries.rs": {
+    "file allow assertion_density": 1,
+    "file allow explicit_defaults": 1,
+    "file allow missing_const_fn": 1,
+    "file allow no_unwrap": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-history/tests/history.rs": {
+    "file allow assertion_density": 1,
+    "file allow explicit_defaults": 1,
+    "file allow function_length": 1,
+    "file allow no_unwrap": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-kamacite/src/aggregate/mod.rs": {
+    "file allow assertion_density": 1,
+    "file allow missing_const_fn": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow path_segment_repetition": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-kamacite/src/codec/mod.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow missing_const_fn": 1,
+    "file allow non_trait_imports": 1,
+    "file allow path_segment_repetition": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-kamacite/src/concrete/mod.rs": {
+    "file allow assertion_density": 1,
+    "file allow fragile_exhaustive_enum_match": 1,
+    "file allow function_length": 1,
+    "file allow missing_const_fn": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow path_segment_repetition": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-kamacite/src/identity.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow fragile_exhaustive_enum_match": 1,
+    "file allow missing_const_fn": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow path_segment_repetition": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-kamacite/src/lib.rs": {
+    "item allow ambiguous_params": 1,
+    "item allow assertion_density": 1,
+    "item allow explicit_defaults": 1,
+    "item allow fragile_exhaustive_enum_match": 1,
+    "item allow function_length": 1,
+    "item allow missing_const_fn": 1,
+    "item allow non_trait_imports": 1,
+    "item allow path_segment_repetition": 1,
+    "item allow renamed_imports": 1,
+    "item allow unbounded_collection_growth": 1,
+    "item allow unknown_lints": 1
+  },
+  "crates/choregraph-kamacite/src/lifecycle/mod.rs": {
+    "file allow allocation_in_loop": 1,
+    "file allow assertion_density": 1,
+    "file allow function_length": 1,
+    "file allow missing_const_fn": 1,
+    "file allow non_trait_imports": 1,
+    "file allow path_segment_repetition": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-kamacite/src/receipt/mod.rs": {
+    "file allow assertion_density": 1,
+    "file allow compound_condition": 1,
+    "file allow fragile_exhaustive_enum_match": 1,
+    "file allow function_length": 1,
+    "file allow missing_const_fn": 1,
+    "file allow non_trait_imports": 1,
+    "file allow path_segment_repetition": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-kamacite/test-support/internal.rs": {
+    "block allow assertion_density": 1,
+    "block allow function_length": 1,
+    "block allow non_trait_imports": 1,
+    "block allow numeric_units": 1,
+    "block allow unknown_lints": 1,
+    "file allow assertion_density": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-nickel/src/diagnostic.rs": {
+    "file allow fragile_exhaustive_enum_match": 1,
+    "file allow function_length": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-nickel/src/identity.rs": {
+    "file allow assertion_density": 1,
+    "file allow fragile_exhaustive_enum_match": 1,
+    "file allow path_segment_repetition": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-nickel/src/imports.rs": {
+    "file allow assertion_density": 1,
+    "file allow borrowed_argument_types": 1,
+    "file allow compound_condition": 1,
+    "file allow function_length": 1,
+    "file allow missing_const_fn": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-nickel/src/lower.rs": {
+    "file allow assertion_density": 1,
+    "file allow fragile_exhaustive_enum_match": 1,
+    "file allow function_length": 1,
+    "file allow missing_const_fn": 1,
+    "file allow path_segment_repetition": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-nickel/src/profile.rs": {
+    "file allow explicit_defaults": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-nickel/src/tests/mod.rs": {
+    "file allow function_length": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-release/src/lib.rs": {
+    "file allow fragile_exhaustive_enum_match": 1,
+    "file allow missing_const_fn": 1,
+    "file allow non_trait_imports": 1,
+    "file allow unknown_lints": 1,
+    "item allow no_panic": 2,
+    "item allow unknown_lints": 2
+  },
+  "crates/choregraph-seaglass/src/admission.rs": {
+    "item allow fragile_exhaustive_enum_match": 1,
+    "item allow missing_const_fn": 1,
+    "item allow unknown_lints": 2
+  },
+  "crates/choregraph-seaglass/src/aggregate.rs": {
+    "item allow fragile_exhaustive_enum_match": 1,
+    "item allow unknown_lints": 1
+  },
+  "crates/choregraph-seaglass/src/lib.rs": {
+    "file allow non_trait_imports": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-seaglass/src/lifecycle.rs": {
+    "item allow fragile_exhaustive_enum_match": 2,
+    "item allow unknown_lints": 2
+  },
+  "crates/choregraph-seaglass/src/topology.rs": {
+    "item allow ambiguous_params": 1,
+    "item allow unknown_lints": 1
+  },
+  "crates/choregraph-seaglass/tests/architecture-boundary.rs": {
+    "file allow missing_const_fn": 1,
+    "file allow non_trait_imports": 1,
+    "file allow unbounded_collection_growth": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-seaglass/tests/concrete-handoff.rs": {
+    "file allow assertion_density": 1,
+    "file allow explicit_defaults": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow unknown_lints": 1,
+    "item allow no_panic": 2
+  },
+  "crates/choregraph-seaglass/tests/consumer-failures.rs": {
+    "file allow missing_const_fn": 1,
+    "file allow non_trait_imports": 1,
+    "file allow unknown_lints": 1,
+    "item allow no_panic": 3,
+    "item allow unknown_lints": 3
+  },
+  "crates/choregraph-seaglass/tests/lattice-diamond.rs": {
+    "file allow missing_const_fn": 1,
+    "file allow non_trait_imports": 1,
+    "file allow unknown_lints": 1,
+    "item allow no_panic": 2,
+    "item allow unknown_lints": 2
+  },
+  "crates/choregraph-seaglass/tests/lattice-suspension.rs": {
+    "file allow explicit_defaults": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow unknown_lints": 1,
+    "item allow no_panic": 3
+  },
+  "crates/choregraph-seaglass/tests/parity.rs": {
+    "file allow non_trait_imports": 1,
+    "file allow unknown_lints": 1,
+    "item allow no_panic": 1,
+    "item allow unknown_lints": 1
+  },
+  "crates/choregraph-wasm/src/codec.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow non_trait_imports": 1,
+    "file allow unknown_lints": 1,
+    "item allow ambiguous_params": 1,
+    "item allow assertion_density": 1,
+    "item allow explicit_defaults": 1,
+    "item allow fragile_exhaustive_enum_match": 1,
+    "item allow function_length": 1,
+    "item allow missing_const_fn": 1,
+    "item allow non_trait_imports": 1,
+    "item allow path_segment_repetition": 1,
+    "item allow renamed_imports": 1,
+    "item allow unbounded_collection_growth": 1,
+    "item allow unknown_lints": 1
+  },
+  "crates/choregraph-wasm/src/dispatch.rs": {
+    "file allow assertion_density": 1,
+    "file allow fragile_exhaustive_enum_match": 1,
+    "file allow function_length": 1,
+    "file allow missing_const_fn": 1,
+    "file allow non_trait_imports": 1,
+    "file allow path_segment_repetition": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/choregraph-wasm/tests/dispatcher.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow explicit_defaults": 1,
+    "file allow function_length": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow unknown_lints": 1,
+    "item allow no_panic": 1
+  },
+  "crates/choregraph-weave/src/lib.rs": {
+    "file allow non_trait_imports": 1,
+    "file allow unknown_lints": 1,
+    "item allow explicit_defaults": 1,
+    "item allow missing_const_fn": 5
+  },
+  "crates/choregraph-weave/tests/weave.rs": {
+    "file allow assertion_density": 1,
+    "file allow explicit_defaults": 1,
+    "file allow function_length": 1,
+    "file allow no_unwrap": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/execution-graph-core/src/adapter.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow assertion_density": 1,
+    "file allow explicit_defaults": 1,
+    "file allow fragile_exhaustive_enum_match": 1,
+    "file allow missing_const_fn": 1,
+    "file allow non_trait_imports": 1,
+    "file allow renamed_imports": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/execution-graph-core/src/lib.rs": {
+    "file allow ambiguous_params": 1,
+    "file allow explicit_defaults": 1,
+    "file allow fragile_exhaustive_enum_match": 1,
+    "file allow missing_const_fn": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow unknown_lints": 1
+  },
+  "crates/execution-graph-core/src/tests.rs": {
+    "item allow no_panic": 2,
+    "item allow unknown_lints": 2
+  },
+  "tools/choregraph-foundation-check/src/main.rs": {
+    "item allow ambient_env": 1,
+    "item allow unknown_lints": 1
+  },
+  "tools/choregraph-foundation-check/src/types.rs": {
+    "file allow explicit_defaults": 1,
+    "file allow unknown_lints": 1
+  },
+  "tools/choregraph-foundation-check/src/validator.rs": {
+    "item allow missing_const_fn": 4,
+    "item allow unknown_lints": 4
+  },
+  "tools/choregraph-wasm-conformance/src/main.rs": {
+    "file allow ambient_env": 1,
+    "file allow assertion_density": 1,
+    "file allow explicit_defaults": 1,
+    "file allow function_length": 1,
+    "file allow missing_const_fn": 1,
+    "file allow non_trait_imports": 1,
+    "file allow numeric_units": 1,
+    "file allow unknown_lints": 1
+  }
+}

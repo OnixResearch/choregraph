@@ -24,14 +24,6 @@ pub struct IndexedSuspensionFact {
     pub reference: alloc::vec::Vec<u8>,
 }
 
-#[derive(Debug, Eq, PartialEq)]
-pub struct IndexedDecision {
-    pub accepted: bool,
-    pub reason: u8,
-    pub next_states: alloc::vec::Vec<u8>,
-    pub intent_indices: alloc::vec::Vec<usize>,
-}
-
 pub fn copy_values(values: &[usize]) -> (result: alloc::vec::Vec<usize>)
     ensures result@ == values@
 {

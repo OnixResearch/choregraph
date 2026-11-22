@@ -6,7 +6,6 @@
     compound_condition,
     function_length,
     missing_const_fn,
-    raw_arithmetic_overflow,
     reason = "import closure checks retain explicit bounded collection and digest compatibility shapes"
 )]
 

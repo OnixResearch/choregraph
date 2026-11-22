@@ -82,8 +82,8 @@ pub struct DescriptorSuspension {
     pub reference: String,
 }
 
-/// The durable-suspension machine descriptor. Version 2 keeps version 1
-/// artifacts byte-identical: linear machines never gain this field set.
+/// The durable-suspension machine descriptor, reused unchanged by both durable
+/// lifecycle profiles. Linear machines never gain this field set.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename = "choregraph-machine-durable-v1", deny_unknown_fields)]
 pub struct DurableMachineDescriptor {

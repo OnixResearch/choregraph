@@ -26,12 +26,17 @@ r[choregraph.nickel.contracts] Nickel source data MUST satisfy typed contracts f
 
 ### Requirement: Restricted evaluator profile
 
-r[choregraph.nickel.profile] Maintained evaluation MUST use explicit bounded inputs and MUST exclude network, process, clock, hidden environment, undeclared import, and ambient path authority.
+r[choregraph.nickel.profile] Maintained evaluation MUST use explicit bounded inputs and a pinned evaluator in an OS sandbox. Before launch the source gate MUST reject non-UTF-8, Nickel imports, interpolation, and non-profile string forms including multiline and symbolic strings. The sandbox MUST exclude host filesystem and network authority except for individually selected immutable runtime files and staged contract materials; source evaluation MUST NOT expose process, clock, hidden environment, or undeclared import authority. Execution MUST fail closed if the pinned runtime or required isolation is unavailable.
 
 #### Scenario: Source requests an undeclared import
 - GIVEN a source import outside the declared closure
 - WHEN evaluation is requested
 - THEN the frontend MUST reject the import.
+
+#### Scenario: Required host isolation is unavailable
+- GIVEN a host where required sandbox setup cannot succeed
+- WHEN a valid graph is submitted for compilation
+- THEN evaluation MUST fail without an unisolated fallback or output publication.
 
 ### Requirement: Content-addressed import closure
 
@@ -69,6 +74,11 @@ r[choregraph.nickel.capabilities] The CLI MUST open operator-declared roots at t
 - WHEN path admission runs
 - THEN access MUST be rejected before file I/O.
 
+#### Scenario: External contract paths change after comparison
+- GIVEN operator-selected contract files matching the embedded contract bytes at verification
+- WHEN the sandbox evaluates the source
+- THEN the launcher MUST stage only the embedded copies and MUST NOT reopen the operator's contract paths.
+
 ### Requirement: Safe deterministic diagnostics
 
 r[choregraph.nickel.diagnostics] Frontend diagnostics MUST use stable issue codes and bounded summaries without raw source, imported values, credentials, environment values, or host paths.
@@ -99,6 +109,8 @@ r[choregraph.nickel.fixtures] Tests MUST include valid Lattice and minimal sourc
 ### Requirement: Maintained frontend validation
 
 r[choregraph.nickel.validation] Release checks MUST run contract, lowering, capability, diagnostic, and identity-linkage checks.
+
+A pure Nix contract validation result MUST NOT be treated as host isolation evidence. The host acceptance check MUST run the production sandbox on a supported Linux host and distinguish allowed staged materials from a denied read of a disposable file outside the sandbox.
 
 #### Scenario: Frontend validation is skipped
 - GIVEN a candidate without current frontend checks

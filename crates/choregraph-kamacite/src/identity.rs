@@ -7,7 +7,6 @@
     non_trait_imports,
     numeric_units,
     path_segment_repetition,
-    raw_arithmetic_overflow,
     reason = "identity code keeps explicit domain matches and fixed-size BLAKE3 arithmetic"
 )]
 

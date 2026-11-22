@@ -1,0 +1,20 @@
+--- a/crates/choregraph-core/src/verified/primitive/transition.rs
++++ b/crates/choregraph-core/src/verified/primitive/transition.rs
+@@ -28,7 +28,7 @@
+         | (STATE_READY, ACTION_START, STATE_RUNNING)
+         | (STATE_RUNNING, ACTION_COMPLETE, STATE_COMPLETED)
+         | (STATE_RUNNING, ACTION_FAIL, STATE_FAILED)
+-        | (STATE_PENDING, ACTION_CANCEL, STATE_CANCELLED)
++        | (STATE_PENDING, ACTION_CANCEL, STATE_COMPLETED)
+         | (STATE_READY, ACTION_CANCEL, STATE_CANCELLED)
+         | (STATE_RUNNING, ACTION_CANCEL, STATE_CANCELLED) => profile_valid_spec(profile),
+         (STATE_READY, ACTION_SUSPEND, STATE_SUSPENDED)
+@@ -68,7 +68,7 @@
+         (STATE_READY, ACTION_START) => Some(STATE_RUNNING),
+         (STATE_RUNNING, ACTION_COMPLETE) => Some(STATE_COMPLETED),
+         (STATE_RUNNING, ACTION_FAIL) => Some(STATE_FAILED),
+-        (STATE_PENDING, ACTION_CANCEL) => Some(STATE_CANCELLED),
++        (STATE_PENDING, ACTION_CANCEL) => Some(STATE_COMPLETED),
+         (STATE_READY | STATE_RUNNING, ACTION_CANCEL) => Some(STATE_CANCELLED),
+         (STATE_READY, ACTION_SUSPEND) if has_suspension(profile) => Some(STATE_SUSPENDED),
+         (STATE_RUNNING, ACTION_SUSPEND) if has_suspension(profile) => Some(STATE_SUSPENDED),

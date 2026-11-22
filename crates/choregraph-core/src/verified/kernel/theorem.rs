@@ -14,6 +14,19 @@
     reason = "Verus proof syntax and production-linked proof witnesses require these local source shapes"
 )]
 
+#[allow(
+    unused_imports,
+    reason = "Verus erases the consumers of these imports in Rust builds"
+)]
+use super::super::{
+    codes::{action::*, profile::*, status::*},
+    primitive::{support::*, transition::*, validity::*},
+};
+#[allow(
+    unused_imports,
+    reason = "Verus erases the consumers of these imports in Rust builds"
+)]
+use super::{decision::*, snapshot::*, target::*};
 use vstd::prelude::*;
 
 verus! {
@@ -32,18 +45,6 @@ pub open spec fn mark_ready_context_spec(
         && node_index < dependencies.len()
         && node_index < states.len()
         && states[node_index as int] == super::super::codes::status::STATE_PENDING
-        && super::super::primitive::validity::indexed_invariant_spec(
-            dependencies,
-            super::super::kernel::target::step_next_states_spec(states, node_index, super::super::codes::status::STATE_READY),
-        )
-        && super::super::primitive::validity::terminal_states_preserved_spec(
-            states,
-            super::super::kernel::target::step_next_states_spec(states, node_index, super::super::codes::status::STATE_READY),
-        )
-        && super::super::primitive::support::suspensions_consistent_spec(
-            super::super::kernel::target::step_next_states_spec(states, node_index, super::super::codes::status::STATE_READY),
-            suspensions,
-        )
 }
 
 // r[verify choregraph.proof.single_step.readiness_transition]
@@ -83,25 +84,7 @@ pub proof fn readiness_is_sound(dependencies: Seq<usize>, states: Seq<u8>)
             let dependency = dependencies[index];
             dependency < states.len() && states[dependency as int] == super::super::codes::status::STATE_COMPLETED
         }
-{
-    readiness_is_sound_from(dependencies, states, 0);
-}
-
-proof fn readiness_is_sound_from(dependencies: Seq<usize>, states: Seq<u8>, from: int)
-    requires
-        0 <= from <= dependencies.len(),
-        super::super::primitive::validity::dependencies_complete_from_spec(dependencies, states, from),
-    ensures forall|index: int| #![trigger dependencies[index]]
-        from <= index < dependencies.len() ==> {
-            let dependency = dependencies[index];
-            dependency < states.len() && states[dependency as int] == super::super::codes::status::STATE_COMPLETED
-        }
-    decreases dependencies.len() - from
-{
-    if from < dependencies.len() {
-        readiness_is_sound_from(dependencies, states, from + 1);
-    }
-}
+{}
 
 // r[verify choregraph.proof.single_step.preservation]
 pub proof fn accepted_step_preserves_invariant_and_effects(
@@ -152,7 +135,11 @@ pub proof fn accepted_step_preserves_invariant_and_effects(
             ),
             super::super::kernel::snapshot::step_next_suspensions_spec(suspensions, node_index, action, event_fact),
         ),
-{}
+{
+    let target = step_target_spec(profile, states, node_index, action).unwrap();
+    local_update_preserves_invariant(dependencies, states, profile, node_index, action, target);
+    suspension_update_preserves_consistency(states, suspensions, profile, node_index, action, event_fact, target);
+}
 
 // r[verify choregraph.machine.suspension_proof]
 pub proof fn suspended_state_blocks_execution_actions(profile: u8)
@@ -315,120 +302,72 @@ pub proof fn denial_has_no_replacement_or_intents(
 
 // r[verify choregraph.proof.single_step.determinism]
 pub proof fn equal_explicit_inputs_have_equal_decisions(
-    dependencies_a: Seq<alloc::vec::Vec<usize>>,
-    dependencies_b: Seq<alloc::vec::Vec<usize>>,
-    states_a: Seq<u8>,
-    states_b: Seq<u8>,
-    suspensions_a: Seq<Option<super::super::primitive::support::IndexedSuspensionFact>>,
-    suspensions_b: Seq<Option<super::super::primitive::support::IndexedSuspensionFact>>,
-    profile_a: u8,
-    profile_b: u8,
-    node_index_a: usize,
-    node_index_b: usize,
-    action_a: u8,
-    action_b: u8,
-    event_fact_a: Option<super::super::primitive::support::IndexedSuspensionFact>,
-    event_fact_b: Option<super::super::primitive::support::IndexedSuspensionFact>,
-    allowed_intents_a: Seq<usize>,
-    allowed_intents_b: Seq<usize>,
-    requested_intents_a: Seq<usize>,
-    requested_intents_b: Seq<usize>,
+    dependencies: Seq<alloc::vec::Vec<usize>>,
+    states: Seq<u8>,
+    suspensions: Seq<Option<IndexedSuspensionFact>>,
+    profile: u8,
+    node: usize,
+    action: u8,
+    fact: Option<IndexedSuspensionFact>,
+    allowed: Seq<usize>,
+    requested: Seq<usize>,
+    first: StepOutcome,
+    second: StepOutcome,
 )
     requires
-        dependencies_a == dependencies_b,
-        states_a == states_b,
-        suspensions_a == suspensions_b,
-        profile_a == profile_b,
-        node_index_a == node_index_b,
-        action_a == action_b,
-        event_fact_a == event_fact_b,
-        allowed_intents_a == allowed_intents_b,
-        requested_intents_a == requested_intents_b,
-    ensures
-        super::super::kernel::decision::indexed_step_accepts_spec(
-            dependencies_a,
-            states_a,
-            suspensions_a,
-            profile_a,
-            node_index_a,
-            action_a,
-            event_fact_a,
-            allowed_intents_a,
-            requested_intents_a,
-        ) == super::super::kernel::decision::indexed_step_accepts_spec(
-            dependencies_b,
-            states_b,
-            suspensions_b,
-            profile_b,
-            node_index_b,
-            action_b,
-            event_fact_b,
-            allowed_intents_b,
-            requested_intents_b,
-        ),
-        super::super::kernel::decision::indexed_step_reason_spec(
-            dependencies_a,
-            states_a,
-            suspensions_a,
-            profile_a,
-            node_index_a,
-            action_a,
-            event_fact_a,
-            allowed_intents_a,
-            requested_intents_a,
-        ) == super::super::kernel::decision::indexed_step_reason_spec(
-            dependencies_b,
-            states_b,
-            suspensions_b,
-            profile_b,
-            node_index_b,
-            action_b,
-            event_fact_b,
-            allowed_intents_b,
-            requested_intents_b,
-        ),
-        super::super::kernel::decision::indexed_step_next_spec(
-            dependencies_a,
-            states_a,
-            suspensions_a,
-            profile_a,
-            node_index_a,
-            action_a,
-            event_fact_a,
-            allowed_intents_a,
-            requested_intents_a,
-        ) == super::super::kernel::decision::indexed_step_next_spec(
-            dependencies_b,
-            states_b,
-            suspensions_b,
-            profile_b,
-            node_index_b,
-            action_b,
-            event_fact_b,
-            allowed_intents_b,
-            requested_intents_b,
-        ),
-        super::super::kernel::decision::indexed_step_intents_spec(
-            dependencies_a,
-            states_a,
-            suspensions_a,
-            profile_a,
-            node_index_a,
-            action_a,
-            event_fact_a,
-            allowed_intents_a,
-            requested_intents_a,
-        ) == super::super::kernel::decision::indexed_step_intents_spec(
-            dependencies_b,
-            states_b,
-            suspensions_b,
-            profile_b,
-            node_index_b,
-            action_b,
-            event_fact_b,
-            allowed_intents_b,
-            requested_intents_b,
-        ),
+        indexed_decision_matches_spec(dependencies, states, suspensions, profile, node, action, fact, allowed, requested, first),
+        indexed_decision_matches_spec(dependencies, states, suspensions, profile, node, action, fact, allowed, requested, second),
+    ensures indexed_decision_view(first) == indexed_decision_view(second)
 {}
+
+pub proof fn cancel_never_completes(profile: u8, from: u8)
+    ensures lifecycle_target_spec(profile, from, ACTION_CANCEL) != Some(STATE_COMPLETED)
+{}
+
+pub proof fn completed_requires_running_complete(profile: u8, from: u8, action: u8)
+    requires lifecycle_target_spec(profile, from, action) == Some(STATE_COMPLETED)
+    ensures from == STATE_RUNNING, action == ACTION_COMPLETE,
+{}
+
+// Stronger than the existence of a progress event: this works for each
+// non-terminal node, including a restored wait with incomplete dependencies.
+pub proof fn nonterminal_can_cancel(
+    dependencies: Seq<alloc::vec::Vec<usize>>,
+    states: Seq<u8>,
+    suspensions: Seq<Option<IndexedSuspensionFact>>,
+    profile: u8,
+    node: usize,
+)
+    requires
+        indexed_invariant_spec(dependencies, states),
+        suspensions_consistent_spec(states, suspensions),
+        profile == PROFILE_LINEAR_V1 || profile == PROFILE_DURABLE_SUSPENSION_V2,
+        node < states.len(),
+        !terminal_state_spec(states[node as int]),
+        profile == PROFILE_LINEAR_V1 ==> states[node as int] != STATE_SUSPENDED,
+    ensures
+        indexed_step_accepts_spec(dependencies, states, suspensions, profile, node, ACTION_CANCEL, None, Seq::empty(), Seq::empty()),
+        indexed_step_next_spec(dependencies, states, suspensions, profile, node, ACTION_CANCEL, None, Seq::empty(), Seq::empty())[node as int] == STATE_CANCELLED,
+        indexed_step_next_suspensions_spec(dependencies, states, suspensions, profile, node, ACTION_CANCEL, None, Seq::empty(), Seq::empty())[node as int].is_none(),
+{
+    assert(node_invariant_spec(dependencies, states, node as int));
+}
+
+pub proof fn accepted_start_has_completed_dependencies(
+    dependencies: Seq<alloc::vec::Vec<usize>>,
+    states: Seq<u8>,
+    suspensions: Seq<Option<IndexedSuspensionFact>>,
+    profile: u8,
+    node: usize,
+    fact: Option<IndexedSuspensionFact>,
+    allowed: Seq<usize>,
+    requested: Seq<usize>,
+)
+    requires indexed_step_accepts_spec(dependencies, states, suspensions, profile, node, ACTION_START, fact, allowed, requested),
+    ensures dependencies_complete_spec(dependencies[node as int]@, states),
+{
+    assert(lifecycle_target_spec(profile, states[node as int], ACTION_START) == Some(STATE_RUNNING));
+    assert(node_invariant_spec(dependencies, states, node as int));
+}
 
 } // verus!

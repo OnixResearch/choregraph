@@ -3,10 +3,8 @@
     unknown_lints,
     ambiguous_params,
     explicit_defaults,
-    no_panic,
     non_trait_imports,
     numeric_units,
-    raw_arithmetic_overflow,
     reason = "integration fixtures keep reviewed domain notation and exact boundary failures readable"
 )]
 
@@ -15,6 +13,7 @@
 // r[verify choregraph.machine.resume_signal]
 // r[verify choregraph.machine.suspension_replay]
 // r[verify choregraph.machine.suspension_boundary]
+// r[verify choregraph.machine.suspension_cancel.restored]
 use choregraph_core::{
     analytics::ready_nodes, analytics::resume_decision, invariant::invariant,
     model::analysis::ResumeDecision, model::automaton::AdmittedMachine,
@@ -26,9 +25,10 @@ use choregraph_core::{
     model::history::TraceBinding, model::outcome::AdmissionDiagnosticCode,
     model::outcome::Decision, model::outcome::DenialReason, model::outcome::InvariantIssue,
     model::pause::SuspensionDeclarationSpec, model::semantics::Action,
-    model::semantics::DURABLE_SUSPENSION_V1, model::semantics::LINEAR_LIFECYCLE_V1,
-    model::semantics::LifecycleProfile, model::semantics::LocalState,
-    model::semantics::TransitionSelector, transition::replay, transition::step,
+    model::semantics::DURABLE_SUSPENSION_V1, model::semantics::DURABLE_SUSPENSION_V2,
+    model::semantics::LINEAR_LIFECYCLE_V1, model::semantics::LifecycleProfile,
+    model::semantics::LocalState, model::semantics::TransitionSelector, transition::replay,
+    transition::step,
 };
 
 const NODE_GATE: &str = "gate";
@@ -61,6 +61,7 @@ fn durable_spec() -> MachineSpec {
     spec
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn admit(spec: MachineSpec) -> AdmittedMachine {
     match AdmittedMachine::admit(spec, AdmissionLimits::default()) {
         Ok(machine) => machine,
@@ -72,6 +73,7 @@ fn durable_machine() -> AdmittedMachine {
     admit(durable_spec())
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn diagnostic_codes(spec: MachineSpec) -> Vec<AdmissionDiagnosticCode> {
     match AdmittedMachine::admit(spec, AdmissionLimits::default()) {
         Ok(_) => panic!("admission unexpectedly succeeded"),
@@ -82,6 +84,7 @@ fn diagnostic_codes(spec: MachineSpec) -> Vec<AdmissionDiagnosticCode> {
     }
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn gate_ready_state(machine: &AdmittedMachine) -> MachineState {
     let mut state = machine.initial_state();
     let source = Event::new(NODE_SOURCE, Action::MarkReady);
@@ -97,6 +100,7 @@ fn gate_ready_state(machine: &AdmittedMachine) -> MachineState {
     state
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn suspended_gate_state(machine: &AdmittedMachine) -> MachineState {
     let state = gate_ready_state(machine);
     let suspend = Event::suspension(NODE_GATE, Action::Suspend, SUSPENSION_CLASS, REFERENCE);
@@ -138,6 +142,7 @@ fn replay_events(
     ))
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn must_some<T>(value: Option<T>) -> T {
     match value {
         Some(value) => value,
@@ -145,6 +150,7 @@ fn must_some<T>(value: Option<T>) -> T {
     }
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn gate_id(machine: &AdmittedMachine) -> choregraph_core::id::bounded::NodeId {
     for node_id in machine.node_ids() {
         if node_id.as_str() == NODE_GATE {
@@ -154,6 +160,7 @@ fn gate_id(machine: &AdmittedMachine) -> choregraph_core::id::bounded::NodeId {
     panic!("admitted node is missing: {NODE_GATE}")
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn deny_reason(decision: Decision) -> DenialReason {
     match decision {
         Decision::Deny { reason } => reason,
@@ -472,6 +479,58 @@ fn duplicate_resume_after_accept_is_denied() {
         )),
         DenialReason::InvalidTransition { .. }
     ));
+}
+
+#[test]
+fn restored_wait_can_be_cancelled_after_its_dependency_is_cancelled() {
+    for profile in [DURABLE_SUSPENSION_V1, DURABLE_SUSPENSION_V2] {
+        let mut spec = durable_spec();
+        spec.lifecycle_profile = String::from(profile);
+        spec.suspensions.push(SuspensionDeclarationSpec {
+            node_id: String::from(NODE_GATE),
+            class: String::from(SUSPENSION_CLASS),
+            reference: String::from(REFERENCE),
+        });
+        let machine = admit(spec);
+        let restored = machine.declared_suspension_state();
+        let cancel_source = Event::new(NODE_SOURCE, Action::Cancel);
+        let Decision::Accept { next: blocked, .. } = step(&machine, &restored, &cancel_source)
+        else {
+            panic!("dependency must be cancellable");
+        };
+        assert_eq!(
+            deny_reason(step(
+                &machine,
+                &blocked,
+                &resume_event(SUSPENSION_CLASS, REFERENCE)
+            )),
+            DenialReason::DependenciesIncomplete,
+        );
+        let cancel = Event::new(NODE_GATE, Action::Cancel);
+        let observed = step(&machine, &blocked, &cancel);
+        if profile == DURABLE_SUSPENSION_V1 {
+            assert_eq!(
+                deny_reason(observed),
+                DenialReason::InvalidTransition {
+                    from: LocalState::Suspended,
+                    action: Action::Cancel,
+                }
+            );
+            continue;
+        }
+        let Decision::Accept { next, intents } = observed else {
+            panic!("durable v2 denied wait cancellation: {observed:?}");
+        };
+        let gate = gate_id(&machine);
+        assert_eq!(next.state(&gate), Some(LocalState::Cancelled));
+        assert!(next.suspension(&gate).is_none());
+        assert!(intents.is_empty());
+        assert!(invariant(&machine, &next));
+        assert!(matches!(
+            replay_events(&machine, &restored, &[cancel_source, cancel]),
+            ReplayDecision::Complete { final_state, .. } if final_state == next
+        ));
+    }
 }
 
 #[test]

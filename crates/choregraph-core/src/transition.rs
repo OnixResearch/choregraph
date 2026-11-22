@@ -14,13 +14,14 @@
 )]
 
 // r[impl choregraph.machine.step]
+// r[impl choregraph.machine.suspension_cancel]
 // r[impl choregraph.machine.denial]
 // r[impl choregraph.machine.effect_intents]
 // r[impl choregraph.proof.single_step.production_linkage]
 // r[impl choregraph.proof.trace.model]
 // r[impl choregraph.proof.trace.replay]
 // r[impl choregraph.proof.trace.failure]
-use alloc::collections::{BTreeMap, BTreeSet};
+use alloc::collections::BTreeSet;
 use alloc::vec::Vec;
 
 use crate::concrete::event::{ConcreteDecision, ConcreteEvent};
@@ -28,7 +29,7 @@ use crate::concrete::replay::ConcreteReplayInput;
 use crate::concrete::{concrete_effects_allowed, concrete_event_size, resolve_concrete_intents};
 use crate::id::bounded::{AbilityId, NodeId, OperationId, RequestId, ResourceId, SuspensionClass};
 use crate::id::reference::PayloadRef;
-use crate::invariant::{effects_allowed, invariant, terminal_states_preserved};
+use crate::invariant::{effects_allowed_for_invariant_state, invariant, terminal_states_preserved};
 use crate::model::automaton::{AdmittedMachine, EffectKey, MachineState};
 use crate::model::dispatch::Event;
 use crate::model::dispatch::{EffectDeclaration, EffectIntent, EffectRequest};
@@ -53,12 +54,15 @@ use crate::verified::codes::denial::transition::{
     DENIAL_INVALID_TRANSITION, DENIAL_INVARIANT_WOULD_BREAK, DENIAL_TERMINAL_STATE,
     DENIAL_UNDECLARED_EFFECT, DENIAL_UNKNOWN_NODE,
 };
-use crate::verified::codes::profile::{PROFILE_DURABLE_SUSPENSION_V1, PROFILE_LINEAR_V1};
+use crate::verified::codes::profile::{
+    PROFILE_DURABLE_SUSPENSION_V1, PROFILE_DURABLE_SUSPENSION_V2, PROFILE_LINEAR_V1,
+};
 use crate::verified::codes::status::{
     STATE_CANCELLED, STATE_COMPLETED, STATE_FAILED, STATE_PENDING, STATE_READY, STATE_RUNNING,
     STATE_SUSPENDED,
 };
-use crate::verified::primitive::support::{IndexedDecision, IndexedSuspensionFact};
+use crate::verified::kernel::decision::StepOutcome;
+use crate::verified::primitive::support::IndexedSuspensionFact;
 
 const EVENT_ACTION_TAG_BYTES: usize = 1;
 
@@ -103,7 +107,20 @@ const fn profile_code(profile: LifecycleProfile) -> u8 {
     match profile {
         LifecycleProfile::LinearV1 => PROFILE_LINEAR_V1,
         LifecycleProfile::DurableSuspensionV1 => PROFILE_DURABLE_SUSPENSION_V1,
+        LifecycleProfile::DurableSuspensionV2 => PROFILE_DURABLE_SUSPENSION_V2,
     }
+}
+
+pub(crate) const fn suspension_effects_forbidden(
+    profile: LifecycleProfile,
+    from: LocalState,
+    action: Action,
+) -> bool {
+    crate::verified::kernel::snapshot::suspension_effects_forbidden(
+        profile_code(profile),
+        local_state_code(from),
+        action_code(action),
+    )
 }
 
 /// Returns the target of one local lifecycle transition under the linear v1 profile.
@@ -200,6 +217,7 @@ fn validate_request_shape(
     Ok(())
 }
 
+// Shell shape and name resolution precede indexed membership/duplicate ordering.
 fn resolve_intent_indices(
     machine: &AdmittedMachine,
     allowed_indices: &[usize],
@@ -211,7 +229,7 @@ fn resolve_intent_indices(
         let mut matched = None;
         for effect_index in allowed_indices {
             let Some(declaration) = machine.effects.get(*effect_index) else {
-                return Err(DenialReason::InvalidState);
+                return Err(DenialReason::InternalInconsistency);
             };
             if declaration_matches_request(declaration, request) {
                 matched = Some(*effect_index);
@@ -235,18 +253,6 @@ fn indexed_states(machine: &AdmittedMachine, state: &MachineState) -> Option<Vec
         states.push(local_state_code(state.state(node_id)?));
     }
     Some(states)
-}
-
-fn state_from_indexed(machine: &AdmittedMachine, states: &[u8]) -> Option<MachineState> {
-    if states.len() != machine.node_order.len() {
-        return None;
-    }
-    let mut entries = BTreeMap::new();
-    for (node_index, node_id) in machine.node_order.iter().enumerate() {
-        let local_state = local_state_from_code(states[node_index])?;
-        entries.insert(node_id.clone(), local_state);
-    }
-    Some(MachineState::new(entries))
 }
 
 fn intents_from_indices(
@@ -278,7 +284,7 @@ fn denial_from_indexed(reason: u8, from: LocalState, action: Action) -> DenialRe
         DENIAL_SUSPENSION_FACT_PRESENT => DenialReason::SuspensionFactUnexpected,
         DENIAL_SUSPENSION_EFFECTS => DenialReason::SuspensionEffectsForbidden,
         DENIAL_PROFILE_ACTION => DenialReason::UnsupportedProfileAction { action },
-        _ => DenialReason::InvariantWouldBreak,
+        _ => DenialReason::InternalInconsistency,
     }
 }
 
@@ -292,39 +298,21 @@ struct PreparedContext<'a> {
 fn public_decision_from_indexed(
     context: PreparedContext<'_>,
     event: &Event,
-    indexed: IndexedDecision,
+    indexed: StepOutcome,
     record: Option<SuspensionRecord>,
 ) -> Decision {
-    if !indexed.accepted {
-        return Decision::Deny {
-            reason: denial_from_indexed(indexed.reason, context.prepared.from, context.action),
-        };
-    }
-    let Some(mut next) = state_from_indexed(context.machine, &indexed.next_states) else {
-        return Decision::Deny {
-            reason: DenialReason::InvariantWouldBreak,
-        };
+    let next = match accepted_next_state(&context, &indexed, record) {
+        Ok(next) => next,
+        Err(reason) => return Decision::Deny { reason },
     };
-    apply_suspension_delta(
-        context.state,
-        &mut next,
-        context.action,
-        &context.prepared.node_id,
-        record,
-    );
-    if !invariant(context.machine, &next) || !terminal_states_preserved(context.state, &next) {
-        return Decision::Deny {
-            reason: DenialReason::InvariantWouldBreak,
-        };
-    }
     let Some(intents) = intents_from_indices(context.machine, &indexed.intent_indices) else {
         return Decision::Deny {
-            reason: DenialReason::EffectsNotAllowed,
+            reason: DenialReason::InternalInconsistency,
         };
     };
-    if !effects_allowed(context.machine, context.state, event, &intents) {
+    if !effects_allowed_for_invariant_state(context.machine, context.state, event, &intents) {
         return Decision::Deny {
-            reason: DenialReason::EffectsNotAllowed,
+            reason: DenialReason::InternalInconsistency,
         };
     }
     Decision::Accept { next, intents }
@@ -394,8 +382,7 @@ fn prepare_step(
     let states = indexed_states(machine, state).ok_or(DenialReason::InvalidState)?;
     let suspensions = indexed_suspensions(machine, state).ok_or(DenialReason::InvalidState)?;
     let event_fact = suspension.map(indexed_suspension_fact);
-    let empty_intents = Vec::new();
-    let precheck = crate::verified::kernel::decision::indexed_step(
+    if let Err(reason) = crate::verified::kernel::decision::indexed_step_precheck(
         &machine.dependency_indices,
         &states,
         &suspensions,
@@ -403,11 +390,9 @@ fn prepare_step(
         node_index,
         action_code(action),
         &event_fact,
-        &empty_intents,
-        &empty_intents,
-    );
-    if !precheck.accepted {
-        return Err(denial_from_indexed(precheck.reason, from, action));
+        false,
+    ) {
+        return Err(denial_from_indexed(reason, from, action));
     }
     Ok(PreparedStep {
         node_id,
@@ -429,7 +414,7 @@ fn run_indexed_step(
     machine: &AdmittedMachine,
     prepared: &PreparedStep,
     input: IndexedStepInput<'_>,
-) -> IndexedDecision {
+) -> StepOutcome {
     crate::verified::kernel::decision::indexed_step(
         &machine.dependency_indices,
         &prepared.states,
@@ -460,20 +445,18 @@ fn parse_suspension_fact(
 
 /// Applies the accepted suspension delta to the next aggregate state.
 fn apply_suspension_delta(
-    state: &MachineState,
     next: &mut MachineState,
     action: Action,
     node_id: &NodeId,
     record: Option<SuspensionRecord>,
 ) {
-    next.suspensions = state.suspensions().clone();
     match action {
         Action::Suspend => {
             if let Some(record) = record {
                 next.suspensions.insert(node_id.clone(), record);
             }
         }
-        Action::ResumeSignal => {
+        Action::ResumeSignal | Action::Cancel => {
             next.suspensions.remove(node_id);
         }
         _ => {}
@@ -481,8 +464,8 @@ fn apply_suspension_delta(
 }
 
 fn accepted_next_state(
-    context: PreparedContext<'_>,
-    indexed: &IndexedDecision,
+    context: &PreparedContext<'_>,
+    indexed: &StepOutcome,
     record: Option<SuspensionRecord>,
 ) -> Result<MachineState, DenialReason> {
     if !indexed.accepted {
@@ -492,17 +475,26 @@ fn accepted_next_state(
             context.action,
         ));
     }
-    let mut next = state_from_indexed(context.machine, &indexed.next_states)
-        .ok_or(DenialReason::InvariantWouldBreak)?;
-    apply_suspension_delta(
-        context.state,
-        &mut next,
-        context.action,
-        &context.prepared.node_id,
-        record,
-    );
+    if indexed.next_states.len() != context.prepared.states.len() {
+        return Err(DenialReason::InternalInconsistency);
+    }
+    // The verified result changes exactly the target index. Reuse the keyed
+    // snapshot, converting only the new target code instead of rebuilding the map.
+    let target = indexed
+        .next_states
+        .get(context.prepared.node_index)
+        .copied()
+        .and_then(local_state_from_code)
+        .ok_or(DenialReason::InternalInconsistency)?;
+    let mut next = context.state.clone();
+    let entry = next
+        .entries
+        .get_mut(&context.prepared.node_id)
+        .ok_or(DenialReason::InternalInconsistency)?;
+    *entry = target;
+    apply_suspension_delta(&mut next, context.action, &context.prepared.node_id, record);
     if !invariant(context.machine, &next) || !terminal_states_preserved(context.state, &next) {
-        return Err(DenialReason::InvariantWouldBreak);
+        return Err(DenialReason::InternalInconsistency);
     }
     Ok(next)
 }
@@ -546,7 +538,9 @@ pub fn step(machine: &AdmittedMachine, state: &MachineState, event: &Event) -> D
         Ok(record) => record,
         Err(reason) => return Decision::Deny { reason },
     };
-    if matches!(event.action, Action::Suspend | Action::ResumeSignal) && !event.effects.is_empty() {
+    if suspension_effects_forbidden(machine.lifecycle_profile, prepared.from, event.action)
+        && !event.effects.is_empty()
+    {
         return Decision::Deny {
             reason: DenialReason::SuspensionEffectsForbidden,
         };
@@ -634,7 +628,9 @@ pub fn step_concrete(
         Ok(record) => record,
         Err(reason) => return ConcreteDecision::Deny { reason },
     };
-    if matches!(event.action, Action::Suspend | Action::ResumeSignal) && !event.effects.is_empty() {
+    if suspension_effects_forbidden(machine.lifecycle_profile, prepared.from, event.action)
+        && !event.effects.is_empty()
+    {
         return ConcreteDecision::Deny {
             reason: DenialReason::SuspensionEffectsForbidden,
         };
@@ -668,7 +664,7 @@ pub fn step_concrete(
         },
     );
     let next = match accepted_next_state(
-        PreparedContext {
+        &PreparedContext {
             machine,
             state,
             prepared: &prepared,
@@ -684,7 +680,7 @@ pub fn step_concrete(
         || !concrete_effects_allowed(machine, state, event, &intents)
     {
         return ConcreteDecision::Deny {
-            reason: DenialReason::EffectsNotAllowed,
+            reason: DenialReason::InternalInconsistency,
         };
     }
     ConcreteDecision::Accept { next, intents }

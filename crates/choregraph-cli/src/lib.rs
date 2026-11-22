@@ -145,7 +145,7 @@ fn parse_non_release_command(arguments: &[String]) -> Result<Command, &'static s
             })
         }
         _ => Err(
-            "usage: choregraph [boundary | compile-nickel <evaluator> <source-root> <source-path> <contract-root> <scratch-root> <output-root> <output-path> [<import-id>=<import-root> ...] | write-kamacite-corpus <output-directory> | write-release-bundle <artifact-root> <output-root> <output-path> | verify-release-bundle <artifact-root> <manifest-root> <manifest-path> | validate-publication-candidate <source-revision> <source-archive-root> <source-archive-path> <artifact-root> <manifest-root> <manifest-path> <rollback-revision>]",
+            "usage: choregraph [boundary | compile-nickel (--pinned|<pinned-evaluator-path>) <source-root> <source-path> <contract-root> <scratch-root> <output-root> <output-path> [<import-id>=<import-root> ...] | write-kamacite-corpus <output-directory> | write-release-bundle <artifact-root> <output-root> <output-path> | verify-release-bundle <artifact-root> <manifest-root> <manifest-path> | validate-publication-candidate <source-revision> <source-archive-root> <source-archive-path> <artifact-root> <manifest-root> <manifest-path> <rollback-revision>]",
         ),
     }
 }
@@ -307,7 +307,7 @@ mod tests {
     fn parses_capability_compile_command_with_operator_roots() {
         let arguments = [
             "compile-nickel",
-            "/nix/store/nickel/bin/nickel",
+            "--pinned",
             "/operator/source",
             "graph/main.ncl",
             "/operator/contracts",
@@ -324,6 +324,7 @@ mod tests {
         let super::Command::CompileNickel { request } = command else {
             panic!("compile command returned another variant");
         };
+        assert_eq!(request.evaluator, std::path::Path::new("--pinned"));
         assert_eq!(request.source_path, std::path::Path::new("graph/main.ncl"));
         assert_eq!(request.import_roots.len(), 1);
         assert_eq!(request.import_roots[0].id, "source");

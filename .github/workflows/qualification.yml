@@ -1,0 +1,34 @@
+name: Foundation qualification
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  foundation:
+    runs-on: ubuntu-22.04 # Unprivileged Bubblewrap user namespaces are required by the host test.
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@3dc140bfc76c49fbd4dd958429132e3746bcb086 # v31
+      - name: Check Rust formatting
+        run: nix develop --no-write-lock-file -c cargo fmt --all -- --check
+      - name: Test all workspace targets
+        run: nix develop --no-write-lock-file -c cargo test --locked --workspace --all-targets
+      - name: Run the restricted Nickel sandbox on the Linux host
+        run: nix develop --no-write-lock-file -c cargo test --locked -p choregraph-cli linux_host_sandbox_acceptance -- --ignored
+      - name: Lint all workspace targets
+        run: nix develop --no-write-lock-file -c cargo clippy --locked --workspace --all-targets -- --deny warnings
+      - name: Validate maintained foundation boundaries
+        run: nix develop --no-write-lock-file -c cargo run --locked -p choregraph-foundation-check -- --root .
+      - name: Check the core on wasm32
+        run: nix develop --no-write-lock-file -c cargo check --locked -p choregraph-core --target wasm32-unknown-unknown
+      - name: Run Nix qualification, including all Verus and Octet rails
+        run: nix flake check --no-write-lock-file -L

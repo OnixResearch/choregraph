@@ -43,7 +43,7 @@ use crate::model::capacity::AdmissionLimits;
 use crate::model::outcome::{AdmissionDiagnostic, AdmissionDiagnosticCode, LimitKind};
 use crate::model::semantics::TransitionSelector;
 use crate::model::semantics::{LINEAR_LIFECYCLE_V1, MACHINE_SCHEMA_V2, MachineSchema};
-use crate::transition::lifecycle_target_for_profile;
+use crate::transition::{lifecycle_target_for_profile, suspension_effects_forbidden};
 
 pub mod effect;
 pub mod event;
@@ -262,10 +262,7 @@ fn parse_declaration(
         parse_binding(&raw.request_binding, limits, "request-binding", diagnostics)?;
     let payload_binding =
         parse_binding(&raw.payload_binding, limits, "payload-binding", diagnostics)?;
-    if matches!(
-        raw.transition.action,
-        crate::model::semantics::Action::Suspend | crate::model::semantics::Action::ResumeSignal
-    ) {
+    if suspension_effects_forbidden(profile, raw.transition.from, raw.transition.action) {
         diagnostics.push(diagnostic(
             AdmissionDiagnosticCode::SuspensionEffectTransition,
             "effect-transition",
@@ -473,24 +470,15 @@ pub(crate) fn concrete_effects_match(machine: &AdmittedMachine) -> bool {
         if !node.operations.contains(&declaration.operation) {
             return false;
         }
-        if !matches!(
-            declaration.transition.action,
-            crate::model::semantics::Action::Suspend
-                | crate::model::semantics::Action::ResumeSignal
-        ) && lifecycle_target_for_profile(
-            machine.lifecycle_profile,
-            declaration.transition.from,
-            declaration.transition.action,
-        )
-        .is_err()
+        let selector = declaration.transition;
+        if suspension_effects_forbidden(machine.lifecycle_profile, selector.from, selector.action)
+            || lifecycle_target_for_profile(
+                machine.lifecycle_profile,
+                selector.from,
+                selector.action,
+            )
+            .is_err()
         {
-            return false;
-        }
-        if matches!(
-            declaration.transition.action,
-            crate::model::semantics::Action::Suspend
-                | crate::model::semantics::Action::ResumeSignal
-        ) {
             return false;
         }
         if !binding_is_well_formed(&declaration.request_binding, machine.limits) {

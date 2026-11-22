@@ -65,6 +65,40 @@
           strictDeps = true;
         };
         cargoArtifacts = craneLib.buildDepsOnly commonCargoArgs;
+        restrictedNickel =
+          assert pkgs.nickel.version == "1.17.0";
+          pkgs.nickel;
+        restrictedNickelRuntime =
+          pkgs.runCommand "choregraph-nickel-runtime-files"
+            {
+              nativeBuildInputs = [
+                pkgs.patchelf
+                pkgs.gawk
+              ];
+            }
+            ''
+              set -eu
+              nickel=${restrictedNickel}/bin/nickel
+              loader=$(patchelf --print-interpreter "$nickel")
+              test -n "$loader"
+              "$loader" --inhibit-cache --list "$nickel" > "$TMPDIR/loader-list"
+              awk '
+                $1 ~ /^linux-(vdso|gate)[.]/ { next }
+                $2 == "=>" && $3 ~ /^\/nix\/store\// { print $3; next }
+                $1 ~ /^\/nix\/store\// { print $1; next }
+                { exit 1 }
+              ' "$TMPDIR/loader-list" > "$TMPDIR/library-files"
+              { printf '%s\n' "$loader"; cat "$TMPDIR/library-files"; } | sort -u > "$out"
+              while IFS= read -r file; do
+                [[ $file == /nix/store/* && -f $file ]]
+              done < "$out"
+            '';
+        restrictedNickelConfig = pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+          CHOREGRAPH_NICKEL_EVALUATOR = "${restrictedNickel}/bin/nickel";
+          CHOREGRAPH_NICKEL_BASH = "${pkgs.bash}/bin/bash";
+          CHOREGRAPH_NICKEL_BWRAP = "${pkgs.bubblewrap}/bin/bwrap";
+          CHOREGRAPH_NICKEL_RUNTIME = "${restrictedNickelRuntime}";
+        };
         choregraphPackage = craneLib.buildPackage (
           commonCargoArgs
           // {
@@ -73,6 +107,7 @@
             cargoExtraArgs = "-p choregraph-cli";
             doCheck = true;
           }
+          // restrictedNickelConfig
         );
         foundationChecker = craneLib.buildPackage (
           commonCargoArgs
@@ -374,6 +409,7 @@
                   pkgs.gnugrep
                   pkgs.jq
                   pkgs.nickel
+                  pkgs.python3
                 ];
                 src = self;
               }
@@ -434,9 +470,14 @@
                 grep --fixed-strings 'default_scope = ["--workspace"]' Cargo.toml > /dev/null
                 grep --fixed-strings 'cargo_check_args = ["--all-targets"]' Cargo.toml > /dev/null
 
+                python3 -B tools/choregraph-foundation-check/qualification.py --root "$src" octet \
+                  > "$TMPDIR/exemptions.txt"
+                cat "$TMPDIR/exemptions.txt"
+
                 mkdir -p "$out"
                 cp "$TMPDIR/octet-deny-all.json" "$out/policy.json"
                 cp "$TMPDIR/local-lints.txt" "$out/lints.txt"
+                cp "$TMPDIR/exemptions.txt" "$out/exemptions.txt"
                 printf '%s\n' 'non-claim=static-source-lint-observations-only' \
                   > "$out/non-claim.txt"
               '';
@@ -510,6 +551,7 @@
                   pkgs.gnugrep
                   pkgs.jq
                   pkgs.nickel
+                  pkgs.python3
                   productionVerus
                 ];
                 src = self;
@@ -521,8 +563,6 @@
                 octet-production-verus --crate-type=lib verus/proofs/epoch_fence.rs \
                   -o "$TMPDIR/epoch-fence.rlib" \
                   > "$TMPDIR/positive.stdout" 2> "$TMPDIR/positive.stderr"
-                grep -E 'verification results:: [1-9][0-9]* verified, 0 errors' \
-                  "$TMPDIR/positive.stdout" > /dev/null
 
                 expected_negative_count=3
                 observed_negative_count="$(find verus/epoch-fence-failure-fixtures \
@@ -552,18 +592,10 @@
                   grep -F "$expected" "$TMPDIR/negative.stderr" > /dev/null
                 done
 
-                if grep -R -E '#\[verifier::external_body\]|assume_specification|\bassume[[:space:]]*\(|\baxiom\b' \
-                  crates/choregraph-core/src/verified.rs \
-                  crates/choregraph-core/src/verified; then
-                  echo 'epoch-fence proof core gained an unrecorded trust escape' >&2
-                  exit 1
-                fi
                 grep -F 'crate::verified::primitive::ownership::epoch_fence_decision(' \
                   crates/choregraph-core/src/ownership/mod.rs > /dev/null
                 grep -F 'Some(crate::transition::step(' \
                   crates/choregraph-core/src/ownership/mod.rs > /dev/null
-                grep -F '../../crates/choregraph-core/src/verified.rs' \
-                  verus/proofs/epoch_fence.rs > /dev/null
                 if grep -E 'std::|SystemTime|Instant|TcpStream|UdpSocket|File::|Command::|Mutex|RwLock|OnceLock' \
                   crates/choregraph-core/src/ownership/mod.rs; then
                   echo 'epoch-fence core gained ambient I/O or shared mutable state' >&2
@@ -589,6 +621,8 @@
                   and .reference.revision == "553ae73f83c87c3f7c7a5f73c32c2211d9d7341f"
                   and .reference.license == "Apache-2.0"
                 ' "$TMPDIR/evidence.json" > /dev/null
+                python3 -B tools/choregraph-foundation-check/qualification.py --root "$src" \
+                  proof epoch-fence --manifest "$TMPDIR/evidence.json" --stdout "$TMPDIR/positive.stdout"
                 jq --raw-output '.sources[] | [.path, .blake3] | @tsv' \
                   "$TMPDIR/evidence.json" \
                   | while IFS="$(printf '\t')" read -r source_path expected_hash; do
@@ -628,6 +662,8 @@
                   pkgs.gnugrep
                   pkgs.jq
                   pkgs.nickel
+                  pkgs.patch
+                  pkgs.python3
                   productionVerus
                 ];
                 src = self;
@@ -655,14 +691,15 @@
                 octet-production-verus --crate-type=lib verus/proofs/single_step.rs \
                   -o "$TMPDIR/single-step.rlib" \
                   > "$TMPDIR/positive.stdout" 2> "$TMPDIR/positive.stderr"
-                grep -E 'verification results:: [1-9][0-9]* verified, 0 errors' \
-                  "$TMPDIR/positive.stdout" > /dev/null
 
+                expected_negative_count=15
+                observed_negative_count="$(find verus/failure-fixtures -maxdepth 1 -type f -name '*.rs' | wc -l)"
+                test "$observed_negative_count" -eq "$expected_negative_count"
                 for fixture in verus/failure-fixtures/*.rs; do
                   fixture_name="$(basename "$fixture")"
                   case "$fixture_name" in
                     concrete_reference_mutation.rs) expected='result.payload_reference' ;;
-                    denial_with_intent.rs) expected='result.intent_indices@.len()' ;;
+                    denial_with_intent.rs) expected='indexed_decision_view(result).3.len()' ;;
                     premature_readiness.rs) expected='dependencies_complete_spec' ;;
                     readiness_duplicates_member.rs) expected='pairwise_distinct_spec' ;;
                     readiness_includes_ineligible.rs) expected='ready_frontier_spec' ;;
@@ -690,18 +727,12 @@
                   grep -F 'postcondition not satisfied' "$TMPDIR/negative.stderr" > /dev/null
                   grep -F "$expected" "$TMPDIR/negative.stderr" > /dev/null
                 done
+                bash tools/check-transition-mutations.sh
 
-                if grep -R -E '#\[verifier::external_body\]|assume_specification|\bassume[[:space:]]*\(|\baxiom\b' \
-                  crates/choregraph-core/src/verified.rs \
-                  crates/choregraph-core/src/verified; then
-                  echo 'single-step proof core gained an unrecorded trust escape' >&2
-                  exit 1
-                fi
+                # Compatibility smoke checks only; the type boundary is in the production adapter.
                 grep -F 'STATE_SUSPENDED' crates/choregraph-core/src/verified/codes/status.rs > /dev/null
                 grep -F 'ACTION_RESUME_SIGNAL' crates/choregraph-core/src/verified/codes/action.rs > /dev/null
                 grep -F 'suspensions_consistent_spec' crates/choregraph-core/src/verified/primitive/support.rs > /dev/null
-                test "$(grep -F -c 'crate::verified::kernel::decision::indexed_step(' \
-                  crates/choregraph-core/src/transition.rs)" -eq 2
                 grep -F 'crate::verified::primitive::transition::lifecycle_target(' \
                   crates/choregraph-core/src/transition.rs > /dev/null
                 test "$(grep -F -c 'crate::verified::primitive::matching::concrete_binding_accepts(' \
@@ -732,11 +763,13 @@
                 jq --exit-status '
                   .proof.schema == "choregraph.single-step-proof.v1"
                   and .proof.status == "verified"
-                  and (.proof.theorems | length) == 20
+                  and (.proof.negative_fixtures | map(select(.path | startswith("verus/failure-fixtures/"))) | length) == 15
                   and (.proof.negative_fixtures | length) == 17
                   and .proof.trusted_surface.project_trusted_declarations == []
                   and (.proof.non_claims | length) > 0
                 ' "$TMPDIR/proof-manifest.json" > /dev/null
+                python3 -B tools/choregraph-foundation-check/qualification.py --root "$src" \
+                  proof single-step --manifest "$TMPDIR/proof-manifest.json" --stdout "$TMPDIR/positive.stdout"
                 jq --raw-output '.proof.sources[] | [.path, .blake3] | @tsv' \
                   "$TMPDIR/proof-manifest.json" \
                   | while IFS="$(printf '\t')" read -r source_path expected_hash; do
@@ -768,6 +801,7 @@
                   pkgs.gnugrep
                   pkgs.jq
                   pkgs.nickel
+                  pkgs.python3
                   productionVerus
                 ];
                 src = self;
@@ -816,10 +850,11 @@
                 octet-production-verus --crate-type=lib verus/proofs/trace_replay.rs \
                   -o "$TMPDIR/trace-replay.rlib" \
                   > "$TMPDIR/positive.stdout" 2> "$TMPDIR/positive.stderr"
-                grep -E 'verification results:: [1-9][0-9]* verified, 0 errors' \
-                  "$TMPDIR/positive.stdout" > /dev/null
                 stage='negative trace fixtures'
 
+                expected_negative_count=5
+                observed_negative_count="$(find verus/trace-failure-fixtures -maxdepth 1 -type f -name '*.rs' | wc -l)"
+                test "$observed_negative_count" -eq "$expected_negative_count"
                 for fixture in verus/trace-failure-fixtures/*.rs; do
                   fixture_name="$(basename "$fixture")"
                   stage="negative trace fixture: $fixture_name"
@@ -843,14 +878,7 @@
                   grep -F 'postcondition not satisfied' "$TMPDIR/negative.stderr" > /dev/null
                   grep -F "$expected" "$TMPDIR/negative.stderr" > /dev/null
                 done
-                stage='production linkage and trust guards'
-
-                if grep -R -E '#\[verifier::external_body\]|assume_specification|\bassume[[:space:]]*\(|\baxiom\b' \
-                  crates/choregraph-core/src/verified.rs \
-                  crates/choregraph-core/src/verified; then
-                  echo 'trace proof core gained an unrecorded trust escape' >&2
-                  exit 1
-                fi
+                stage='production shape smoke checks'
                 grep -F 'match step(input.machine, &last_valid_state, event)' \
                   crates/choregraph-core/src/transition.rs > /dev/null
                 grep -F 'Decision::Accept { next, intents: _ }' \
@@ -859,10 +887,6 @@
                   crates/choregraph-core/src/transition.rs > /dev/null
                 grep -F 'ConcreteDecision::Accept { next, intents: _ }' \
                   crates/choregraph-core/src/transition.rs > /dev/null
-                grep -F '../../crates/choregraph-core/src/verified.rs' \
-                  verus/proofs/trace_replay.rs > /dev/null
-                grep -F '../../crates/choregraph-core/src/verified/trace.rs' \
-                  verus/proofs/trace_replay.rs > /dev/null
                 if grep -A12 -F 'pub enum ReplayDecision' \
                   crates/choregraph-core/src/model/history.rs | grep -E 'intents|dispatch'; then
                   echo 'replay decision gained dispatch authority' >&2
@@ -891,11 +915,13 @@
                   and .proof.limits.max_trace_events == ${toString defaultMaxTraceEvents}
                   and .proof.limits.trace_binding_bytes == ${toString traceBindingBytes}
                   and (.proof.machine_schemas | length) == 2
-                  and (.proof.theorems | length) == 8
                   and (.proof.negative_fixtures | length) == 5
                   and .proof.trusted_surface.project_trusted_declarations == []
                   and (.proof.non_claims | length) >= 5
                 ' "$TMPDIR/proof-manifest.json" > /dev/null
+                stage='trace proof trust, item inventory and verifier count'
+                python3 -B tools/choregraph-foundation-check/qualification.py --root "$src" \
+                  proof trace-replay --manifest "$TMPDIR/proof-manifest.json" --stdout "$TMPDIR/positive.stdout"
                 stage='trace proof source digests'
                 jq --raw-output '.proof.sources[] | [.path, .blake3] | @tsv' \
                   "$TMPDIR/proof-manifest.json" \
@@ -923,6 +949,7 @@
                   pkgs.coreutils
                   pkgs.gnugrep
                   pkgs.nickel
+                  pkgs.python3
                   rustToolchain
                 ];
                 src = self;
@@ -931,6 +958,7 @@
                 set -eu
                 cd "$src"
                 choregraph-foundation-check --root "$src"
+                python3 -B tools/choregraph-foundation-check/test_qualification.py
 
                 nickel export --format json fixtures/foundation/positive/allowed-boundary.ncl \
                   > "$TMPDIR/allowed-boundary.json"
@@ -986,7 +1014,7 @@
                   pkgs.coreutils
                   pkgs.gnugrep
                   pkgs.jq
-                  pkgs.nickel
+                  restrictedNickel
                   rustToolchain
                 ];
                 src = self;
@@ -1046,28 +1074,8 @@
                 done
 
                 mkdir -p "$TMPDIR/scratch" "$TMPDIR/output"
-                evaluator="$(command -v nickel)"
-                choregraph compile-nickel \
-                  "$evaluator" \
-                  "$src/fixtures/nickel" positive/minimal.ncl \
-                  "$src/contracts/nickel" "$TMPDIR/scratch" \
-                  "$TMPDIR/output" minimal.preserves \
-                  > "$TMPDIR/minimal-report.txt"
-                grep --fixed-strings 'status=compiled' "$TMPDIR/minimal-report.txt" > /dev/null
-                test -s "$TMPDIR/output/minimal.preserves"
-
-                choregraph compile-nickel \
-                  "$evaluator" \
-                  "$src/fixtures/nickel" positive/declared-import.ncl \
-                  "$src/contracts/nickel" "$TMPDIR/scratch" \
-                  "$TMPDIR/output" declared-import.preserves \
-                  "source=$src/fixtures/nickel" \
-                  > "$TMPDIR/import-report.txt"
-                grep --fixed-strings 'imports=1' "$TMPDIR/import-report.txt" > /dev/null
-                test -s "$TMPDIR/output/declared-import.preserves"
-
                 if choregraph compile-nickel \
-                  "$evaluator" \
+                  --pinned \
                   "$src/fixtures/nickel" negative/forbidden-runtime-import.ncl \
                   "$src/contracts/nickel" "$TMPDIR/scratch" \
                   "$TMPDIR/output" forbidden.preserves \
@@ -1082,24 +1090,10 @@
                 fi
                 test ! -e "$TMPDIR/output/forbidden.preserves"
 
-                if choregraph compile-nickel \
-                  "$evaluator" \
-                  "$src/fixtures/nickel" negative/path-escape.ncl \
-                  "$src/contracts/nickel" "$TMPDIR/scratch" \
-                  "$TMPDIR/output" path-escape.preserves \
-                  > "$TMPDIR/path.stdout" 2> "$TMPDIR/path.stderr"; then
-                  echo 'path-escape fixture unexpectedly compiled' >&2
-                  exit 1
-                fi
-                grep --fixed-strings 'EvaluatorExecutionRejected' "$TMPDIR/path.stderr" > /dev/null
-                if grep --fixed-strings '/home/operator/secret' "$TMPDIR/path.stderr"; then
-                  echo 'safe diagnostic leaked a host path' >&2
-                  exit 1
-                fi
-                test ! -e "$TMPDIR/output/path-escape.preserves"
-
                 mkdir -p "$out"
-                printf '%s\n' 'claim=capability-relative-bounded-frontend-not-nickel-semantics' > "$out/result.txt"
+                # Namespace availability is a host property. The opt-in host acceptance test
+                # runs the real sandbox instead of assuming nested namespaces in this derivation.
+                printf '%s\n' 'claim=pinned-nickel-contract-and-source-gate-validation-not-host-isolation' > "$out/result.txt"
               '';
 
           foundation-evidence =
@@ -1296,19 +1290,22 @@
               '';
         };
 
-        devShells.default = pkgs.mkShell {
-          packages = [
-            pkgs.b3sum
-            pkgs.jq
-            pkgs.nickel
-            pkgs.nixfmt
-            pkgs.wasm-tools
-            octetDenyAllRunner
-            productionVerus
-            rustToolchain
-            verusToolchainProfile
-          ];
-        };
+        devShells.default = pkgs.mkShell (
+          {
+            packages = [
+              pkgs.b3sum
+              pkgs.jq
+              restrictedNickel
+              pkgs.nixfmt
+              pkgs.wasm-tools
+              octetDenyAllRunner
+              productionVerus
+              rustToolchain
+              verusToolchainProfile
+            ];
+          }
+          // restrictedNickelConfig
+        );
 
         formatter = pkgs.nixfmt;
       }

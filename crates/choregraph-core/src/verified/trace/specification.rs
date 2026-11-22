@@ -259,4 +259,30 @@ pub open spec fn replay_dispatch_intents_spec(
     Seq::empty()
 }
 
+pub open spec fn replay_starts_after_dependencies_spec(
+    dependencies: Seq<alloc::vec::Vec<usize>>,
+    states: Seq<u8>,
+    suspensions: Seq<Option<crate::verified::primitive::support::IndexedSuspensionFact>>,
+    profile: u8,
+    events: Seq<IndexedReplayEvent>,
+    from: int,
+) -> bool
+    decreases events.len() - from
+{
+    if from < 0 || from >= events.len() {
+        true
+    } else {
+        let event = events[from];
+        !replay_event_accepts_spec(dependencies, states, suspensions, profile, event)
+            || ((event.action != crate::verified::codes::action::ACTION_START
+                || crate::verified::primitive::validity::dependencies_complete_spec(dependencies[event.node_index as int]@, states))
+                && replay_starts_after_dependencies_spec(
+                    dependencies,
+                    replay_event_next_spec(dependencies, states, suspensions, profile, event),
+                    replay_event_next_suspensions_spec(dependencies, states, suspensions, profile, event),
+                    profile, events, from + 1,
+                ))
+    }
+}
+
 } // verus!

@@ -18,13 +18,14 @@
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 
-use crate::transition::{lifecycle_target, lifecycle_target_for_profile};
+use crate::transition::{
+    lifecycle_target, lifecycle_target_for_profile, suspension_effects_forbidden,
+};
 use crate::{
     model::automaton::AdmittedMachine, model::automaton::EffectKey, model::automaton::MachineState,
     model::dispatch::EffectDeclaration, model::dispatch::EffectIntent, model::dispatch::Event,
-    model::graph::Edge, model::outcome::InvariantIssue, model::semantics::LifecycleProfile,
-    model::semantics::LocalState, model::semantics::MachineSchema,
-    model::semantics::TransitionSelector,
+    model::graph::Edge, model::outcome::InvariantIssue, model::semantics::LocalState,
+    model::semantics::MachineSchema, model::semantics::TransitionSelector,
 };
 
 fn dependencies_complete(
@@ -172,19 +173,14 @@ fn effects_match(machine: &AdmittedMachine) -> bool {
         {
             return false;
         }
-        if matches!(
-            declaration.transition.action,
-            crate::model::semantics::Action::Suspend
-                | crate::model::semantics::Action::ResumeSignal
-        ) {
-            return false;
-        }
-        if lifecycle_target_for_profile(
-            machine.lifecycle_profile,
-            declaration.transition.from,
-            declaration.transition.action,
-        )
-        .is_err()
+        let selector = declaration.transition;
+        if suspension_effects_forbidden(machine.lifecycle_profile, selector.from, selector.action)
+            || lifecycle_target_for_profile(
+                machine.lifecycle_profile,
+                selector.from,
+                selector.action,
+            )
+            .is_err()
         {
             return false;
         }
@@ -235,7 +231,7 @@ fn suspension_declarations_match(machine: &AdmittedMachine) -> bool {
         return false;
     }
     if !machine.suspension_declarations.is_empty()
-        && machine.lifecycle_profile != LifecycleProfile::DurableSuspensionV1
+        && !machine.lifecycle_profile.supports_suspension()
     {
         return false;
     }
@@ -262,12 +258,6 @@ fn suspension_declarations_match(machine: &AdmittedMachine) -> bool {
 /// Returns true when all immutable admitted-machine facts remain closed and normalized.
 #[must_use]
 pub fn well_formed(machine: &AdmittedMachine) -> bool {
-    if !matches!(
-        machine.lifecycle_profile,
-        LifecycleProfile::LinearV1 | LifecycleProfile::DurableSuspensionV1
-    ) {
-        return false;
-    }
     let effect_count = machine
         .effects
         .len()
@@ -343,7 +333,7 @@ pub fn validate_invariant(machine: &AdmittedMachine, state: &MachineState) -> Ve
         }
         match local_state {
             LocalState::Suspended => {
-                if machine.lifecycle_profile != LifecycleProfile::DurableSuspensionV1 {
+                if !machine.lifecycle_profile.supports_suspension() {
                     issues.insert(InvariantIssue::SuspensionWithoutProfile(node_id.clone()));
                 }
                 if !state.suspensions().contains_key(node_id) {
@@ -415,7 +405,16 @@ pub fn effects_allowed(
     event: &Event,
     intents: &[EffectIntent],
 ) -> bool {
-    if !invariant(machine, state) || intents.len() != event.effects.len() {
+    invariant(machine, state) && effects_allowed_for_invariant_state(machine, state, event, intents)
+}
+
+pub(crate) fn effects_allowed_for_invariant_state(
+    machine: &AdmittedMachine,
+    state: &MachineState,
+    event: &Event,
+    intents: &[EffectIntent],
+) -> bool {
+    if intents.len() != event.effects.len() {
         return false;
     }
     let Ok(node_id) =

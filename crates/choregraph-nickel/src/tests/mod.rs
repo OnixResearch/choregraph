@@ -124,6 +124,31 @@ fn lowers_durable_suspension_profile_with_explicit_selection() {
 }
 
 #[test]
+fn lowers_and_cancels_a_restored_durable_v2_gate() {
+    let output = must(crate::lower::lower_evaluated_json(
+        include_bytes!("../../../../fixtures/nickel/evaluated/durable-cancellation.json"),
+        &[],
+        crate::profile::FrontendLimits::default(),
+    ));
+    let machine = &output.machine;
+    let gate = &machine.suspension_declarations()[FIRST_ITEM].node_id;
+    let decision = choregraph_core::transition::step(
+        machine,
+        &machine.declared_suspension_state(),
+        &choregraph_core::model::dispatch::Event::new(
+            gate.as_str(),
+            choregraph_core::model::semantics::Action::Cancel,
+        ),
+    );
+    assert!(matches!(
+        decision,
+        choregraph_core::model::outcome::Decision::Accept { next, intents }
+            if next.state(gate) == Some(choregraph_core::model::semantics::LocalState::Cancelled)
+            && next.suspension(gate).is_none() && intents.is_empty()
+    ));
+}
+
+#[test]
 fn rejects_suspension_inference_widening_and_product_fields() {
     let mut linear_events: serde_json::Value =
         must(serde_json::from_slice(DURABLE_SUSPENSION_JSON));

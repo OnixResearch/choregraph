@@ -21,21 +21,38 @@ pub enum Decision {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DenialReason {
     InvalidState,
-    EventTooLarge { observed: usize, maximum: usize },
-    TooManyEffectRequests { observed: usize, maximum: usize },
+    EventTooLarge {
+        observed: usize,
+        maximum: usize,
+    },
+    TooManyEffectRequests {
+        observed: usize,
+        maximum: usize,
+    },
     InvalidNodeId,
     UnknownNode,
-    TerminalState { from: LocalState, action: Action },
-    InvalidTransition { from: LocalState, action: Action },
+    TerminalState {
+        from: LocalState,
+        action: Action,
+    },
+    InvalidTransition {
+        from: LocalState,
+        action: Action,
+    },
     DependenciesIncomplete,
     MalformedEffectRequest,
     DuplicateEffectRequest,
     UndeclaredEffect,
     UnknownDeclaration,
     ConcreteBindingMismatch,
-    ConcreteIntentTooLarge { observed: usize, maximum: usize },
+    ConcreteIntentTooLarge {
+        observed: usize,
+        maximum: usize,
+    },
     UnsupportedMachineSchema,
-    UnsupportedProfileAction { action: Action },
+    UnsupportedProfileAction {
+        action: Action,
+    },
     SuspensionFactMissing,
     SuspensionFactUnexpected,
     MalformedSuspensionFact,
@@ -43,6 +60,8 @@ pub enum DenialReason {
     SuspensionEffectsForbidden,
     InvariantWouldBreak,
     EffectsNotAllowed,
+    /// The adapter could not faithfully convert a kernel decision.
+    InternalInconsistency,
 }
 
 /// Stable admission limit categories.

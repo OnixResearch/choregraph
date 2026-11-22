@@ -1,0 +1,26 @@
+{
+  source_format = "choregraph-v1",
+  schema = "choregraph.evaluated-graph.v1",
+  lifecycle_profile = "choregraph.lifecycle.durable-suspension.v2",
+  events = ["cancel", "complete", "fail", "mark-ready", "resume-signal", "start", "suspend"],
+  limits = {
+    max_nodes = 4,
+    max_edges = 4,
+    max_operations = 4,
+    max_effect_declarations = 4,
+    max_identifier_bytes = 128,
+    max_reference_bytes = 71,
+    max_event_bytes = 4096,
+    max_intent_bytes = 1024,
+    max_intents_per_transition = 4,
+  },
+  imports = [],
+  nodes = [{ id = "source", operations = ["run"] }, { id = "gate", operations = ["run"] }],
+  edges = [{ source = "source", target = "gate" }],
+  effects = [],
+  suspensions = [{
+    node_id = "gate",
+    class = "manual-approval",
+    reference = "blake3:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  }],
+}

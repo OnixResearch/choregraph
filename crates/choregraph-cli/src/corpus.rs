@@ -8,7 +8,6 @@
     non_trait_imports,
     numeric_units,
     path_segment_repetition,
-    raw_arithmetic_overflow,
     reason = "corpus generation binds reviewed source bytes and preserves established canonical fixture shapes"
 )]
 
@@ -256,10 +255,10 @@ fn noncanonical_equivalent(canonical: &[u8]) -> Result<Vec<u8>, String> {
         .windows(CANONICAL_INTEGER_BYTES.len())
         .position(|window| window == CANONICAL_INTEGER_BYTES)
         .ok_or_else(|| String::from("canonical machine lacks the schema-version integer"))?;
-    bytes.splice(
-        offset..offset + CANONICAL_INTEGER_BYTES.len(),
-        NON_CANONICAL_INTEGER_BYTES,
-    );
+    let end = offset
+        .checked_add(CANONICAL_INTEGER_BYTES.len())
+        .ok_or_else(|| String::from("canonical integer extent exceeds address space"))?;
+    bytes.splice(offset..end, NON_CANONICAL_INTEGER_BYTES);
     Ok(bytes)
 }
 

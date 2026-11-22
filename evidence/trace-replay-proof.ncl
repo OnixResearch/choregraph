@@ -49,6 +49,7 @@ let ProofManifest = {
   schema | NonEmpty,
   status | NonEmpty,
   claim | NonEmpty,
+  verified_count | PositiveNumber,
   positive_command_argv | Array NonEmpty,
   verifier_release | NonEmpty,
   verifier_revision | GitRevision,
@@ -73,7 +74,8 @@ let ProofManifest = {
   proof | ProofManifest = {
     schema = "choregraph.trace-replay-proof.v1",
     status = "verified",
-    claim = "The production-linked indexed fold preserves every finite v1 or v2 accepted prefix, stops at the first denial, and returns no dispatch intents.",
+    claim = "The production-linked indexed fold derives invariant preservation for every finite accepted prefix from the step guards, checks completed dependencies before each Start, stops at the first denial, and returns no dispatch intents.",
+    verified_count = 121,
     positive_command_argv = [
       "octet-production-verus",
       "--crate-type=lib",
@@ -130,11 +132,14 @@ let ProofManifest = {
       "first_failure_is_exact",
       "equal_replay_inputs_have_equal_decisions",
       "replay_never_returns_dispatch_intents",
+      "accepted_trace_starts_after_dependencies",
     ],
     sources = [
+      { path = ".cargo/config.toml", blake3 = "a3a61c8e85aab80b6612fd9b5c111c9c184bb879ee5cd9489a7cead1e2b67683", role = "scoped Rust bootstrap exception for the Trellis dependency" },
+      { path = "tools/choregraph-foundation-check/proof-policy.json", blake3 = "8354f239d0f6288e4b1175d82a51f78a094c3434f07f2d22135ec4aa6c1047a0", role = "independent proof item and theorem inventory" },
       {
         path = "Cargo.lock",
-        blake3 = "f72e98db6abb7fb86ee8660381617dd707eb938638fb4b821ba0e087ccd4a879",
+        blake3 = "19dc051cfbec627d81445a0236bcf503fcaad40ca8cc243e0092f305012bbf44",
         role = "resolved Rust dependency identity",
       },
       {
@@ -154,7 +159,7 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/concrete.rs",
-        blake3 = "820549c379f2d011cd1b374d57930c6fb5035fb6672fdf2b01a4ed612ca0bbf1",
+        blake3 = "9a05ee11e384ad5e7263a7fd05f0913623a5606677f5f2ab0f817e93c4dd7636",
         role = "production v2 replay event and intent boundary",
       },
       {
@@ -169,7 +174,7 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/transition.rs",
-        blake3 = "9d8c6d178139361738ca14a325a320afc9107c5b0c4feb2542c1161a614a8ff6",
+        blake3 = "90323de4a7615d6fc0e5d9c88e890ba13b3fff7b2f8efac67fb589dc02a65073",
         role = "public replay fold over the production step relation",
       },
       {
@@ -194,7 +199,7 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/tests/trace-replay.rs",
-        blake3 = "7dd5b98a58e89d8a579775b1c4c2d6c020cea46c8e3194075084d41abdaa7caa",
+        blake3 = "4e55222861f0cfdc0cddb92e1ee6a0c9c3c057e0c49dfb460aa9e505627e21b1",
         role = "public replay fixtures and repeated-step parity properties",
       },
       {
@@ -214,7 +219,7 @@ let ProofManifest = {
       },
       {
         path = "flake.nix",
-        blake3 = "3c27cc6c2c273359dfea36d9344a0c6dd34520b6724827409bcfb2186545812a",
+        blake3 = "4e4dd16ff8a47646b8873a94e58bdf66666693dadbf6bda456b627a07f3b95b1",
         role = "maintained positive, negative, trust, and evidence gate",
       },
       {
@@ -249,7 +254,7 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/admission.rs",
-        blake3 = "83e4d722a54b9ec4bfffe0984f39ee8e57410e04ea1f9e4e371dcfc56944c153",
+        blake3 = "c6cc30d4ff82a846e1ef5037d59fd4c11cf23d2078047d4e8d311ffe06085494",
         role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
       },
       {
@@ -289,7 +294,7 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/id.rs",
-        blake3 = "99a0d54542d8f68f767172ffa965b5e8620809866c33807054e43800bc80b0ff",
+        blake3 = "54490a226e32f7dbc544c0056176dd63a354d6e583e2fe278c1395ee503e93f0",
         role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
       },
       {
@@ -304,12 +309,12 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/id/reference.rs",
-        blake3 = "8f0e75add17ea67253de65c716b68f4eb9efbe4a4b9391dc9bc4836bb6d452a6",
+        blake3 = "66639142b219dc7af4d9f0f85f1f8186fcc01a8e4553bbec113aa317e3063904",
         role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
       },
       {
         path = "crates/choregraph-core/src/invariant.rs",
-        blake3 = "8774cdce7edf40f04a68ae845ed0e7124cbddddc6c7a2f2aa31fdc97712bef99",
+        blake3 = "b35a2615c571a960bf93e3d594f6b05244ed6c00b34a5ca817351a9188d0a866",
         role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
       },
       {
@@ -344,7 +349,7 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/model/outcome.rs",
-        blake3 = "cb69664e2468d313768112cbccf99ac124481cdff2dcac68f3e539393061bb48",
+        blake3 = "1ded3f9810619398ccdd02fd9cea28cac43b4c1782ba37572410acc7f953824c",
         role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
       },
       {
@@ -354,12 +359,12 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/model/semantics.rs",
-        blake3 = "206ed3d32c41c8f2225dbb41ef47350a9857ee807e77d01d140ac1adc3306fec",
+        blake3 = "d1b0242e4b997e43e7fd42945200d81d8133e5ac7524742adc44c957506de3a8",
         role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
       },
       {
         path = "crates/choregraph-core/src/ownership/mod.rs",
-        blake3 = "2a915df3b08d4ace07591516e7abf870294a7a93e017e3cce7200cf791f0a501",
+        blake3 = "5dc5e4da9e063f69c3328380a037306ae634c69155871fad4ce8fb7c1956e462",
         role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
       },
       {
@@ -389,7 +394,7 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/verified/codes/profile.rs",
-        blake3 = "a037e48fa6ed4ddc03257a61c0aef7eb4556d040c51db32e6a8d595f258adefa",
+        blake3 = "567f8a79960fd611b381cd3e7fcac3383529e61de6384bac20b85bec286cd20e",
         role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
       },
       {
@@ -399,22 +404,22 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/verified/kernel/decision.rs",
-        blake3 = "70f98598e1be11a97867421bfa617090e289059ee3ce29034c3e843e770f8efc",
+        blake3 = "4ed830075a3b3e6f766c4ddcabcb959c6087fa955a73f56003132d5dbc5b4247",
         role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
       },
       {
         path = "crates/choregraph-core/src/verified/kernel/snapshot.rs",
-        blake3 = "6d5e6e439e982656c27b88237106c0d928c66ab26babcdbaa17a8ebe0ed6de92",
+        blake3 = "dee13990db834962613bb01353da74f885bfe52f907e175fffe6d97ee6ffc4fa",
         role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
       },
       {
         path = "crates/choregraph-core/src/verified/kernel/target.rs",
-        blake3 = "5047dfd1edc9420872caf004f1600ed6f6139e88c68796be0d79e00307fe3632",
+        blake3 = "367030b671d4d0c5d0752e55e6efa5a6731454d9b128736d3d91f564d970ff80",
         role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
       },
       {
         path = "crates/choregraph-core/src/verified/kernel/theorem.rs",
-        blake3 = "3b769426a94feb4c06df3dfe994b95c67c1b6bf18cfd7934fda0aec4723b23cf",
+        blake3 = "dc5774402bf701fcb16b9426af16ed6aa276e90eddb4d1a4f929841f7b88cae1",
         role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
       },
       {
@@ -439,17 +444,17 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/verified/primitive/support.rs",
-        blake3 = "5cfcb696e93cfcd4626743865826b6f0d051343201ece45dcf83ad4bcc803bc9",
+        blake3 = "5d51f9ef054c88d4bd4e17af05fd89386700bcaf3985f2e414af5f7ae1451640",
         role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
       },
       {
         path = "crates/choregraph-core/src/verified/primitive/transition.rs",
-        blake3 = "92675113af8a6690befb0b42c65d330f7e9391e0c1e6569f8f17b42ace6f181c",
+        blake3 = "1d82dab149c5a479a9b044c62297f4453397c6eb89b1ab6d919ae946f9200f9b",
         role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
       },
       {
         path = "crates/choregraph-core/src/verified/primitive/validity.rs",
-        blake3 = "1d39160c3c0be1dc85727da6b19956bfc60f5c392518be78dd3f094cd8c1ffbd",
+        blake3 = "fea7371a6a1527ade3322ed1748221c6d98ddeddca0d36050e61250f1090d391",
         role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
       },
       {
@@ -479,12 +484,12 @@ let ProofManifest = {
       },
       {
         path = "crates/choregraph-core/src/verified/trace/specification.rs",
-        blake3 = "f2eea3b57fdc654cbab178ee20d4cc424bff38990a6f670dec7ec57a6af839ce",
+        blake3 = "2faf8891b7c1f3b94440b29dfc0438a2a2dfed5b441c49e1849222b42f61a9ea",
         role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
       },
       {
         path = "crates/choregraph-core/src/verified/trace/theorem.rs",
-        blake3 = "40846e70f75aecf578c19090d6c2d1402e6493e42108ec3fc045448aec563af7",
+        blake3 = "86f1267b38748824908e08decc1ea7acec522bf5c4e8b9f64f254ea8c3b67307",
         role = "production core module in the bound source closure; theorem and adapter boundaries remain explicit",
       },
     ],
@@ -522,6 +527,7 @@ let ProofManifest = {
         "The selected Rust compiler erases ghost code and compiles the executable functions correctly.",
         "The vstd sequence and vector contracts match their executable Rust implementations.",
         "The allocator and target platform implement Rust allocation and memory semantics correctly.",
+        "Normal Cargo builds enable RUSTC_BOOTSTRAP only for the pinned verified_logic dependency; the selected Verus toolchain is separate.",
       ],
       adapter_boundary = [
         "Identifier parsing and BTreeMap-to-index conversion are executable Rust and are not Verus-proved.",

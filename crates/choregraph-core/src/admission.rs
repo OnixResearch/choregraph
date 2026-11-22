@@ -30,11 +30,11 @@ use crate::model::dispatch::{EffectDeclaration, EffectDeclarationSpec};
 use crate::model::graph::Edge;
 use crate::model::outcome::{AdmissionDiagnostic, AdmissionDiagnosticCode, LimitKind};
 use crate::model::pause::{SuspensionDeclaration, SuspensionDeclarationSpec};
-use crate::model::semantics::Action;
 use crate::model::semantics::{
-    DURABLE_SUSPENSION_V1, LINEAR_LIFECYCLE_V1, LifecycleProfile, MACHINE_SCHEMA_V1, MachineSchema,
+    DURABLE_SUSPENSION_V1, DURABLE_SUSPENSION_V2, LINEAR_LIFECYCLE_V1, LifecycleProfile,
+    MACHINE_SCHEMA_V1, MachineSchema,
 };
-use crate::transition::lifecycle_target_for_profile;
+use crate::transition::{lifecycle_target_for_profile, suspension_effects_forbidden};
 
 const MINIMUM_BYTE_LIMIT: usize = 1;
 const MINIMUM_EVENT_ACTION_TAG_BYTES: usize = 1;
@@ -365,10 +365,7 @@ fn parse_effect_declaration(
             return None;
         }
     };
-    if matches!(
-        raw.transition.action,
-        Action::Suspend | Action::ResumeSignal
-    ) {
+    if suspension_effects_forbidden(profile, raw.transition.from, raw.transition.action) {
         diagnostics.push(diagnostic(
             AdmissionDiagnosticCode::SuspensionEffectTransition,
             Some(&raw.node_id),
@@ -560,7 +557,7 @@ fn admit_suspensions(
     diagnostics: &mut Vec<AdmissionDiagnostic>,
 ) -> AdmittedSuspensions {
     let mut declarations = Vec::new();
-    if !spec.suspensions.is_empty() && profile != LifecycleProfile::DurableSuspensionV1 {
+    if !spec.suspensions.is_empty() && !profile.supports_suspension() {
         diagnostics.push(diagnostic(
             AdmissionDiagnosticCode::SuspensionDeclarationWithoutProfile,
             Some(DURABLE_SUSPENSION_V1),
@@ -669,6 +666,8 @@ fn admit_profile(spec: &MachineSpec) -> Result<LifecycleProfile, Vec<AdmissionDi
         Some(LifecycleProfile::LinearV1)
     } else if spec.lifecycle_profile == DURABLE_SUSPENSION_V1 {
         Some(LifecycleProfile::DurableSuspensionV1)
+    } else if spec.lifecycle_profile == DURABLE_SUSPENSION_V2 {
+        Some(LifecycleProfile::DurableSuspensionV2)
     } else {
         diagnostics.push(diagnostic(
             AdmissionDiagnosticCode::UnsupportedLifecycleProfile,

@@ -49,9 +49,9 @@ Validation fails for missing, duplicate, malformed, stale, skipped, unsupported,
 
 `choregraph-cli verify-release-bundle` reopens the artifact and manifest roots. It rebuilds the expected bundle and requires exact manifest-byte equality. It does not trust a recorded identity without current artifact bytes.
 
-The checked-in manifest is `evidence/release/generated/choregraph.release.bundle`. The adjacent BLAKE3 file identifies the manifest bytes, not the internal bundle framing.
+The checked-in historical manifest is `evidence/release/generated/choregraph.release.bundle`. The adjacent BLAKE3 file identifies the manifest bytes, not the internal bundle framing.
 
-The current v2 bundle identity is `ff6918401eb789fc78d9d1b822a5db25731505833a38092ece8c0657bcfd1b0a`. It is local release evidence only.
+The recorded v2 bundle identity is `ff6918401eb789fc78d9d1b822a5db25731505833a38092ece8c0657bcfd1b0a`. Validate historical bundles against their exact recorded source revision. The current release shell uses the corrected Cairn archive paths (the first committed archive date), without rewriting the historical publication records.
 
 ## Valence projection
 

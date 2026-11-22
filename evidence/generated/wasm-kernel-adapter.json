@@ -2,11 +2,11 @@
   "evidence": {
     "abi": "onix:choregraph/kernel@1.0.0 call(list<u8>) -> list<u8>",
     "component": {
-      "blake3": "8f198eaab08b939d6d040806119ff78f92d089f2f5124ddcb5127a4fcad7232f",
+      "blake3": "c2e3de59835a55c304edc7d87de5ee9b56f9c36d0dd5fea1c6215577db474bd0",
       "blake3_context": "choregraph wasm component bytes v1",
       "export": "call",
       "imports": "none",
-      "nix_nar_hash": "sha256-DKsjHyU95LtSKlybU/z3gQdLKjwrr9w0Lu9auxBtnqs=",
+      "nix_nar_hash": "sha256-v9y7wE8myELEx1QED1zdDIIdoslRuzXnPypSW1bkp7U=",
       "nix_nar_hash_algorithm": "sha256 required by the Nix store protocol"
     },
     "conformance": {
@@ -36,29 +36,29 @@
     "proof_references": [
       {
         "claim_boundary": "production-called single-step transition and readiness frontier obligations only",
-        "exported_blake3": "1760200812b3b46094271c59c2b321c46cb035005ca6bb2a075b35de5055d663",
+        "exported_blake3": "b3164499a0feecff276aa270bc26edbe24dec3c7e04634051c070d9c5a17e0dd",
         "exported_path": "evidence/generated/single-step-proof.json",
-        "manifest_blake3": "96403e8e0dda8ec5e85f0f5b59995260516e70bb0943e729009cb4090c2ce9f5",
+        "manifest_blake3": "610fc9242a9c11c8db7b01451656ee7f59b00d2a24a40223ae5da3ed200097d3",
         "manifest_path": "evidence/single-step-proof.ncl"
       },
       {
         "claim_boundary": "bounded replay refinement and first-denial obligations only",
-        "exported_blake3": "2a68c2445059f636cf5b58fd9fbd61b2c3582c67c33b36b4a3550df5d41d6603",
+        "exported_blake3": "793302013812f193599dee9166251a4526f39f7183f83702bba0e89e2ffa8cb3",
         "exported_path": "evidence/generated/trace-replay-proof.json",
-        "manifest_blake3": "12ae4475cda6e3da48db21de46d3ed5bae54081a33cc5408ca9bdffce2311e3a",
+        "manifest_blake3": "da96945ba8598d59a35506e2b85739d57465c4a82a3227b96d7b47cf31e72115",
         "manifest_path": "evidence/trace-replay-proof.ncl"
       }
     ],
     "schema": "choregraph.wasm-kernel-adapter-evidence.v1",
     "sources": [
       {
-        "blake3": "2d5b228130ad6deb6a6958df2ce21abf47e65a06b9e5a581d1bfe301c1eb7a37",
+        "blake3": "c7cce854fe55d399e39e9a9d2395b4d16df70980a6f254e602e8c1140b9b7209",
         "context": "choregraph wasm source file v1:Cargo.toml",
         "path": "Cargo.toml",
         "role": "workspace membership and dependency policy"
       },
       {
-        "blake3": "b8e8e46f7ae75130e201cfd0770b47b654dcb19c230bbe1267e36818d6312565",
+        "blake3": "28ae19a6c95e4304cf90c0e78a74dde418f4ff3ed874c58e6c13257f71c68c82",
         "context": "choregraph wasm source file v1:Cargo.lock",
         "path": "Cargo.lock",
         "role": "resolved Rust dependency identity"
@@ -70,7 +70,7 @@
         "role": "Rust channel and WASM target identity"
       },
       {
-        "blake3": "dfc855c980d3e9fda931c51e14b0f3d8e37157d58d04ca151b1f0159ddae0516",
+        "blake3": "28fdee6d9e7bf083b0d12e6379426570bb3b08d1b892fd33f94a9a776dca838e",
         "context": "choregraph wasm source file v1:flake.nix",
         "path": "flake.nix",
         "role": "reproducible component, conformance, and evidence build graph"
@@ -82,19 +82,19 @@
         "role": "production kernel public entrypoints"
       },
       {
-        "blake3": "8493cd8e833f73a25e43db83578f754fb15cbdf46121f1fd06612592e66fda2e",
+        "blake3": "87e16a90393af8f39301b0fe16b9dd8f27398237c0a07a7784961e4cda49cfff",
         "context": "choregraph wasm source file v1:crates/choregraph-core/src/admission.rs",
         "path": "crates/choregraph-core/src/admission.rs",
         "role": "production machine admission"
       },
       {
-        "blake3": "50587d5812774e751bb3a347185f80e86603bae169218e28e5e3524636dd3722",
+        "blake3": "106e886cb1593f0aa6082fbc8aa7b55fdcaa6ca3cd3129a76cc30c38a08d0a2b",
         "context": "choregraph wasm source file v1:crates/choregraph-core/src/transition.rs",
         "path": "crates/choregraph-core/src/transition.rs",
         "role": "production abstract transition and replay entrypoints"
       },
       {
-        "blake3": "b183da305666865bff3e29df0c4a01fb46c3efac2c4f6996d633f7aa351d5e33",
+        "blake3": "70ebcff63321c835d38177b7eb69896af23a2a5d5d4dd3c344715dbb659b0259",
         "context": "choregraph wasm source file v1:crates/choregraph-core/src/concrete.rs",
         "path": "crates/choregraph-core/src/concrete.rs",
         "role": "production concrete transition and replay entrypoints"
@@ -118,7 +118,7 @@
         "role": "canonical packed Preserves implementation"
       },
       {
-        "blake3": "6ba121aeeed33ff658a5e9bcb682c9545815f38d860b8ca318cbac4018d7a16a",
+        "blake3": "c755f68d6a74ba66cdb7b9d8b979765c4d07167c026a6e18c0324f7adcd7251b",
         "context": "choregraph wasm source file v1:crates/choregraph-kamacite/src/identity.rs",
         "path": "crates/choregraph-kamacite/src/identity.rs",
         "role": "domain-separated artifact identities"
@@ -142,7 +142,7 @@
         "role": "component shell and generated ABI export"
       },
       {
-        "blake3": "9300877a18296ae97ec5123d38c1afa31b5ce6a57d5bdf263ae37760fea876c9",
+        "blake3": "29994535781e6bc187f9c7a2068255d88beed4240f321230081c8761d6298188",
         "context": "choregraph wasm source file v1:crates/choregraph-wasm/src/schema.rs",
         "path": "crates/choregraph-wasm/src/schema.rs",
         "role": "bounded versioned request and response schema"
@@ -154,13 +154,13 @@
         "role": "canonical packed Preserves codec wrapper"
       },
       {
-        "blake3": "19596509bd70cbd379a0016da0f82deca842145d44ce5a8af2e875755804f412",
+        "blake3": "13aea3420f8c3bb07eb05e104dd4c24ec213417fdc091e85fddefa65fcf99048",
         "context": "choregraph wasm source file v1:crates/choregraph-wasm/src/dispatch.rs",
         "path": "crates/choregraph-wasm/src/dispatch.rs",
         "role": "pure dispatcher and production-kernel delegation"
       },
       {
-        "blake3": "d8b5bfa7d74707cda002daa51c2ae4b0f9dcb864c4115650ee67c62d959f9447",
+        "blake3": "72000e6e3e77c852df465c6bee31b76e26f260d0cfd2a29361542431a11493dd",
         "context": "choregraph wasm source file v1:crates/choregraph-wasm/tests/dispatcher.rs",
         "path": "crates/choregraph-wasm/tests/dispatcher.rs",
         "role": "positive and negative native adapter tests"
@@ -190,13 +190,13 @@
         "role": "foundation-check command shell"
       },
       {
-        "blake3": "fb2c0e2b7e6fb99c99aa608c91f04d6045a34eaf9fd9f7497a6e4202ee4c536d",
+        "blake3": "6e79348d7195b6ded2383ad96255e9059577a282c21310190730ba7e16196635",
         "context": "choregraph wasm source file v1:tools/choregraph-foundation-check/src/source.rs",
         "path": "tools/choregraph-foundation-check/src/source.rs",
         "role": "repository source loader and readiness delegation guard"
       },
       {
-        "blake3": "89d398c1279b71bc803e7ea7d608beffaeba1e4f6f727cac4f8ef6836d9efdb4",
+        "blake3": "481b8d5232f5e10708782602da18efef48b9b70a714891016b8d46c679472ff1",
         "context": "choregraph wasm source file v1:tools/choregraph-foundation-check/src/tests.rs",
         "path": "tools/choregraph-foundation-check/src/tests.rs",
         "role": "positive and negative boundary and readiness source-link fixtures"
@@ -256,7 +256,7 @@
         "role": "production core source closure; proof boundaries remain explicit"
       },
       {
-        "blake3": "d9ef3643f4f5a6842890bf1db8488315f06ec1d7f1026435631a9c3d5e435a86",
+        "blake3": "425b129d36ade465223e5c639df0e2dfad6826f68a9e572f8cb53a157b110790",
         "context": "choregraph wasm source file v1:crates/choregraph-core/src/id.rs",
         "path": "crates/choregraph-core/src/id.rs",
         "role": "production core source closure; proof boundaries remain explicit"
@@ -274,13 +274,13 @@
         "role": "production core source closure; proof boundaries remain explicit"
       },
       {
-        "blake3": "51d6ebcb10a4f5c71a569ab2ff5b09d11862ae40f5dc8269f789e6329a48c948",
+        "blake3": "8b0e9bab1c7a63f63f22642459dcb6d07cb0fbf485543b3f9df1e2a7999aca16",
         "context": "choregraph wasm source file v1:crates/choregraph-core/src/id/reference.rs",
         "path": "crates/choregraph-core/src/id/reference.rs",
         "role": "production core source closure; proof boundaries remain explicit"
       },
       {
-        "blake3": "2ee3723ebd4460331c9f5cb84b57577fe520997a1bafe6d7be48201f2de06291",
+        "blake3": "65545e41c78d07ce23012c36acb9bf1bc5bc5bc5e0fd259451c58cd27026a544",
         "context": "choregraph wasm source file v1:crates/choregraph-core/src/invariant.rs",
         "path": "crates/choregraph-core/src/invariant.rs",
         "role": "production core source closure; proof boundaries remain explicit"
@@ -328,7 +328,7 @@
         "role": "production core source closure; proof boundaries remain explicit"
       },
       {
-        "blake3": "2150d37cf466a6dcc093ef8f61030654ff6dac9f803e42ca7f411c56f131405f",
+        "blake3": "d0ff1f1b988302df09f98b5529a97ed348ba64b7a570ba3bed8c0e679e6f3a43",
         "context": "choregraph wasm source file v1:crates/choregraph-core/src/model/outcome.rs",
         "path": "crates/choregraph-core/src/model/outcome.rs",
         "role": "production core source closure; proof boundaries remain explicit"
@@ -340,13 +340,13 @@
         "role": "production core source closure; proof boundaries remain explicit"
       },
       {
-        "blake3": "b4739c9c5771506f8b691d219aa7e4f9655299d8efab7110565ccc779afd5b26",
+        "blake3": "adcdedb50fb56dfa632ef172cf62fd3280a23c52f2f589360dc9e5dc37a1c5c6",
         "context": "choregraph wasm source file v1:crates/choregraph-core/src/model/semantics.rs",
         "path": "crates/choregraph-core/src/model/semantics.rs",
         "role": "production core source closure; proof boundaries remain explicit"
       },
       {
-        "blake3": "708eaeab259623d72b128b0cc5116b8d12688af66d63bad928a8377581d6d508",
+        "blake3": "539aefc72cfb924c64188661e832de58f00fb79db1783fc61c827fca660ee6da",
         "context": "choregraph wasm source file v1:crates/choregraph-core/src/ownership/mod.rs",
         "path": "crates/choregraph-core/src/ownership/mod.rs",
         "role": "production core source closure; proof boundaries remain explicit"
@@ -388,7 +388,7 @@
         "role": "production core source closure; proof boundaries remain explicit"
       },
       {
-        "blake3": "411cd5caeeae56c65f3bf22a7acb2aef47aef1023e8db390b0fd59504947c752",
+        "blake3": "f18c9888ccc190132bfd1a61cf716054880ba738829e867cfa6f08b14dc47321",
         "context": "choregraph wasm source file v1:crates/choregraph-core/src/verified/codes/profile.rs",
         "path": "crates/choregraph-core/src/verified/codes/profile.rs",
         "role": "production core source closure; proof boundaries remain explicit"
@@ -406,25 +406,25 @@
         "role": "production core source closure; proof boundaries remain explicit"
       },
       {
-        "blake3": "33fd1b63c4ae0def9f66fe81abd73e63ab99acba8383126bb6d4e714132aea08",
+        "blake3": "7236afd63f81ac0a53acd0e0e2b8b92e4e615be1d3516a1d24618f5c9da9200b",
         "context": "choregraph wasm source file v1:crates/choregraph-core/src/verified/kernel/decision.rs",
         "path": "crates/choregraph-core/src/verified/kernel/decision.rs",
         "role": "production core source closure; proof boundaries remain explicit"
       },
       {
-        "blake3": "245788e961b2a2692fa2f9ba560feb1d623d7d124f2cca30179b3f4df4bba0a1",
+        "blake3": "70266f0343a61cf0bfc838d976395aa5840f6b4a9e3118db7e2806a3598a1ea5",
         "context": "choregraph wasm source file v1:crates/choregraph-core/src/verified/kernel/snapshot.rs",
         "path": "crates/choregraph-core/src/verified/kernel/snapshot.rs",
         "role": "production core source closure; proof boundaries remain explicit"
       },
       {
-        "blake3": "a65b3dc60f825aa705053cc7535a2957627c0d16aeb449a048771ebab7f723b9",
+        "blake3": "3a3bb5861afab2b12f3ae54406873fe6ac7d354b8a35258c481c65a2a62f55c3",
         "context": "choregraph wasm source file v1:crates/choregraph-core/src/verified/kernel/target.rs",
         "path": "crates/choregraph-core/src/verified/kernel/target.rs",
         "role": "production core source closure; proof boundaries remain explicit"
       },
       {
-        "blake3": "dfaf373ef2f8cbf4b8d92b9af32953defc7c9a11679e4f10950b728dccce7c69",
+        "blake3": "67b9043ff56e3dab2c0073816d679dd625178abdc791bba7881cc186ccda822e",
         "context": "choregraph wasm source file v1:crates/choregraph-core/src/verified/kernel/theorem.rs",
         "path": "crates/choregraph-core/src/verified/kernel/theorem.rs",
         "role": "production core source closure; proof boundaries remain explicit"
@@ -454,19 +454,19 @@
         "role": "production core source closure; proof boundaries remain explicit"
       },
       {
-        "blake3": "dab92f794b86ebbe8c9be4b8cbd0048043694fcb855a05ad020e197d50ed2f3a",
+        "blake3": "9edb62f13862b7306b1b5132a842b5f45208dcf294f105cb6c43c43a244ee149",
         "context": "choregraph wasm source file v1:crates/choregraph-core/src/verified/primitive/support.rs",
         "path": "crates/choregraph-core/src/verified/primitive/support.rs",
         "role": "production core source closure; proof boundaries remain explicit"
       },
       {
-        "blake3": "d602d481e156523351f88d9ea2d5f9308ce67e98f552f6d2fe80662f288cda04",
+        "blake3": "d7820477489b7b0c07a3e80db4b5e0dc37527842501bff4a8c81cbde5e59a927",
         "context": "choregraph wasm source file v1:crates/choregraph-core/src/verified/primitive/transition.rs",
         "path": "crates/choregraph-core/src/verified/primitive/transition.rs",
         "role": "production core source closure; proof boundaries remain explicit"
       },
       {
-        "blake3": "2df2e78adb80d72631feb9d49780f1b251c0aac3904bae6e0bc93efe5ddbd0b2",
+        "blake3": "803e5306919f4382f6c0010fc5cf1d550e55066ea272dcd39d758feddd2d1627",
         "context": "choregraph wasm source file v1:crates/choregraph-core/src/verified/primitive/validity.rs",
         "path": "crates/choregraph-core/src/verified/primitive/validity.rs",
         "role": "production core source closure; proof boundaries remain explicit"
@@ -514,19 +514,19 @@
         "role": "production core source closure; proof boundaries remain explicit"
       },
       {
-        "blake3": "076001998ef6849b392d0a64943bbb25c674476a92014563ae604ab6f1f3e793",
+        "blake3": "460681996ad4324471e29e66803788f85de02d785c46ab0efbf30d6289ed2c98",
         "context": "choregraph wasm source file v1:crates/choregraph-core/src/verified/trace/specification.rs",
         "path": "crates/choregraph-core/src/verified/trace/specification.rs",
         "role": "production core source closure; proof boundaries remain explicit"
       },
       {
-        "blake3": "f5b3cbd945f3d30df2461cd909680fe6e78d4e461bbbf7b562e74951d13d1c9e",
+        "blake3": "b14893edb4a9169d4f653760b1f3ddc9a611212b023cbe03aadd7d62c21412fc",
         "context": "choregraph wasm source file v1:crates/choregraph-core/src/verified/trace/theorem.rs",
         "path": "crates/choregraph-core/src/verified/trace/theorem.rs",
         "role": "production core source closure; proof boundaries remain explicit"
       },
       {
-        "blake3": "54c9ac68b0d8ae21d2ba6ed6ecd81344fa06caa9d210c84f495281b800b9467d",
+        "blake3": "69cf3cdb346e9bbc20e152c597e9899a7242ca8b6372956a6349d4ec31849cb7",
         "context": "choregraph wasm source file v1:crates/choregraph-kamacite/src/aggregate/assembly.rs",
         "path": "crates/choregraph-kamacite/src/aggregate/assembly.rs",
         "role": "canonical artifact adapter source closure"
@@ -538,7 +538,7 @@
         "role": "canonical artifact adapter source closure"
       },
       {
-        "blake3": "1d7a1ffda1d5be11361d451b89bac6f7a54d61182ec55d85289630cdd0247424",
+        "blake3": "809d3fe5de320ee1516c605cf25f9aab973c6aa85e798a865fa4c9a0a4b6954c",
         "context": "choregraph wasm source file v1:crates/choregraph-kamacite/src/aggregate/record.rs",
         "path": "crates/choregraph-kamacite/src/aggregate/record.rs",
         "role": "canonical artifact adapter source closure"
@@ -586,13 +586,13 @@
         "role": "canonical artifact adapter source closure"
       },
       {
-        "blake3": "4f1f32cdca7d1e2245c1aa8929084c17adb05a3757c4176a008949627cfa3d4b",
+        "blake3": "6f717b88e450df59b01ab32bb1c7450799d62fb900c116d12b837685fbdf3551",
         "context": "choregraph wasm source file v1:crates/choregraph-kamacite/src/lifecycle/conversion.rs",
         "path": "crates/choregraph-kamacite/src/lifecycle/conversion.rs",
         "role": "canonical artifact adapter source closure"
       },
       {
-        "blake3": "b808e84fa3e7a72209c622350fbfba7f9dae1a1bd45fe930b2cd4c108162450d",
+        "blake3": "f61044441ac8fb7b23e534999c82744f6f4873b69ee001e8c5c19441ac5ae503",
         "context": "choregraph wasm source file v1:crates/choregraph-kamacite/src/lifecycle/mod.rs",
         "path": "crates/choregraph-kamacite/src/lifecycle/mod.rs",
         "role": "canonical artifact adapter source closure"

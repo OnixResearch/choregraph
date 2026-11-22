@@ -42,7 +42,13 @@ The call envelope supports these operations:
 
 Each operation carries all required state. The guest does not retain admitted machines, state, traces, handles, or product data between calls.
 
-Linear and durable v1 calls carry canonical machine, lifecycle, lifecycle-identity, profile-identity, and machine-identity fields. Concrete v2 calls carry canonical machine bytes and their machine identity. Extra or missing artifact fields fail closed.
+`linear-v1`, `durable-v1`, and `durable-v2` calls carry canonical machine,
+lifecycle, lifecycle-identity, profile-identity, and machine-identity fields.
+The durable discriminator must agree with both the machine and lifecycle
+profile IDs. `durable-v2` enables effect-free cancellation of a suspended node
+without a suspension fact; `durable-v1` still denies that transition.
+`concrete-v2` calls carry canonical machine bytes and their machine identity.
+Extra or missing artifact fields fail closed.
 
 A valid replay carries separate expected and trace bindings. This structure preserves the production replay mismatch checks.
 
@@ -77,6 +83,10 @@ A canonical result is one of these classes:
 - adapter-error
 
 Adapter errors contain only a stable code and stage. They do not include input bytes or codec diagnostics. Engine traps, fuel exhaustion, memory rejection, and host timeouts are host failures. A host must not convert them to accepted or denied machine results.
+
+Kernel denial `internal-inconsistency` is distinct from `invalid-state` and
+`invariant-would-break`, both for an individual step and within a replay
+failure. Existing denial codes and the byte-list WIT interface are unchanged.
 
 Effect intents are data only. A host must make a separate authorization and dispatch decision.
 

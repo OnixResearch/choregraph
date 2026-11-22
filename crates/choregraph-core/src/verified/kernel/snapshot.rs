@@ -53,8 +53,21 @@ pub open spec fn suspension_fact_shape_spec(
     }
 }
 
-pub open spec fn suspension_effects_spec(action: u8, requested_intents: Seq<usize>) -> bool {
-    !super::super::codes::action::suspension_action_spec(action) || requested_intents.len() == 0
+pub open spec fn suspension_effects_forbidden_spec(profile: u8, from: u8, action: u8) -> bool {
+    super::super::codes::action::suspension_action_spec(action)
+        || (profile == super::super::codes::profile::PROFILE_DURABLE_SUSPENSION_V2
+            && from == super::super::codes::status::STATE_SUSPENDED
+            && action == super::super::codes::action::ACTION_CANCEL)
+}
+
+pub const fn suspension_effects_forbidden(profile: u8, from: u8, action: u8) -> (result: bool)
+    ensures result == suspension_effects_forbidden_spec(profile, from, action)
+{
+    action == super::super::codes::action::ACTION_SUSPEND
+        || action == super::super::codes::action::ACTION_RESUME_SIGNAL
+        || (profile == super::super::codes::profile::PROFILE_DURABLE_SUSPENSION_V2
+            && from == super::super::codes::status::STATE_SUSPENDED
+            && action == super::super::codes::action::ACTION_CANCEL)
 }
 
 pub open spec fn suspension_binding_spec(
@@ -78,7 +91,9 @@ pub open spec fn step_next_suspensions_spec(
 ) -> Seq<Option<super::super::primitive::support::IndexedSuspensionFact>> {
     if action == super::super::codes::action::ACTION_SUSPEND {
         suspensions.update(node_index as int, event_fact)
-    } else if action == super::super::codes::action::ACTION_RESUME_SIGNAL {
+    } else if action == super::super::codes::action::ACTION_RESUME_SIGNAL
+        || action == super::super::codes::action::ACTION_CANCEL
+    {
         suspensions.update(node_index as int, None)
     } else {
         suspensions
@@ -146,7 +161,8 @@ pub proof fn suspension_transitions_emit_no_effects(
             allowed_intents,
             requested_intents,
         ),
-        super::super::codes::action::suspension_action_spec(action),
+        node_index < states.len(),
+        suspension_effects_forbidden_spec(profile, states[node_index as int], action),
     ensures super::super::kernel::decision::indexed_step_intents_spec(
         dependencies,
         states,

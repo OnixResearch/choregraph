@@ -6,7 +6,6 @@
     explicit_defaults,
     fragile_exhaustive_enum_match,
     missing_const_fn,
-    no_panic,
     non_trait_imports,
     numeric_units,
     reason = "the compatibility facade retains published signatures and exact legacy fixtures"

@@ -1,0 +1,21 @@
+--- a/crates/choregraph-core/src/verified/kernel/target.rs
++++ b/crates/choregraph-core/src/verified/kernel/target.rs
+@@ -22,7 +22,6 @@
+ 
+ pub open spec fn action_needs_readiness_spec(action: u8) -> bool {
+-    action == super::super::codes::action::ACTION_MARK_READY
+-        || action == super::super::codes::action::ACTION_START
++    action == super::super::codes::action::ACTION_START
+         || action == super::super::codes::action::ACTION_RESUME_SIGNAL
+ }
+ 
+@@ -29,8 +28,7 @@
+ pub const fn action_needs_readiness(action: u8) -> (result: bool)
+     ensures result == action_needs_readiness_spec(action)
+ {
+-    action == super::super::codes::action::ACTION_MARK_READY
+-        || action == super::super::codes::action::ACTION_START
++    action == super::super::codes::action::ACTION_START
+         || action == super::super::codes::action::ACTION_RESUME_SIGNAL
+ }
+ 

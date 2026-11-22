@@ -26,7 +26,8 @@ use choregraph_core::{
     model::history::ReplayFailureReason, model::history::ReplayInput, model::history::ReplayLimits,
     model::history::TRACE_BINDING_BYTES, model::history::TraceBinding, model::outcome::Decision,
     model::outcome::DenialReason, model::pause::SuspensionFactSpec, model::pause::SuspensionRecord,
-    model::semantics::Action, model::semantics::LocalState, transition::replay,
+    model::semantics::Action, model::semantics::DURABLE_SUSPENSION_V1,
+    model::semantics::DURABLE_SUSPENSION_V2, model::semantics::LocalState, transition::replay,
     transition::replay_concrete, transition::step, transition::step_concrete,
 };
 use choregraph_kamacite::{
@@ -238,11 +239,19 @@ fn admit_artifacts(artifacts: &MachineArtifacts) -> Result<MachineContext, Adapt
                 kind: artifacts.kind,
             })
         }
-        MachineArtifactKind::DurableV1 => {
+        MachineArtifactKind::DurableV1 | MachineArtifactKind::DurableV2 => {
             let (lifecycle_bytes, lifecycle_identity, profile_identity) =
                 required_aggregate_fields(artifacts)?;
             let lifecycle = validate_durable_lifecycle_artifact(lifecycle_bytes)
                 .map_err(|_error| invalid_artifact())?;
+            let expected_profile = if artifacts.kind == MachineArtifactKind::DurableV1 {
+                DURABLE_SUSPENSION_V1
+            } else {
+                DURABLE_SUSPENSION_V2
+            };
+            if lifecycle.descriptor.fsm_id != expected_profile {
+                return Err(invalid_artifact());
+            }
             if lifecycle.project_identity != *lifecycle_identity {
                 return Err(identity_mismatch());
             }
@@ -663,6 +672,7 @@ fn denial_value(reason: DenialReason) -> DenialValue {
         }
         DenialReason::InvariantWouldBreak => value.code = DenialCode::InvariantWouldBreak,
         DenialReason::EffectsNotAllowed => value.code = DenialCode::EffectsNotAllowed,
+        DenialReason::InternalInconsistency => value.code = DenialCode::InternalInconsistency,
     }
     value
 }
@@ -725,7 +735,9 @@ const fn transition_value(from: LocalState, action: Action) -> TransitionValue {
 fn require_linear(kind: MachineArtifactKind) -> Result<(), AdapterErrorValue> {
     if matches!(
         kind,
-        MachineArtifactKind::LinearV1 | MachineArtifactKind::DurableV1
+        MachineArtifactKind::LinearV1
+            | MachineArtifactKind::DurableV1
+            | MachineArtifactKind::DurableV2
     ) {
         Ok(())
     } else {
@@ -809,4 +821,21 @@ fn emergency_encoding_failure(input_identity: &str) -> Vec<u8> {
 
 fn usize_to_u64(value: usize) -> u64 {
     value as u64
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn internal_inconsistency_has_its_own_denial_code() {
+        assert_eq!(
+            super::denial_value(super::DenialReason::InternalInconsistency),
+            super::DenialValue {
+                code: super::DenialCode::InternalInconsistency,
+                observed: None,
+                maximum: None,
+                from: None,
+                action: None,
+            }
+        );
+    }
 }

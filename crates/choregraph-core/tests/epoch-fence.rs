@@ -2,9 +2,7 @@
 #![allow(
     unknown_lints,
     explicit_defaults,
-    no_panic,
     non_trait_imports,
-    raw_arithmetic_overflow,
     reason = "integration fixtures keep reviewed epoch and rejection notation readable"
 )]
 
@@ -15,9 +13,10 @@ use choregraph_core::{
     model::automaton::MachineState, model::capacity::AdmissionLimits, model::dispatch::Event,
     model::graph::NodeSpec, model::outcome::Decision, model::outcome::DenialReason,
     model::semantics::Action, model::semantics::LocalState,
-    ownership::EPOCH_FENCE_CONTRACT_IDENTITY, ownership::EPOCH_FENCE_IMPLEMENTATION_IDENTITY,
-    ownership::EPOCH_FENCE_NON_CLAIMS, ownership::EntityEpoch, ownership::EpochFence,
-    ownership::EpochFenceDisposition, ownership::EpochFenceRejection, ownership::step_epoch_fenced,
+    ownership::EPOCH_FENCE_CONTRACT_VERSION_LABEL,
+    ownership::EPOCH_FENCE_IMPLEMENTATION_VERSION_LABEL, ownership::EPOCH_FENCE_NON_CLAIMS,
+    ownership::EntityEpoch, ownership::EpochFence, ownership::EpochFenceDisposition,
+    ownership::EpochFenceRejection, ownership::step_epoch_fenced,
 };
 
 const ENTITY_A: &str = "entity/a";
@@ -27,6 +26,7 @@ const CURRENT_EPOCH: u64 = 8;
 const STALE_EPOCH: u64 = CURRENT_EPOCH - 1;
 const FUTURE_EPOCH: u64 = CURRENT_EPOCH + 1;
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn machine() -> AdmittedMachine {
     let spec = MachineSpec::new(
         vec![
@@ -41,6 +41,7 @@ fn machine() -> AdmittedMachine {
     }
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn entity(value: &str) -> NodeId {
     match NodeId::parse(value, AdmissionLimits::default().max_identifier_bytes) {
         Ok(entity) => entity,
@@ -73,11 +74,11 @@ fn current_epoch_admits_exactly_one_entity_through_production_step() {
     assert_eq!(result.fence.offered_epoch.get(), CURRENT_EPOCH);
     assert_eq!(
         result.fence.implementation_identity,
-        EPOCH_FENCE_IMPLEMENTATION_IDENTITY
+        EPOCH_FENCE_IMPLEMENTATION_VERSION_LABEL
     );
     assert_eq!(
         result.fence.contract_identity,
-        EPOCH_FENCE_CONTRACT_IDENTITY
+        EPOCH_FENCE_CONTRACT_VERSION_LABEL
     );
     assert_eq!(result.fence.required_non_claims, EPOCH_FENCE_NON_CLAIMS);
     let Some(Decision::Accept { next, intents }) = result.transition else {
@@ -187,14 +188,14 @@ fn admitted_fence_does_not_override_other_machine_denials() {
 
 #[test]
 fn identity_and_non_claims_stay_bounded_and_canonical() {
-    assert!(EPOCH_FENCE_CONTRACT_IDENTITY.starts_with("blake3:"));
-    assert!(EPOCH_FENCE_IMPLEMENTATION_IDENTITY.starts_with("blake3:"));
+    assert!(EPOCH_FENCE_CONTRACT_VERSION_LABEL.starts_with("blake3:"));
+    assert!(EPOCH_FENCE_IMPLEMENTATION_VERSION_LABEL.starts_with("blake3:"));
     assert_eq!(
-        EPOCH_FENCE_CONTRACT_IDENTITY.len(),
+        EPOCH_FENCE_CONTRACT_VERSION_LABEL.len(),
         choregraph_core::id::reference::BLAKE3_REFERENCE_BYTES
     );
     assert_eq!(
-        EPOCH_FENCE_IMPLEMENTATION_IDENTITY.len(),
+        EPOCH_FENCE_IMPLEMENTATION_VERSION_LABEL.len(),
         choregraph_core::id::reference::BLAKE3_REFERENCE_BYTES
     );
     assert!(!EPOCH_FENCE_NON_CLAIMS.is_empty());

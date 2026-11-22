@@ -9,6 +9,11 @@ let MAX_PORTS_PER_NODE = 4096 in
 let MAX_IDENTIFIER_CHARS = 256 in
 let MAX_IMPORT_PATH_CHARS = 512 in
 let LIFECYCLE_EVENTS = ["cancel", "complete", "fail", "mark-ready", "start"] in
+let DURABLE_EVENTS = LIFECYCLE_EVENTS @ ["suspend", "resume-signal"] in
+let DURABLE_PROFILES = [
+  "choregraph.lifecycle.durable-suspension.v1",
+  "choregraph.lifecycle.durable-suspension.v2",
+] in
 let exact_fields = fun allowed value =>
   std.is_record value
   && std.array.length (std.record.fields value) == std.array.length allowed
@@ -55,11 +60,11 @@ let is_limits = fun value =>
   && positive 1048576 (field "max_intent_bytes" value)
   && positive 4096 (field "max_intents_per_transition" value)
 in
-let is_events = fun value =>
+let is_events = fun expected value =>
   std.is_array value
-  && std.array.length value == std.array.length LIFECYCLE_EVENTS
-  && std.array.all (fun event => std.array.elem event LIFECYCLE_EVENTS) value
-  && std.array.all (fun event => std.array.elem event value) LIFECYCLE_EVENTS
+  && std.array.length value == std.array.length expected
+  && std.array.all (fun event => std.array.elem event expected) value
+  && std.array.all (fun event => std.array.elem event value) expected
 in
 let is_import = fun value =>
   exact_fields ["logical_id", "root_id", "relative_path", "media_class", "max_bytes", "expected_blake3"] value
@@ -147,12 +152,35 @@ let is_lattice_effect_v2 = fun value =>
   && is_reference_binding (field "request_binding" value)
   && is_reference_binding (field "payload_binding" value)
 in
+let is_suspension = fun value =>
+  exact_fields ["node_id", "class", "reference"] value
+  && bounded_string MAX_IDENTIFIER_CHARS (field "node_id" value)
+  && bounded_string MAX_IDENTIFIER_CHARS (field "class" value)
+  && std.is_string (field "reference" value)
+  && std.string.is_match "^blake3:[0-9a-f]{64}$" (field "reference" value)
+in
+let DIRECT_FIELDS = ["source_format", "schema", "lifecycle_profile", "events", "limits", "imports", "nodes", "edges", "effects"] in
+let is_direct_profile = fun value =>
+  std.is_record value
+  && has "lifecycle_profile" value
+  && (
+    (field "lifecycle_profile" value == "choregraph.lifecycle.linear.v1"
+      && exact_fields DIRECT_FIELDS value
+      && is_events LIFECYCLE_EVENTS (field "events" value))
+    || (std.array.elem (field "lifecycle_profile" value) DURABLE_PROFILES
+      && (if has "suspensions" value then
+        exact_fields (DIRECT_FIELDS @ ["suspensions"]) value
+        && std.is_array (field "suspensions" value)
+        && std.array.length (field "suspensions" value) <= MAX_NODES
+        && std.array.all is_suspension (field "suspensions" value)
+      else exact_fields DIRECT_FIELDS value)
+      && is_events DURABLE_EVENTS (field "events" value))
+  )
+in
 let is_choregraph = fun value =>
-  exact_fields ["source_format", "schema", "lifecycle_profile", "events", "limits", "imports", "nodes", "edges", "effects"] value
+  is_direct_profile value
   && field "source_format" value == "choregraph-v1"
   && field "schema" value == "choregraph.evaluated-graph.v1"
-  && field "lifecycle_profile" value == "choregraph.lifecycle.linear.v1"
-  && is_events (field "events" value)
   && is_limits (field "limits" value)
   && is_imports (field "imports" value)
   && std.is_array (field "nodes" value)
@@ -170,7 +198,7 @@ let is_lattice = fun value =>
   && field "source_format" value == "lattice-workflow-v1"
   && field "schema" value == "choregraph.lattice-workflow-projection.v1"
   && field "lifecycle_profile" value == "choregraph.lifecycle.linear.v1"
-  && is_events (field "events" value)
+  && is_events LIFECYCLE_EVENTS (field "events" value)
   && is_limits (field "limits" value)
   && is_imports (field "imports" value)
   && std.is_array (field "nodes" value)
@@ -188,7 +216,7 @@ let is_lattice_v2 = fun value =>
   && field "source_format" value == "lattice-workflow-v2"
   && field "schema" value == "choregraph.lattice-workflow-projection.v2"
   && field "lifecycle_profile" value == "choregraph.lifecycle.linear.v1"
-  && is_events (field "events" value)
+  && is_events LIFECYCLE_EVENTS (field "events" value)
   && is_limits (field "limits" value)
   && is_imports (field "imports" value)
   && std.is_array (field "nodes" value)

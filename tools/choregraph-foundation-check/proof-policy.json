@@ -1,0 +1,464 @@
+{
+  "sources": {
+    "crates/choregraph-core/src/verified.rs": {
+      "functions": {},
+      "modules": {
+        "codes": "crates/choregraph-core/src/verified/codes.rs",
+        "kernel": "crates/choregraph-core/src/verified/kernel.rs",
+        "primitive": "crates/choregraph-core/src/verified/primitive.rs",
+        "readiness": "crates/choregraph-core/src/verified/readiness.rs"
+      }
+    },
+    "crates/choregraph-core/src/verified/codes.rs": {
+      "functions": {},
+      "modules": {
+        "action": "crates/choregraph-core/src/verified/codes/action.rs",
+        "denial": "crates/choregraph-core/src/verified/codes/denial.rs",
+        "profile": "crates/choregraph-core/src/verified/codes/profile.rs",
+        "status": "crates/choregraph-core/src/verified/codes/status.rs"
+      }
+    },
+    "crates/choregraph-core/src/verified/codes/action.rs": {
+      "functions": {
+        "action_valid_spec": "spec",
+        "suspension_action_spec": "spec"
+      },
+      "modules": {}
+    },
+    "crates/choregraph-core/src/verified/codes/denial.rs": {
+      "functions": {},
+      "modules": {
+        "suspension": "crates/choregraph-core/src/verified/codes/denial/suspension.rs",
+        "transition": "crates/choregraph-core/src/verified/codes/denial/transition.rs"
+      }
+    },
+    "crates/choregraph-core/src/verified/codes/denial/suspension.rs": {
+      "functions": {},
+      "modules": {}
+    },
+    "crates/choregraph-core/src/verified/codes/denial/transition.rs": {
+      "functions": {},
+      "modules": {}
+    },
+    "crates/choregraph-core/src/verified/codes/profile.rs": {
+      "functions": {
+        "has_suspension": "exec",
+        "durable_profile_spec": "spec",
+        "is_supported": "exec",
+        "profile_valid_spec": "spec"
+      },
+      "modules": {}
+    },
+    "crates/choregraph-core/src/verified/codes/status.rs": {
+      "functions": {
+        "local_state_valid": "exec",
+        "local_state_valid_spec": "spec",
+        "terminal_state": "exec",
+        "terminal_state_spec": "spec"
+      },
+      "modules": {}
+    },
+    "crates/choregraph-core/src/verified/kernel.rs": {
+      "functions": {},
+      "modules": {
+        "decision": "crates/choregraph-core/src/verified/kernel/decision.rs",
+        "snapshot": "crates/choregraph-core/src/verified/kernel/snapshot.rs",
+        "target": "crates/choregraph-core/src/verified/kernel/target.rs",
+        "theorem": "crates/choregraph-core/src/verified/kernel/theorem.rs"
+      }
+    },
+    "crates/choregraph-core/src/verified/kernel/decision.rs": {
+      "functions": {
+        "deny": "exec",
+        "indexed_decision_matches_spec": "spec",
+        "indexed_decision_view": "spec",
+        "indexed_precheck_spec": "spec",
+        "indexed_step": "exec",
+        "indexed_step_accepts_spec": "spec",
+        "indexed_step_intents_spec": "spec",
+        "indexed_step_next_spec": "spec",
+        "indexed_step_next_suspensions_spec": "spec",
+        "indexed_step_precheck": "exec",
+        "indexed_step_reason_spec": "spec"
+      },
+      "modules": {}
+    },
+    "crates/choregraph-core/src/verified/kernel/snapshot.rs": {
+      "functions": {
+        "step_next_suspensions_spec": "spec",
+        "suspension_binding_spec": "spec",
+        "suspension_effects_forbidden": "exec",
+        "suspension_effects_forbidden_spec": "spec",
+        "suspension_fact_matches": "exec",
+        "suspension_fact_matches_spec": "spec",
+        "suspension_fact_shape_spec": "spec",
+        "suspension_transitions_emit_no_effects": "proof",
+        "suspension_update_preserves_consistency": "proof"
+      },
+      "modules": {}
+    },
+    "crates/choregraph-core/src/verified/kernel/target.rs": {
+      "functions": {
+        "action_needs_readiness": "exec",
+        "action_needs_readiness_spec": "spec",
+        "local_update_preserves_invariant": "proof",
+        "step_dependencies_ready_spec": "spec",
+        "step_next_states_spec": "spec",
+        "step_target_spec": "spec"
+      },
+      "modules": {}
+    },
+    "crates/choregraph-core/src/verified/kernel/theorem.rs": {
+      "functions": {
+        "accepted_resume_requires_exact_fact_and_clears": "proof",
+        "accepted_start_has_completed_dependencies": "proof",
+        "accepted_step_preserves_invariant_and_effects": "proof",
+        "accepted_suspend_records_exact_fact": "proof",
+        "cancel_never_completes": "proof",
+        "completed_requires_running_complete": "proof",
+        "denial_has_no_replacement_or_intents": "proof",
+        "equal_explicit_inputs_have_equal_decisions": "proof",
+        "mark_ready_acceptance_is_exact": "proof",
+        "mark_ready_context_spec": "spec",
+        "mismatched_resume_is_denied": "proof",
+        "nonterminal_can_cancel": "proof",
+        "readiness_is_sound": "proof",
+        "suspended_state_blocks_execution_actions": "proof"
+      },
+      "modules": {}
+    },
+    "crates/choregraph-core/src/verified/primitive.rs": {
+      "functions": {},
+      "modules": {
+        "matching": "crates/choregraph-core/src/verified/primitive/matching.rs",
+        "membership": "crates/choregraph-core/src/verified/primitive/membership.rs",
+        "ownership": "crates/choregraph-core/src/verified/primitive/ownership.rs",
+        "support": "crates/choregraph-core/src/verified/primitive/support.rs",
+        "transition": "crates/choregraph-core/src/verified/primitive/transition.rs",
+        "validity": "crates/choregraph-core/src/verified/primitive/validity.rs"
+      }
+    },
+    "crates/choregraph-core/src/verified/primitive/matching.rs": {
+      "functions": {
+        "concrete_binding_accepts": "exec",
+        "concrete_binding_accepts_spec": "spec",
+        "concrete_reference_witness": "exec",
+        "concrete_references_preserved_spec": "spec"
+      },
+      "modules": {}
+    },
+    "crates/choregraph-core/src/verified/primitive/membership.rs": {
+      "functions": {
+        "all_distinct": "exec",
+        "all_distinct_from_spec": "spec",
+        "all_distinct_spec": "spec",
+        "all_requested_allowed": "exec",
+        "all_requested_allowed_from_spec": "spec",
+        "all_requested_allowed_spec": "spec",
+        "contains": "exec",
+        "contains_from_spec": "spec",
+        "contains_spec": "spec",
+        "effects_allowed_spec": "spec",
+        "not_in_suffix_spec": "spec"
+      },
+      "modules": {}
+    },
+    "crates/choregraph-core/src/verified/primitive/ownership.rs": {
+      "functions": {
+        "epoch_fence_decision": "exec",
+        "epoch_fence_decision_spec": "spec"
+      },
+      "modules": {}
+    },
+    "crates/choregraph-core/src/verified/primitive/support.rs": {
+      "functions": {
+        "bytes_equal": "exec",
+        "copy_states": "exec",
+        "copy_values": "exec",
+        "suspensions_consistent": "exec",
+        "suspensions_consistent_spec": "spec"
+      },
+      "modules": {}
+    },
+    "crates/choregraph-core/src/verified/primitive/transition.rs": {
+      "functions": {
+        "lifecycle_target": "exec",
+        "lifecycle_target_spec": "spec",
+        "lifecycle_transition_spec": "spec"
+      },
+      "modules": {}
+    },
+    "crates/choregraph-core/src/verified/primitive/validity.rs": {
+      "functions": {
+        "dependencies_complete": "exec",
+        "dependencies_complete_spec": "spec",
+        "indexed_invariant": "exec",
+        "indexed_invariant_spec": "spec",
+        "node_invariant_spec": "spec",
+        "state_requires_completed_dependencies": "exec",
+        "state_requires_completed_dependencies_spec": "spec",
+        "terminal_states_preserved_spec": "spec"
+      },
+      "modules": {}
+    },
+    "crates/choregraph-core/src/verified/readiness.rs": {
+      "functions": {
+        "dependency_ready": "exec",
+        "dependency_ready_spec": "spec",
+        "frontier_is_admitted_order_filter_spec": "spec",
+        "pairwise_distinct_spec": "spec",
+        "ready_frontier": "exec",
+        "ready_frontier_build_contains_eligible": "proof",
+        "ready_frontier_build_spec": "spec",
+        "ready_frontier_contains_each_eligible_node_once": "proof",
+        "ready_frontier_contains_every_eligible_node": "proof",
+        "ready_frontier_contains_only_eligible_nodes": "proof",
+        "ready_frontier_element_source": "proof",
+        "ready_frontier_no_duplicates_from": "proof",
+        "ready_frontier_preserves_admitted_order": "proof",
+        "ready_frontier_spec": "spec"
+      },
+      "modules": {}
+    },
+    "crates/choregraph-core/src/verified/topology.rs": {
+      "functions": {},
+      "modules": {
+        "admission": "crates/choregraph-core/src/verified/topology/admission.rs",
+        "bounds": "crates/choregraph-core/src/verified/topology/bounds.rs",
+        "cardinality": "crates/choregraph-core/src/verified/topology/cardinality.rs",
+        "precedence": "crates/choregraph-core/src/verified/topology/precedence.rs"
+      }
+    },
+    "crates/choregraph-core/src/verified/topology/admission.rs": {
+      "functions": {
+        "admitted_graph_spec": "spec",
+        "admitted_graph_valid": "exec",
+        "admitted_topology_has_each_node_once_and_edges_forward": "proof"
+      },
+      "modules": {}
+    },
+    "crates/choregraph-core/src/verified/topology/bounds.rs": {
+      "functions": {
+        "dependency_indices_valid": "exec",
+        "dependency_indices_valid_from_spec": "spec",
+        "dependency_indices_valid_spec": "spec",
+        "indices_bounded": "exec",
+        "indices_bounded_from_spec": "spec",
+        "indices_bounded_spec": "spec"
+      },
+      "modules": {}
+    },
+    "crates/choregraph-core/src/verified/topology/cardinality.rs": {
+      "functions": {
+        "all_nodes_once": "exec",
+        "all_nodes_once_from_spec": "spec",
+        "all_nodes_once_spec": "spec",
+        "occurrence_class": "exec",
+        "occurrence_class_from_spec": "spec",
+        "occurrence_class_spec": "spec"
+      },
+      "modules": {}
+    },
+    "crates/choregraph-core/src/verified/topology/precedence.rs": {
+      "functions": {
+        "edges_forward": "exec",
+        "edges_forward_from_spec": "spec",
+        "edges_forward_spec": "spec",
+        "precedes": "exec",
+        "precedes_from_spec": "spec",
+        "precedes_spec": "spec",
+        "topological_order_spec": "spec",
+        "topological_order_valid": "exec"
+      },
+      "modules": {}
+    },
+    "crates/choregraph-core/src/verified/trace.rs": {
+      "functions": {},
+      "modules": {
+        "specification": "crates/choregraph-core/src/verified/trace/specification.rs",
+        "theorem": "crates/choregraph-core/src/verified/trace/theorem.rs"
+      }
+    },
+    "crates/choregraph-core/src/verified/trace/specification.rs": {
+      "functions": {
+        "replay_dispatch_intents_spec": "spec",
+        "replay_event_accepts_spec": "spec",
+        "replay_event_next_spec": "spec",
+        "replay_event_next_suspensions_spec": "spec",
+        "replay_failure_index_from_spec": "spec",
+        "replay_final_states_from_spec": "spec",
+        "replay_final_suspensions_from_spec": "spec",
+        "replay_prefix_len_from_spec": "spec",
+        "replay_starts_after_dependencies_spec": "spec",
+        "trace_admitted_spec": "spec"
+      },
+      "modules": {}
+    },
+    "crates/choregraph-core/src/verified/trace/theorem.rs": {
+      "functions": {
+        "accepted_suspended_prefix_remains_consistent": "proof",
+        "accepted_trace_starts_after_dependencies": "proof",
+        "admitted_trace_respects_limit": "proof",
+        "empty_trace_base": "proof",
+        "equal_replay_inputs_have_equal_decisions": "proof",
+        "finite_replay_preserves_invariant": "proof",
+        "first_failure_is_exact": "proof",
+        "replay_never_returns_dispatch_intents": "proof",
+        "replay_prefix_length_bounded": "proof"
+      },
+      "modules": {}
+    },
+    "verus/proofs/epoch_fence.rs": {
+      "functions": {
+        "cross_entity_mutation_is_rejected": "proof",
+        "matching_epoch_for_known_nonterminal_entity_admits": "proof",
+        "stale_or_future_epoch_is_rejected": "proof",
+        "terminal_mutation_is_rejected": "proof",
+        "unknown_entity_is_rejected": "proof"
+      },
+      "modules": {
+        "verified": "crates/choregraph-core/src/verified.rs"
+      }
+    },
+    "verus/proofs/single_step.rs": {
+      "functions": {},
+      "modules": {
+        "verified": "crates/choregraph-core/src/verified.rs",
+        "verified_topology": "crates/choregraph-core/src/verified/topology.rs"
+      }
+    },
+    "verus/proofs/trace_replay.rs": {
+      "functions": {},
+      "modules": {
+        "verified": "crates/choregraph-core/src/verified.rs",
+        "verified_trace": "crates/choregraph-core/src/verified/trace.rs"
+      }
+    }
+  },
+  "theorems": {
+    "epoch-fence": {
+      "cross_entity_mutation_is_rejected": {
+        "crate::cross_entity_mutation_is_rejected": "proof"
+      },
+      "matching_epoch_for_known_nonterminal_entity_admits": {
+        "crate::matching_epoch_for_known_nonterminal_entity_admits": "proof"
+      },
+      "stale_or_future_epoch_is_rejected": {
+        "crate::stale_or_future_epoch_is_rejected": "proof"
+      },
+      "terminal_mutation_is_rejected": {
+        "crate::terminal_mutation_is_rejected": "proof"
+      },
+      "unknown_entity_is_rejected": {
+        "crate::unknown_entity_is_rejected": "proof"
+      }
+    },
+    "single-step": {
+      "accepted_resume_requires_exact_fact_and_clears": {
+        "crate::verified::kernel::theorem::accepted_resume_requires_exact_fact_and_clears": "proof"
+      },
+      "accepted_start_has_completed_dependencies": {
+        "crate::verified::kernel::theorem::accepted_start_has_completed_dependencies": "proof"
+      },
+      "accepted_step_preserves_invariant_and_effects": {
+        "crate::verified::kernel::theorem::accepted_step_preserves_invariant_and_effects": "proof"
+      },
+      "accepted_suspend_records_exact_fact": {
+        "crate::verified::kernel::theorem::accepted_suspend_records_exact_fact": "proof"
+      },
+      "admitted_topology_has_each_node_once_and_edges_forward": {
+        "crate::verified_topology::admission::admitted_topology_has_each_node_once_and_edges_forward": "proof"
+      },
+      "cancel_never_completes": {
+        "crate::verified::kernel::theorem::cancel_never_completes": "proof"
+      },
+      "completed_requires_running_complete": {
+        "crate::verified::kernel::theorem::completed_requires_running_complete": "proof"
+      },
+      "concrete binding and reference preservation witnesses": {
+        "crate::verified::primitive::matching::concrete_binding_accepts": "exec",
+        "crate::verified::primitive::matching::concrete_reference_witness": "exec"
+      },
+      "denial_has_no_replacement_or_intents": {
+        "crate::verified::kernel::theorem::denial_has_no_replacement_or_intents": "proof"
+      },
+      "dependency_ready executable refinement postcondition": {
+        "crate::verified::readiness::dependency_ready": "exec"
+      },
+      "equal_explicit_inputs_have_equal_decisions": {
+        "crate::verified::kernel::theorem::equal_explicit_inputs_have_equal_decisions": "proof"
+      },
+      "indexed_step executable refinement postconditions": {
+        "crate::verified::kernel::decision::indexed_step": "exec"
+      },
+      "local_update_preserves_invariant": {
+        "crate::verified::kernel::target::local_update_preserves_invariant": "proof"
+      },
+      "mark_ready_acceptance_is_exact": {
+        "crate::verified::kernel::theorem::mark_ready_acceptance_is_exact": "proof"
+      },
+      "mismatched_resume_is_denied": {
+        "crate::verified::kernel::theorem::mismatched_resume_is_denied": "proof"
+      },
+      "nonterminal_can_cancel": {
+        "crate::verified::kernel::theorem::nonterminal_can_cancel": "proof"
+      },
+      "readiness_is_sound": {
+        "crate::verified::kernel::theorem::readiness_is_sound": "proof"
+      },
+      "ready_frontier executable refinement postcondition": {
+        "crate::verified::readiness::ready_frontier": "exec"
+      },
+      "ready_frontier_contains_each_eligible_node_once": {
+        "crate::verified::readiness::ready_frontier_contains_each_eligible_node_once": "proof"
+      },
+      "ready_frontier_contains_every_eligible_node": {
+        "crate::verified::readiness::ready_frontier_contains_every_eligible_node": "proof"
+      },
+      "ready_frontier_contains_only_eligible_nodes": {
+        "crate::verified::readiness::ready_frontier_contains_only_eligible_nodes": "proof"
+      },
+      "ready_frontier_preserves_admitted_order": {
+        "crate::verified::readiness::ready_frontier_preserves_admitted_order": "proof"
+      },
+      "suspended_state_blocks_execution_actions": {
+        "crate::verified::kernel::theorem::suspended_state_blocks_execution_actions": "proof"
+      },
+      "suspension_transitions_emit_no_effects": {
+        "crate::verified::kernel::snapshot::suspension_transitions_emit_no_effects": "proof"
+      },
+      "suspension_update_preserves_consistency": {
+        "crate::verified::kernel::snapshot::suspension_update_preserves_consistency": "proof"
+      }
+    },
+    "trace-replay": {
+      "accepted_suspended_prefix_remains_consistent": {
+        "crate::verified_trace::theorem::accepted_suspended_prefix_remains_consistent": "proof"
+      },
+      "accepted_trace_starts_after_dependencies": {
+        "crate::verified_trace::theorem::accepted_trace_starts_after_dependencies": "proof"
+      },
+      "admitted_trace_respects_limit": {
+        "crate::verified_trace::theorem::admitted_trace_respects_limit": "proof"
+      },
+      "empty_trace_base": {
+        "crate::verified_trace::theorem::empty_trace_base": "proof"
+      },
+      "equal_replay_inputs_have_equal_decisions": {
+        "crate::verified_trace::theorem::equal_replay_inputs_have_equal_decisions": "proof"
+      },
+      "finite_replay_preserves_invariant": {
+        "crate::verified_trace::theorem::finite_replay_preserves_invariant": "proof"
+      },
+      "first_failure_is_exact": {
+        "crate::verified_trace::theorem::first_failure_is_exact": "proof"
+      },
+      "replay_never_returns_dispatch_intents": {
+        "crate::verified_trace::theorem::replay_never_returns_dispatch_intents": "proof"
+      },
+      "replay_prefix_length_bounded": {
+        "crate::verified_trace::theorem::replay_prefix_length_bounded": "proof"
+      }
+    }
+  }
+}

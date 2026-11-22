@@ -23,7 +23,8 @@ use crate::identity::{
     compute_identity, compute_kamacite_identity,
 };
 use crate::lifecycle::conversion::{
-    LIFECYCLE_FSM_ID, LifecycleArtifact, LifecycleError, build_lifecycle_artifact,
+    LIFECYCLE_FSM_ID, LifecycleArtifact, LifecycleError, build_lifecycle_artifact, durable_fsm_id,
+    durable_profile_from_fsm_id,
 };
 use choregraph_core::{
     model::automaton::AdmittedMachine, model::automaton::MachineSpec,
@@ -471,11 +472,8 @@ pub fn durable_machine_descriptor(
     lifecycle_identity: ArtifactIdentity,
     profile_identity: ArtifactIdentity,
 ) -> Result<DurableMachineDescriptor, AggregateError> {
-    if machine.lifecycle_profile()
-        != choregraph_core::model::semantics::LifecycleProfile::DurableSuspensionV1
-    {
-        return Err(AggregateError::UnsupportedProfile);
-    }
+    let profile_id =
+        durable_fsm_id(machine.lifecycle_profile()).ok_or(AggregateError::UnsupportedProfile)?;
     let parts = normalized_parts(machine)?;
     let suspensions = machine
         .suspension_declarations()
@@ -489,7 +487,7 @@ pub fn durable_machine_descriptor(
     Ok(DurableMachineDescriptor {
         schema_version: DURABLE_DESCRIPTOR_SCHEMA_VERSION,
         machine_schema: String::from(machine.schema()),
-        lifecycle_profile_id: String::from(crate::lifecycle::conversion::DURABLE_FSM_ID),
+        lifecycle_profile_id: String::from(profile_id),
         lifecycle_profile_identity: lifecycle_identity,
         kamacite_profile_identity: profile_identity,
         global_state_model: String::from(GLOBAL_STATE_MODEL),
@@ -592,6 +590,7 @@ pub struct ValidatedDurableMachineArtifact {
     pub identity: ArtifactIdentity,
 }
 
+/// Validates a durable machine against the closed, validated lifecycle artifact it names.
 pub fn validate_durable_machine_artifact(
     input: &[u8],
     lifecycle: &LifecycleArtifact,
@@ -607,9 +606,12 @@ pub fn validate_durable_machine_artifact(
         crate::codec::graph::DURABLE_MACHINE_ROOT_LABEL,
     )?;
     if descriptor.schema_version != DURABLE_DESCRIPTOR_SCHEMA_VERSION
-        || descriptor.lifecycle_profile_id != crate::lifecycle::conversion::DURABLE_FSM_ID
+        || descriptor.lifecycle_profile_id != lifecycle.descriptor.fsm_id
         || descriptor.compatibility.kamacite_revision != KAMACITE_REVISION
     {
+        return Err(AggregateError::UnsupportedProfile);
+    }
+    if durable_profile_from_fsm_id(&descriptor.lifecycle_profile_id).is_none() {
         return Err(AggregateError::UnsupportedProfile);
     }
     if descriptor.global_state_model != GLOBAL_STATE_MODEL

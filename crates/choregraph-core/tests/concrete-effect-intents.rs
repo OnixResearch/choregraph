@@ -8,10 +8,8 @@
     assertion_density,
     explicit_defaults,
     function_length,
-    no_panic,
     non_trait_imports,
     numeric_units,
-    raw_arithmetic_overflow,
     reason = "the concrete-effect corpus keeps explicit positive and negative boundary cases"
 )]
 
@@ -51,7 +49,7 @@ const STATE_BINDING_BYTE: u8 = 0x42;
 const TRACE_LIMIT: u64 = 8;
 const TWO_EFFECTS: usize = 2;
 const EVENT_ACTION_BYTES: usize = 1;
-const MINIMUM_EVENT_LIMIT: usize = NODE.len() + EVENT_ACTION_BYTES;
+const MINIMUM_EVENT_LIMIT: usize = NODE.len().saturating_add(EVENT_ACTION_BYTES);
 
 fn reference(identity: &str) -> ConcreteReferenceSpec {
     ConcreteReferenceSpec {
@@ -135,6 +133,7 @@ fn machine_spec(reversed: bool) -> MachineSpecV2 {
     spec
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn admit_spec(spec: MachineSpecV2) -> AdmittedMachine {
     match AdmittedMachine::admit_v2(spec, AdmissionLimits::default()) {
         Ok(machine) => machine,
@@ -162,6 +161,7 @@ fn slot_request(request_identity: &str, payload_identity: &str) -> ConcreteEffec
     }
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn ready_state(machine: &AdmittedMachine) -> choregraph_core::model::automaton::MachineState {
     match step_concrete(
         machine,
@@ -203,6 +203,7 @@ fn bindings() -> ReplayBindings {
     )
 }
 
+#[allow(no_panic, reason = "this test helper reports failed fixture setup")]
 fn diagnostic_codes(
     result: Result<AdmittedMachine, Vec<choregraph_core::model::outcome::AdmissionDiagnostic>>,
 ) -> Vec<AdmissionDiagnosticCode> {

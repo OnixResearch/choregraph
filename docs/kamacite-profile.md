@@ -47,13 +47,25 @@ The v1 aggregate descriptor uses `choregraph.machine-preserves.v1` and the `chor
 
 The v2 descriptor uses `choregraph.machine-preserves.v2` and the `choregraph-machine-v2` root. Its review schema is [`../schemas/preserves/choregraph-machine-v2.preserves`](../schemas/preserves/choregraph-machine-v2.preserves).
 
+The separate durable aggregate uses the existing `choregraph-machine-durable-v1`
+root under `choregraph.machine-preserves.v1`, with descriptor `schema_version`
+`2`. Its `lifecycle_profile_id` selects exactly
+`choregraph.lifecycle.durable-suspension.v1` or
+`choregraph.lifecycle.durable-suspension.v2`; the referenced canonical FSM
+must carry the same `fsm_id` and match the recorded lifecycle identity. The
+profile opt-in does not change the envelope or any V1 canonical bytes.
+
 Concrete intents use `choregraph.concrete-intent-preserves.v2`. The intent schema is [`../schemas/preserves/choregraph-concrete-intent-v2.preserves`](../schemas/preserves/choregraph-concrete-intent-v2.preserves).
 
 Role choreography uses distinct versioned source, global, local, ordered-local-set, diagnostics, and projection-receipt Preserves profiles. Packed Preserves bytes own each identity. The complete local-set identity binds normalized role order and every local artifact identity.
 
 The descriptor contains normalized nodes, edges, dependencies, effect declarations, limits, compatibility revisions, and exact profile identities. It identifies aggregate state as a parameterized node map. It does not contain a global product-state table.
 
-The local lifecycle is one closed `kamacite.fsm-spec.v2` descriptor. It contains six local states, five events, accepted transitions, and explicit denial rows. Every local state and event pair has one row.
+The local lifecycle is a closed `kamacite.fsm-spec.v2` descriptor. Every local
+state and event pair has one row: six states and five events for linear, seven
+states and seven events for either durable profile. In durable V1 an attempted
+cancel from `suspended` is a denial row. Durable V2 instead has an unguarded
+`suspended` → `cancelled` transition with side effect `none`.
 
 ## Identity chain
 
@@ -108,6 +120,11 @@ unclassified future categories retain their variant and payload in diagnostics.
 `choregraph-cli write-kamacite-corpus fixtures/kamacite` writes the maintained corpus. Tests rebuild each corpus entry and compare its exact bytes with the checked-in artifact.
 
 The corpus manifest is [`../fixtures/kamacite/corpus.ncl`](../fixtures/kamacite/corpus.ncl). It includes positive canonical artifacts and negative malformed, non-canonical, unsupported, stale, mismatched, JSON, global-enumeration, trace, and overclaim cases.
+
+The reviewed binary durable corpus remains the V1 compatibility reference.
+Source-level V2 round-trip tests build their artifacts in memory. Refresh
+source-bound identities and regenerate linked evidence only against verified
+final inputs; do not replace the V1 corpus to record a separate profile.
 
 ## Receipt roles
 
