@@ -90,7 +90,18 @@ This exception does not apply to Choregraph crates. The foundation, Clippy, Octe
 
 A diagnostic contains a stable code, one primary source-relative span, ordered secondary spans, bounded notes, bounded hints, and an optional bounded replacement.
 
-Safe output rejects absolute home paths and common secret-bearing fragments. It does not persist raw evaluator output, imported source, environment values, or credentials.
+Safe output rejects absolute home paths and common secret-bearing fragments. It does not persist raw evaluator output, imported source, environment values, or credentials. `issue::render_safe_diagnostics` renders the diagnostic code, primary span, secondary spans, notes, and hints deterministically under `MAX_DIAGNOSTIC_TEXT_BYTES` (512 bytes), appending `role-choreography:truncated` when output would exceed that ceiling and rejecting unsafe, unsorted, malformed-span, or over-limit diagnostic slices.
+
+### Projection rejection witness (diagnostic-only)
+
+Trellis's production `projectable` and `project_endpoint` remain the sole acceptance authority. Only after `projectable(&global)` returns `false` does `issue::projection` run a bounded, iterative, diagnostic-only traversal over the admitted source tree and lowered `GlobalChoreo`:
+
+- It descends through communications, transfers, and failing branches to locate the innermost unprojectable `Choice` node rather than attributing every failure to the protocol root or selecting an arbitrary descendant.
+- Once all branch bodies of a failing `Choice` are individually projectable, it calls Trellis's `project_endpoint` per non-decider role and inspects the projected branches under the same prefix-peel and decider-guard merge rules to identify affected roles, conflicting branch spans, and observed local head incompatibilities. Uninvolved roles projecting to `End` are not blamed.
+- It emits a bounded safe hint to review choice communication and branch structure without claiming that inserting a notification alone is always sufficient.
+- If a precise witness cannot be established within reviewed bounds, it retains the `trellis-projection-rejected` error with an explicit incomplete-witness note rather than inventing a cause.
+
+This diagnostic traversal never accepts a protocol, relaxes rejection, emits partial executable local sets, or rewrites the source. Its trust boundary is strictly diagnostic-only; projectability itself checks structural local-protocol compatibility and does **not** establish runtime progress, scheduling fairness, network transport delivery, fault tolerance, or crash recovery guarantees.
 
 ## Canonical artifacts
 

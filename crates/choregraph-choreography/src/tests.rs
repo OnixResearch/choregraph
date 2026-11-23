@@ -552,8 +552,290 @@ fn incompatible_offer_heads_are_not_projectable() {
         diagnostics[0].code,
         crate::issue::DiagnosticCode::TrellisProjectionRejected
     );
+    assert_eq!(diagnostics[0].primary, span());
     assert_eq!(diagnostics[0].secondary, vec![span(), alternate_span()]);
+    assert!(
+        diagnostics[0]
+            .notes
+            .iter()
+            .any(|note| note.contains("role 2") && note.contains("incompatible offer heads"))
+    );
+    assert!(
+        diagnostics[0]
+            .hints
+            .iter()
+            .any(|hint| hint.contains("may not suffice"))
+    );
     assert!(crate::issue::diagnostics_are_safe(&diagnostics));
+    let rendered = crate::issue::render_safe_diagnostics(&diagnostics);
+    assert!(rendered.contains("TrellisProjectionRejected:0..8"));
+    assert!(rendered.contains("secondary: 0..8, 9..17"));
+    assert!(rendered.contains("note: "));
+    assert!(rendered.contains("hint: "));
+    assert!(rendered.len() <= crate::model::bounds::MAX_DIAGNOSTIC_TEXT_BYTES);
+}
+
+const fn span_range(range: core::ops::Range<u32>) -> crate::model::participants::SourceSpan {
+    crate::model::participants::SourceSpan {
+        start: range.start,
+        end: range.end,
+    }
+}
+
+#[test]
+fn rejected_choice_beneath_leading_communication_reports_choice_span_and_role() {
+    let root_span = span_range(0..100);
+    let choice_span = span_range(20..90);
+    let branch_a_span = span_range(25..50);
+    let branch_b_span = span_range(55..85);
+    let protocol = crate::model::tree::Node::Communication {
+        from: ROLE_A,
+        to: ROLE_B,
+        label: LABEL_A,
+        payload_tag: PAYLOAD_A,
+        next: Box::new(crate::model::tree::Node::Choice {
+            decider: ROLE_A,
+            branches: vec![
+                crate::model::tree::ChoiceBranch {
+                    label: LABEL_A,
+                    body: communication(ROLE_B, ROLE_C, LABEL_A, PAYLOAD_A, end()),
+                    span: branch_a_span,
+                },
+                crate::model::tree::ChoiceBranch {
+                    label: LABEL_B,
+                    body: communication(ROLE_C, ROLE_B, LABEL_B, PAYLOAD_B, end()),
+                    span: branch_b_span,
+                },
+            ],
+            span: choice_span,
+        }),
+        span: root_span,
+    };
+    let diagnostics = match crate::admission::admit_source(source(protocol)) {
+        Ok(_) => panic!("unprojectable choice beneath communication unexpectedly admitted"),
+        Err(crate::admission::Error::Diagnostics(diagnostics)) => diagnostics,
+        Err(crate::admission::Error::UnsupportedNode) => panic!("known test node was unsupported"),
+    };
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(
+        diagnostics[0].code,
+        crate::issue::DiagnosticCode::TrellisProjectionRejected
+    );
+    assert_eq!(diagnostics[0].primary, choice_span);
+    assert_ne!(diagnostics[0].primary, root_span);
+    assert_eq!(diagnostics[0].secondary, vec![branch_a_span, branch_b_span]);
+    assert!(diagnostics[0].notes.iter().any(|note| {
+        note.contains("role 2")
+            && note.contains("decider 1")
+            && note.contains("branch 30 (send)")
+            && note.contains("branch 31 (recv from other)")
+    }));
+    assert!(crate::issue::diagnostics_are_safe(&diagnostics));
+}
+
+#[test]
+fn nested_choice_incompatibility_locates_inner_choice_and_conflicting_branches() {
+    let outer_span = span_range(0..200);
+    let outer_ok_span = span_range(10..40);
+    let outer_bad_span = span_range(50..190);
+    let inner_choice_span = span_range(60..180);
+    let inner_ok_branch_span = span_range(70..95);
+    let inner_conflict_a_span = span_range(100..135);
+    let inner_conflict_b_span = span_range(140..175);
+
+    let inner_choice = crate::model::tree::Node::Choice {
+        decider: ROLE_B,
+        branches: vec![
+            crate::model::tree::ChoiceBranch {
+                label: LABEL_A,
+                body: communication(ROLE_B, ROLE_C, LABEL_A, PAYLOAD_A, end()),
+                span: inner_ok_branch_span,
+            },
+            crate::model::tree::ChoiceBranch {
+                label: LABEL_B,
+                body: communication(ROLE_B, ROLE_C, LABEL_B, PAYLOAD_A, end()),
+                span: inner_conflict_a_span,
+            },
+            crate::model::tree::ChoiceBranch {
+                label: LABEL_C,
+                body: end(),
+                span: inner_conflict_b_span,
+            },
+        ],
+        span: inner_choice_span,
+    };
+    let protocol = crate::model::tree::Node::Choice {
+        decider: ROLE_A,
+        branches: vec![
+            crate::model::tree::ChoiceBranch {
+                label: LABEL_A,
+                body: communication(ROLE_A, ROLE_B, LABEL_A, PAYLOAD_A, end()),
+                span: outer_ok_span,
+            },
+            crate::model::tree::ChoiceBranch {
+                label: LABEL_B,
+                body: communication(ROLE_A, ROLE_B, LABEL_B, PAYLOAD_B, inner_choice),
+                span: outer_bad_span,
+            },
+        ],
+        span: outer_span,
+    };
+
+    let diagnostics = match crate::admission::admit_source(source(protocol)) {
+        Ok(_) => panic!("nested unprojectable choice unexpectedly admitted"),
+        Err(crate::admission::Error::Diagnostics(diagnostics)) => diagnostics,
+        Err(crate::admission::Error::UnsupportedNode) => panic!("known test node was unsupported"),
+    };
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0].primary, inner_choice_span);
+    assert_eq!(
+        diagnostics[0].secondary,
+        vec![inner_ok_branch_span, inner_conflict_b_span]
+    );
+    assert!(diagnostics[0].notes.iter().any(|note| {
+        note.contains("role 3")
+            && note.contains("decider 2")
+            && note.contains("recv from decider")
+            && note.contains("(end)")
+    }));
+    assert!(
+        !diagnostics[0]
+            .notes
+            .iter()
+            .any(|note| note.contains("role 1"))
+    );
+    assert!(crate::issue::diagnostics_are_safe(&diagnostics));
+}
+
+#[test]
+fn outer_choice_conflict_with_valid_nested_choice_reports_outer_choice() {
+    let outer_span = span_range(0..200);
+    let outer_branch_a_span = span_range(10..90);
+    let outer_branch_b_span = span_range(100..190);
+    let valid_inner_span = span_range(20..80);
+
+    let valid_inner = crate::model::tree::Node::Choice {
+        decider: ROLE_B,
+        branches: vec![
+            crate::model::tree::ChoiceBranch {
+                label: LABEL_A,
+                body: communication(ROLE_B, ROLE_C, LABEL_A, PAYLOAD_A, end()),
+                span: span_range(25..45),
+            },
+            crate::model::tree::ChoiceBranch {
+                label: LABEL_B,
+                body: communication(ROLE_B, ROLE_C, LABEL_B, PAYLOAD_B, end()),
+                span: span_range(50..75),
+            },
+        ],
+        span: valid_inner_span,
+    };
+    let protocol = crate::model::tree::Node::Choice {
+        decider: ROLE_A,
+        branches: vec![
+            crate::model::tree::ChoiceBranch {
+                label: LABEL_A,
+                body: valid_inner,
+                span: outer_branch_a_span,
+            },
+            crate::model::tree::ChoiceBranch {
+                label: LABEL_B,
+                body: communication(ROLE_C, ROLE_B, LABEL_A, PAYLOAD_A, end()),
+                span: outer_branch_b_span,
+            },
+        ],
+        span: outer_span,
+    };
+
+    let diagnostics = match crate::admission::admit_source(source(protocol)) {
+        Ok(_) => panic!("outer choice conflict unexpectedly admitted"),
+        Err(crate::admission::Error::Diagnostics(diagnostics)) => diagnostics,
+        Err(crate::admission::Error::UnsupportedNode) => panic!("known test node was unsupported"),
+    };
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0].primary, outer_span);
+    assert_eq!(
+        diagnostics[0].secondary,
+        vec![outer_branch_a_span, outer_branch_b_span]
+    );
+    assert!(
+        diagnostics[0]
+            .notes
+            .iter()
+            .any(|note| note.contains("decider 1"))
+    );
+    assert!(crate::issue::diagnostics_are_safe(&diagnostics));
+}
+
+#[test]
+fn render_safe_diagnostics_truncates_deterministically_and_rejects_unsafe_or_excessive() {
+    let mut many = Vec::with_capacity(10);
+    for index in 0..10u32 {
+        let start = index.saturating_mul(10);
+        let end_bytes = start.saturating_add(5);
+        many.push(
+            crate::issue::Diagnostic::error(
+                crate::issue::DiagnosticCode::TrellisProjectionRejected,
+                span_range(start..end_bytes),
+                "role 2 cannot distinguish choice by decider 1: incompatible offer heads",
+            )
+            .with_secondary(span_range(start.saturating_add(1)..start.saturating_add(3)))
+            .with_hint("review choice communication and branch structure for affected roles"),
+        );
+    }
+    let rendered_first = crate::issue::render_safe_diagnostics(&many);
+    let rendered_second = crate::issue::render_safe_diagnostics(&many);
+    assert_eq!(rendered_first, rendered_second);
+    assert!(rendered_first.len() <= crate::model::bounds::MAX_DIAGNOSTIC_TEXT_BYTES);
+    assert!(rendered_first.ends_with("role-choreography:truncated\n"));
+
+    let malformed_span = vec![crate::issue::Diagnostic::error(
+        crate::issue::DiagnosticCode::TrellisProjectionRejected,
+        span_range(10..5),
+        "bad span",
+    )];
+    assert_eq!(
+        crate::issue::render_safe_diagnostics(&malformed_span),
+        "role-choreography: unsafe diagnostic rejected"
+    );
+
+    let overflow_count = crate::model::bounds::MAX_DIAGNOSTICS.saturating_add(1);
+    let mut excessive = Vec::with_capacity(overflow_count);
+    for _ in 0..overflow_count {
+        excessive.push(crate::issue::Diagnostic::error(
+            crate::issue::DiagnosticCode::TrellisProjectionRejected,
+            span(),
+            "overflow",
+        ));
+    }
+    assert_eq!(
+        crate::issue::render_safe_diagnostics(&excessive),
+        "role-choreography: unsafe diagnostic rejected"
+    );
+}
+
+#[test]
+fn diagnostic_changes_preserve_canonical_protocol_and_local_set_identities() {
+    let annotated_json = include_bytes!(
+        "../../../fixtures/role-choreography/positive/annotated-two-branch-choice.json"
+    );
+    let annotated: crate::preference::model::AnnotatedSource =
+        match serde_json::from_slice(annotated_json) {
+            Ok(source) => source,
+            Err(error) => panic!("parse checked-in annotated fixture: {error}"),
+        };
+    let base_bytes = match serde_json::to_vec(&annotated.base) {
+        Ok(bytes) => bytes,
+        Err(error) => panic!("serialize base fixture: {error}"),
+    };
+    let bundle = match crate::compile_evaluated(&base_bytes, b"envelope") {
+        Ok(bundle) => bundle,
+        Err(error) => panic!("compile unchanged two-branch base fixture: {error:?}"),
+    };
+    assert_eq!(
+        bundle.local_set().identity.hex,
+        "aae9fbd4fefa129f8772f99225d6e0b2a67a311a2d61dd7bb66ee6697ce12194"
+    );
 }
 
 #[test]

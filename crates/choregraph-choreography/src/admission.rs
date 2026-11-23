@@ -77,21 +77,6 @@ fn issue(code: DiagnosticCode, span: SourceSpan, note: &'static str) -> Vec<Diag
     one(Diagnostic::error(code, span, note))
 }
 
-fn projection_issue(node: &Node) -> Result<Vec<Diagnostic>, Error> {
-    let span = node.span().ok_or(Error::UnsupportedNode)?;
-    let mut diagnostic = Diagnostic::error(
-        DiagnosticCode::TrellisProjectionRejected,
-        span,
-        "Trellis rejected endpoint projectability",
-    );
-    if let Node::Choice { branches, .. } = node {
-        diagnostic.secondary = branches.iter().map(|branch| branch.span).collect();
-        diagnostic.secondary.sort_unstable();
-        diagnostic.secondary.dedup();
-    }
-    Ok(one(diagnostic))
-}
-
 fn duplicate_issue(
     code: DiagnosticCode,
     primary: SourceSpan,
@@ -693,7 +678,7 @@ pub fn admit_source(mut source: RoleSource) -> Result<Admitted, Error> {
     debug_assert!(source.roles.is_sorted_by_key(|role| role.id));
     debug_assert!(source.values.is_sorted_by_key(|value| value.id));
     debug_assert!(source.non_claims.is_sorted());
-    let roles = source.roles.iter().map(|role| role.id).collect();
+    let roles: Vec<RoleId> = source.roles.iter().map(|role| role.id).collect();
     let global = lower_node(&source.protocol)?;
     if !verified_logic::choreography_global::well_formed_global(&global) {
         return Err(issue(
@@ -704,7 +689,9 @@ pub fn admit_source(mut source: RoleSource) -> Result<Admitted, Error> {
         .into());
     }
     if !projectable(&global) {
-        return Err(Error::Diagnostics(projection_issue(&source.protocol)?));
+        return Err(Error::Diagnostics(
+            crate::issue::projection::explain_rejection(&source.protocol, &global, &roles)?,
+        ));
     }
 
     let admitted = Admitted {
