@@ -1,0 +1,27 @@
+; Annotated projection receipt v1.
+; Binds preference annotation identities to one v1 projection cohort.
+; `game_mapping` is always `not-formalized`; this receipt is identity linkage
+; only and promotes no solver, game, or self-interested soundness claim.
+
+PreferenceProjectionReceipt = <PreferenceProjectionReceipt {
+  profile: "choregraph.role-choreography.profile.preference-annotations.v1",
+  schema: "choregraph.role-choreography.preference-annotations.v1",
+  base_receipt: ChoreographyIdentity,
+  global_artifact: ChoreographyIdentity,
+  local_artifacts: [ChoreographyIdentity ...],
+  complete_local_set: ChoreographyIdentity,
+  strict_dto: ChoreographyIdentity,
+  annotations: ChoreographyIdentity,
+  annotated_local_set: ChoreographyIdentity,
+  schema_set: ChoreographyIdentity,
+  lowerer: ChoreographyIdentity,
+  non_claims: ChoreographyIdentity,
+  game_mapping: not-formalized,
+  claim: "identity-linkage-only-no-claim-promotion"
+}>
+
+ChoreographyIdentity = <ChoreographyIdentity {
+  domain: symbol,
+  algorithm: "blake3",
+  hex: string
+}>

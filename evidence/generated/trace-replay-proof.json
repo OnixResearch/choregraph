@@ -158,7 +158,7 @@
         "role": "reviewed selected-source baseline"
       },
       {
-        "blake3": "4e4dd16ff8a47646b8873a94e58bdf66666693dadbf6bda456b627a07f3b95b1",
+        "blake3": "f569095768c31cb82f0651e0fe43a68bfa6afcaffab6ce8f7440d89110924453",
         "path": "flake.nix",
         "role": "maintained positive, negative, trust, and evidence gate"
       },

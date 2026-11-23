@@ -1,0 +1,14 @@
+; Strict annotated role-choreography DTO v1 (default-off preference profile).
+; The Rust DTO is the executable admission authority.
+; `base` is exactly a RoleChoreographySource from
+; choregraph-role-choreography-source-v1; its meaning is unchanged.
+
+AnnotatedRoleChoreographySource = <AnnotatedRoleChoreographySource {
+  schema: "choregraph.role-choreography.preference-annotations.v1",
+  base: RoleChoreographySource,
+  annotations: PreferenceAnnotationSet,
+  non_claims: [string ...]
+}>
+
+; PreferenceAnnotationSet is defined by
+; choregraph-role-choreography-preference-annotations-v1.

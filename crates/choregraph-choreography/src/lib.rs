@@ -25,6 +25,7 @@ pub mod endpoint;
 pub mod issue;
 pub mod linkage;
 pub mod model;
+pub mod preference;
 
 pub const CLAIM_BOUNDARY: &str = concat!(
     "bounded source admission, exact pinned Trellis projection, canonical identity linkage; ",
@@ -33,11 +34,19 @@ pub const CLAIM_BOUNDARY: &str = concat!(
     "or release eligibility",
 );
 
+/// Compiles one unannotated `choregraph.role-choreography.v1` source under the
+/// default cooperative baseline profile.
+///
+/// Annotated sources are refused with `PreferenceProfileNotSelected`; they are
+/// admitted only by `preference::compile_evaluated` with the explicitly
+/// selected preference-annotation profile.
 pub fn compile_evaluated(
     evaluated_bytes: &[u8],
     source_envelope_bytes: &[u8],
 ) -> Result<linkage::ProjectionBundle, admission::Error> {
-    let source = admission::parse_evaluated_json(evaluated_bytes)?;
+    let source = admission::parse_evaluated_json(evaluated_bytes).map_err(|diagnostics| {
+        preference::admission::refusal_without_selection(evaluated_bytes).unwrap_or(diagnostics)
+    })?;
     let admitted = admission::admit_source(source)?;
     let materials = linkage::ProjectionMaterials::reviewed(source_envelope_bytes, evaluated_bytes);
     linkage::build_projection_bundle(&admitted, &materials).map_err(Into::into)
