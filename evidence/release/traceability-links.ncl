@@ -84,6 +84,8 @@
     { requirement = "choregraph.machine.suspension_boundary.valid", evidence = "crates/choregraph-core/src/boundary.rs and durable-suspension tests" },
     # r[verify choregraph.machine.suspension_boundary.overclaim]
     { requirement = "choregraph.machine.suspension_boundary.overclaim", evidence = "crates/choregraph-core/src/boundary.rs and evidence non-claims" },
+    # r[impl choregraph.proof.single_step.readiness_completeness_boundary]
+    { requirement = "choregraph.proof.single_step.readiness_completeness_boundary", evidence = "docs/single-step-verification.md#non-claims and evidence/single-step-proof.ncl" },
     # r[verify choregraph.validation_baselines.trace_fixtures]
     { requirement = "choregraph.validation_baselines.trace_fixtures", evidence = "proofs/negative and trace-replay-verus Nix check" },
     # r[verify choregraph.validation_baselines.cairn_policy]

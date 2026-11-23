@@ -94,7 +94,33 @@ The operator separately authorized publication of the unchanged compatibility ca
 
 The v2 concrete-effect source and bundle have no publication authority. Publication requires a new exact source revision, archive identity, candidate, and operator authorization.
 
-Radicle `main` and `candidate` now resolve to `81b260da2256147ec82cb5dd44c0a0c1dcb7500d`. The earlier candidate and publication receipt remain unchanged.
+At the compatibility publication, Radicle `main` and `candidate` resolved to `81b260da2256147ec82cb5dd44c0a0c1dcb7500d`. Those publication receipts remain historical and unchanged.
+
+## Release preflight for `32b01c02`
+
+GitHub source `32b01c024e5934b9e10ea8e64f4271b200458a7a` passed
+[Foundation qualification](https://github.com/OnixResearch/choregraph/actions/runs/45089298802).
+Its reproducible `git archive --format=tar` was 4,515,840 bytes, with BLAKE3
+`7da6f0796a3dd9dd4d7f185bcd6a1eb412dee74bee3d3078f324d1dde4d4d8e5`.
+The release CLI rejected the historical bundle for this source with
+`ManifestMismatch`. Eleven listed artifact digests differed, and two archive
+paths had moved without changing the historical receipt bytes. Rehashing the
+bundle is not a substitute for current release observations.
+
+Cairn `695124d459574ba7aeba6097310d237f393c243c`, the project's policy pin,
+validated `choregraph-default`. Its release-readiness verdict was false:
+traceability had a missing accepted link and references to an unaccepted
+construction delta; the MCP smoke and Preserves freshness checks expected
+Cairn fixtures not present in Choregraph. A newer reader's profile error is
+not evidence that the pinned policy is invalid.
+
+The historical adapter runner passed all 21 tests for Lattice
+`c8d56ad83a57287064edb85f58808f53e4bf4536` against this archive through
+`choregraph-seaglass`, using the maintained namespace migration and with no
+source fallback. The offline run used the checksum-verified Rust components
+of the pinned Fenix revision and host GCC, not the complete Nix shell. This
+tests historical runner compatibility, not a current Lattice source pin,
+cutover, or release approval.
 
 ## Local commands
 
