@@ -13,6 +13,11 @@ jobs:
   foundation:
     runs-on: ubuntu-22.04 # Unprivileged Bubblewrap user namespaces are required by the host test.
     timeout-minutes: 120
+    env:
+      # Octet's locked Cargo source uses SSH. Fetch the same pinned Bounded Exec commit over public HTTPS.
+      GIT_CONFIG_COUNT: "1"
+      GIT_CONFIG_KEY_0: url.https://github.com/OnixResearch/bounded-exec.git.insteadOf
+      GIT_CONFIG_VALUE_0: ssh://git@github.com/OnixResearch/bounded-exec.git
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:

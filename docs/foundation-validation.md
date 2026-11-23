@@ -5,9 +5,11 @@ Run these commands from the repository root.
 The first four commands below and `nix flake check -L` also run in the
 **Foundation qualification** GitHub workflow on pull requests and pushes to
 `main`. CI uses locked Cargo resolution, read-only repository permissions, and
-does not need a deploy key. The Trellis dependency retains its pinned revision
-and is acquired over anonymous HTTPS by both Cargo and Nix. A runner-local SSH
-rewrite is not sufficient for Nix's sandboxed fetcher.
+does not need a deploy key. Trellis uses pinned HTTPS sources for Cargo and
+Nix, including in the Nix build sandbox. Octet's reviewed Cargo lock still
+names Bounded Exec over SSH. The workflow maps that exact URL to its public
+HTTPS equivalent for Crane's Nix client fetch, without changing the revision
+or the lockfile.
 
 ```text
 nix develop -c cargo fmt --all -- --check
