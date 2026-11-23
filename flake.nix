@@ -951,6 +951,55 @@
                 printf '%s\n' "$closure_digest" > "$out/verus-closure.blake3"
               '';
 
+          liveness-verus =
+            pkgs.runCommand "choregraph-liveness-verus"
+              {
+                nativeBuildInputs = [
+                  pkgs.coreutils
+                  pkgs.gnugrep
+                  productionVerus
+                ];
+                src = self;
+              }
+              ''
+                set -eu
+                cd "$src"
+
+                octet-production-verus --crate-type=lib verus/proofs/liveness.rs \
+                  -o "$TMPDIR/liveness.rlib" \
+                  > "$TMPDIR/positive.stdout" 2> "$TMPDIR/positive.stderr"
+                grep -F '0 errors' "$TMPDIR/positive.stdout" > /dev/null
+
+                expected_negative_count=3
+                observed_negative_count="$(find verus/liveness-failure-fixtures -maxdepth 1 -type f -name '*.rs' | wc -l)"
+                test "$observed_negative_count" -eq "$expected_negative_count"
+                for fixture in verus/liveness-failure-fixtures/*.rs; do
+                  fixture_name="$(basename "$fixture")"
+                  case "$fixture_name" in
+                    cycle_has_ready_pending_node.rs) expected='dependencies_complete_spec' ;;
+                    non_terminal_count_decreases_on_start.rs) expected='non_terminal_count_spec' ;;
+                    suspended_dag_accepts_start_without_resume.rs) expected='indexed_step_accepts_spec' ;;
+                    *) echo "unclassified liveness failure fixture: $fixture_name" >&2; exit 1 ;;
+                  esac
+                  set +e
+                  octet-production-verus --crate-type=lib "$fixture" \
+                    > "$TMPDIR/negative.stdout" 2> "$TMPDIR/negative.stderr"
+                  negative_status="$?"
+                  set -e
+                  if [ "$negative_status" -eq 0 ]; then
+                    echo "negative liveness fixture unexpectedly passed: $fixture_name" >&2
+                    exit 1
+                  fi
+                  grep -F 'postcondition not satisfied' "$TMPDIR/negative.stderr" > /dev/null
+                  grep -F "$expected" "$TMPDIR/negative.stderr" > /dev/null
+                done
+
+                mkdir -p "$out"
+                cp "$TMPDIR/positive.stdout" "$out/positive.stdout"
+                printf '%s\n' 'non-claim=kernel-liveness-under-fair-runner-assumptions-only' \
+                  > "$out/non-claim.txt"
+              '';
+
           foundation-boundaries =
             pkgs.runCommand "choregraph-foundation-boundaries"
               {

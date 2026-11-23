@@ -36,16 +36,16 @@
     "proof_references": [
       {
         "claim_boundary": "production-called single-step transition and readiness frontier obligations only",
-        "exported_blake3": "7a20deecd12816d4c6a93fb42f5dc81d43b66c4443b81df4271ac8411e48329d",
+        "exported_blake3": "f084264483ad992adb6a501d4501458a956cd55ab31c0530d6a41474a3840b4e",
         "exported_path": "evidence/generated/single-step-proof.json",
-        "manifest_blake3": "75c916a5e8cfa3704192312fbb75defdea965ed2f79fabc132799f9c3974f229",
+        "manifest_blake3": "5de1aaa22dee0ebd5989c54d26e2f31b241023eb4468b96bfa1b8e9e79ff6407",
         "manifest_path": "evidence/single-step-proof.ncl"
       },
       {
         "claim_boundary": "bounded replay refinement and first-denial obligations only",
-        "exported_blake3": "72ec80918bdb8ffa227d1b471b75cb77361c75f7101b35c0f0b3eaad95e6da8c",
+        "exported_blake3": "3eac807518e40639de888691552554e9da83b438ce67dec452d78d46f6662b49",
         "exported_path": "evidence/generated/trace-replay-proof.json",
-        "manifest_blake3": "15f98d7de9cc4ecf9c9f472f7a060929233a11348f7b14a1ca5a5b95c0f7158c",
+        "manifest_blake3": "eaa299fe60cc455e2f7b8e5dfeeda3d920dfa27d6688a77b1af0313ef9de122d",
         "manifest_path": "evidence/trace-replay-proof.ncl"
       }
     ],
@@ -70,7 +70,7 @@
         "role": "Rust channel and WASM target identity"
       },
       {
-        "blake3": "88a568b3503f066b1682d0118f69269c8dc3f0ed2f64831b9c6e2aea3ef82da3",
+        "blake3": "84fa9fa4ec437497052aca68cb50856c2ca75242cf2288a7922c8277bfa74aac",
         "context": "choregraph wasm source file v1:flake.nix",
         "path": "flake.nix",
         "role": "reproducible component, conformance, and evidence build graph"

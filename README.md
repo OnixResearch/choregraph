@@ -170,7 +170,7 @@ The CLI additionally exposes `write-kamacite-corpus`, `write-release-bundle`, `v
 - **Scoped proofs.** Verus proves indexed preservation from the transition guards, independent lifecycle laws, readiness completeness, finite-trace behavior, and the caller-fact epoch fence. The Rust adapter still checks converted results. The rails do not prove the whole application, identifier-map adapters, arbitrary Nickel semantics, caller-derived identities, external-role correctness, or distributed execution.
 - **Identity is not correctness.** Canonical bytes and receipts bind exact artifacts and evidence. They do not establish authorization, exactly-once effects, persistence durability, delivery, or release eligibility. Checked-in evidence describes its recorded source and toolchain; changes need fresh validation.
 
-The [single-step proof boundary](docs/single-step-verification.md), [trace proof boundary](docs/trace-replay-verification.md), and [WASM contract](docs/wasm-kernel-adapter.md) describe the precise claims and trusted surfaces. Reference designs and superseded plans are provenance, not additional shipped features.
+The [single-step proof boundary](docs/single-step-verification.md), [trace proof boundary](docs/trace-replay-verification.md), [liveness proof boundary](docs/liveness-verification.md), and [WASM contract](docs/wasm-kernel-adapter.md) describe the precise claims and trusted surfaces. Reference designs and superseded plans are provenance, not additional shipped features.
 
 ## Development and checks
 
@@ -192,6 +192,7 @@ nix build .#choregraph-wasm-component --no-link -L
 nix build .#checks.x86_64-linux.wasm-kernel-conformance --no-link -L
 nix build .#checks.x86_64-linux.single-step-verus --no-link -L
 nix build .#checks.x86_64-linux.trace-replay-verus --no-link -L
+nix build .#checks.x86_64-linux.liveness-verus --no-link -L
 nix build .#checks.x86_64-linux.epoch-fence-verus --no-link -L
 nix build .#checks.x86_64-linux.octet-deny-all --no-link -L
 ```
