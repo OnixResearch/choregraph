@@ -791,7 +791,7 @@ fn render_safe_diagnostics_truncates_deterministically_and_rejects_unsafe_or_exc
 
     let malformed_span = vec![crate::issue::Diagnostic::error(
         crate::issue::DiagnosticCode::TrellisProjectionRejected,
-        span_range(10..5),
+        crate::model::participants::SourceSpan { start: 10, end: 5 },
         "bad span",
     )];
     assert_eq!(
