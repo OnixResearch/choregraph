@@ -203,7 +203,7 @@ The pinned Octet gate treats all its lints as errors. The full [foundation valid
 
 - [Architecture](docs/architecture.md) and [machine semantics](docs/machine-semantics.md)
 - [Restricted Nickel lowering](docs/restricted-nickel-lowering.md), [graph construction](docs/graph-construction.md) and [Kamacite artifacts](docs/kamacite-profile.md)
-- [Role choreography](docs/role-choreography.md)
+- [Role choreography](docs/role-choreography.md) and [quantitative role-protocol pilot](docs/quantitative-role-pilot.md)
 - [Branchable history](docs/branchable-event-history.md), [epoch fencing](docs/epoch-fenced-single-writer.md), and [reference Postgres durable host](docs/postgres-durable-host.md)
 - [Lattice authority boundary](docs/lattice-authority-boundary.md)
 - [Release evidence and historical exact-pin publications](docs/release-evidence.md)
